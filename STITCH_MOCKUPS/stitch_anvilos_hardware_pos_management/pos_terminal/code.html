@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AnvilOS - POS Terminal</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed": "#341100",
+                        "on-primary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "outline": "#73777c",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#0a1d29",
+                        "surface-tint": "#4e616e",
+                        "primary-container": "#243642",
+                        "surface-container": "#eaedff",
+                        "background": "#faf8ff",
+                        "surface-bright": "#faf8ff",
+                        "on-secondary-fixed-variant": "#783200",
+                        "surface-dim": "#d2d9f4",
+                        "on-surface-variant": "#43474b",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#f2f3ff",
+                        "primary-fixed": "#d2e5f5",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#eef0ff",
+                        "on-surface": "#131b2e",
+                        "tertiary-container": "#263546",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed-dim": "#b6c9d8",
+                        "tertiary-fixed": "#d4e4fa",
+                        "surface-container-high": "#e2e7ff",
+                        "secondary": "#9d4300",
+                        "tertiary-fixed-dim": "#b9c8de",
+                        "surface": "#faf8ff",
+                        "secondary-fixed": "#ffdbca",
+                        "surface-variant": "#dae2fd",
+                        "inverse-primary": "#b6c9d8",
+                        "secondary-fixed-dim": "#ffb690",
+                        "on-primary-fixed-variant": "#374956",
+                        "on-primary-container": "#8c9fad",
+                        "surface-container-highest": "#dae2fd",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#39485a",
+                        "on-background": "#131b2e",
+                        "primary": "#0e212c",
+                        "inverse-surface": "#283044",
+                        "on-error": "#ffffff",
+                        "tertiary": "#112030",
+                        "on-tertiary-fixed": "#0d1c2d",
+                        "outline-variant": "#c3c7cb",
+                        "on-tertiary-container": "#8f9db2",
+                        "secondary-container": "#fd761a",
+                        "on-secondary-container": "#5c2400"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "grid-gutter": "20px",
+                        "table-cell-padding": "12px 16px",
+                        "sidebar-width": "260px",
+                        "container-padding": "24px",
+                        "stack-gap": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display": ["Inter"],
+                        "label-mono": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "600" }],
+                        "display": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-mono": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1; }
+        
+        /* Scrollbar styling for industrial feel */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: theme('colors.surface-dim'); }
+        ::-webkit-scrollbar-thumb { background: theme('colors.outline-variant'); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: theme('colors.outline'); }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-screen w-screen overflow-hidden flex font-body-md">
+<nav class="fixed left-0 top-0 h-full w-[260px] flex flex-col z-50 bg-primary">
+<div class="px-6 py-6 border-b border-primary-container">
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary tracking-tight">AnvilOS</h1>
+<p class="font-label-sm text-label-sm text-on-primary/70 uppercase tracking-widest mt-1">Hardware &amp; Supply</p>
+</div>
+<div class="flex-1 py-4 flex flex-col gap-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container border-l-4 border-secondary hover:bg-primary-container/50 transition-all active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">point_of_sale</span>
+<span class="font-label-sm text-label-sm">POS Terminal</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-sm text-label-sm">Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label-sm text-label-sm">Transactions</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-label-sm text-label-sm">Suppliers</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-label-sm text-label-sm">Audit Logs</span>
+</a>
+</div>
+<div class="mt-auto border-t border-primary-container py-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+<span class="font-label-sm text-label-sm">Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-sm text-label-sm">Sign Out</span>
+</a>
+</div>
+</nav>
+<div class="flex-1 flex flex-col ml-[260px] h-screen bg-surface">
+<header class="bg-surface flex justify-between items-center w-full px-grid-gutter h-16 sticky top-0 z-50 border-b border-outline-variant">
+<div class="flex items-center gap-4">
+<h2 class="font-headline-md text-headline-md text-primary tracking-tight">Active Terminal: Station 04</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer active:opacity-80 p-2 rounded">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer active:opacity-80 p-2 rounded">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low transition-colors cursor-pointer active:opacity-80 p-2 rounded">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="h-8 w-8 bg-surface-variant border border-outline rounded overflow-hidden ml-2 flex items-center justify-center">
+<span class="material-symbols-outlined text-outline">person</span>
+</div>
+</div>
+</header>
+<main class="flex-1 flex p-grid-gutter gap-grid-gutter overflow-hidden">
+<section class="flex-[2] flex flex-col gap-4 overflow-hidden h-full">
+<div class="relative bg-surface-container-lowest p-1 rounded border border-outline-variant flex focus-within:border-secondary focus-within:ring-1 focus-within:ring-secondary transition-all">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full bg-transparent border-none pl-12 pr-4 py-3 font-body-lg text-body-lg text-on-surface placeholder:text-outline focus:ring-0" placeholder="Scan barcode or search SKU, Product Name..." type="text"/>
+<button class="bg-surface-variant text-on-surface px-4 py-2 border-l border-outline-variant hover:bg-surface-dim transition-colors font-label-sm text-label-sm uppercase tracking-wider flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">barcode_scanner</span> Scan
+                    </button>
+</div>
+<div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+<button class="px-4 py-2 bg-primary text-on-primary font-label-sm text-label-sm rounded whitespace-nowrap">All Items</button>
+<button class="px-4 py-2 bg-surface-container-lowest border border-outline-variant text-on-surface font-label-sm text-label-sm rounded whitespace-nowrap hover:bg-surface-variant transition-colors">Power Tools</button>
+<button class="px-4 py-2 bg-surface-container-lowest border border-outline-variant text-on-surface font-label-sm text-label-sm rounded whitespace-nowrap hover:bg-surface-variant transition-colors">Fasteners</button>
+<button class="px-4 py-2 bg-surface-container-lowest border border-outline-variant text-on-surface font-label-sm text-label-sm rounded whitespace-nowrap hover:bg-surface-variant transition-colors">Safety Gear</button>
+<button class="px-4 py-2 bg-surface-container-lowest border border-outline-variant text-on-surface font-label-sm text-label-sm rounded whitespace-nowrap hover:bg-surface-variant transition-colors">Lumber</button>
+<button class="px-4 py-2 bg-surface-container-lowest border border-outline-variant text-on-surface font-label-sm text-label-sm rounded whitespace-nowrap hover:bg-surface-variant transition-colors">Electrical</button>
+</div>
+<div class="flex-1 overflow-y-auto pr-2">
+<div class="grid grid-cols-3 gap-4 pb-10">
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-3 flex flex-col gap-3 hover:border-secondary transition-colors cursor-pointer group">
+<div class="aspect-video bg-surface-variant rounded flex items-center justify-center overflow-hidden border border-outline-variant/30">
+<img alt="Drill" class="w-full h-full object-cover mix-blend-multiply opacity-90 group-hover:opacity-100 transition-opacity" data-alt="A high-quality product photography shot of an industrial-grade yellow and black power drill against a pure white background. The image is brightly lit with high-key lighting to emphasize the rugged, metallic textures and safety color accents of the tool. The clean industrial aesthetic aligns perfectly with a modern warehouse inventory management interface, utilizing a stark contrast between heavy slate greys and vibrant safety colors. The mood is professional, utilitarian, and focused on durability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPV2c1CA2xvXFFM7E_rPc-53qTd3-MjW8WY-oOc0_zIr7i12NRlJDHhCwNAIGM5Y4uR62ppBh9JD9lM7CDxc-q5ytReRDgN59uQ3D40aRSINZR31aFFZliRJyUUPl01uptCQQigPoLe9uFVgjZ6-N0H610p22n53b787Ad9FbJoMGwqCNxbI7SaZoj3PcXFQwnRSGTu4cJSTTttrC6M85yoFsVj-XxUzGpjIkGpAwbPvuEGwOMmMexCdDp2L4wEXcwb0jub2iRowkd"/>
+</div>
+<div class="flex justify-between items-start gap-2">
+<h3 class="font-label-sm text-label-sm text-on-surface leading-tight">DeWalt 20V Max Cordless Drill</h3>
+<span class="font-headline-md text-headline-md text-on-surface">$129.00</span>
+</div>
+<div class="flex justify-between items-end mt-auto pt-2 border-t border-surface-variant">
+<div class="flex flex-col">
+<span class="font-label-mono text-label-mono text-outline text-[10px]">SKU: DW-20V-01</span>
+<span class="font-label-sm text-label-sm text-emerald-700">92 in stock</span>
+</div>
+<button class="bg-surface-variant text-on-surface p-1.5 rounded group-hover:bg-primary group-hover:text-on-primary transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-3 flex flex-col gap-3 hover:border-secondary transition-colors cursor-pointer group">
+<div class="aspect-video bg-surface-variant rounded flex items-center justify-center overflow-hidden border border-outline-variant/30">
+<img alt="Screwdriver Set" class="w-full h-full object-cover mix-blend-multiply opacity-90 group-hover:opacity-100 transition-opacity" data-alt="A professional studio shot of a comprehensive heavy-duty screwdriver set featuring bright orange handles, laid out immaculately on a light gray industrial surface. The lighting is crisp and even, highlighting the machined steel tips and textured grips. This visual seamlessly integrates into a utilitarian, high-contrast user interface designed for warehouse professionals. The atmosphere is organized, robust, and highly functional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBy3jYwTre_3bFbub3C6krSxGC-VY-VdY6gdO_EkBAsq8GdoKoEzTkGNZ8hP2JjrJYMOOY4b_eIyneJJHs0xYdBxv7-nZm7Oc35LnJ39-7y3KmlSHkN4TOPRJQrsUgC80xCljnduM0PQaspvNkAKvIk7yAox5BhXisSstTzTna7uE4_0b0t1wH3msDFTMa73_sZk7XLCgn8GQCgv2pMXC98LsWLV8Tm1kjpHwply7MCJY4oPHgDgA0kn6-lrqqfc5anO0vSWjHMWwDu"/>
+</div>
+<div class="flex justify-between items-start gap-2">
+<h3 class="font-label-sm text-label-sm text-on-surface leading-tight">ProGrade 12-Piece Screwdriver Set</h3>
+<span class="font-headline-md text-headline-md text-on-surface">$34.50</span>
+</div>
+<div class="flex justify-between items-end mt-auto pt-2 border-t border-surface-variant">
+<div class="flex flex-col">
+<span class="font-label-mono text-label-mono text-outline text-[10px]">SKU: PG-SD12</span>
+<span class="font-label-sm text-label-sm text-emerald-700">14 in stock</span>
+</div>
+<button class="bg-surface-variant text-on-surface p-1.5 rounded group-hover:bg-primary group-hover:text-on-primary transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-3 flex flex-col gap-3 hover:border-secondary transition-colors cursor-pointer group">
+<div class="aspect-video bg-surface-variant rounded flex items-center justify-center overflow-hidden border border-outline-variant/30">
+<img alt="Work Gloves" class="w-full h-full object-cover mix-blend-multiply opacity-90 group-hover:opacity-100 transition-opacity" data-alt="A detailed close-up of pair of rugged, high-visibility orange and black industrial work gloves resting on a stark slate-colored metallic background. The lighting casts slight, sharp shadows, emphasizing the durable materials and reinforced stitching. The overall composition is stark, minimalist, and perfectly suited for a heavy-duty corporate retail system. The vibe is gritty yet meticulously clean." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBABtazN3S23Z4vy1ZMw-zKs8qgRpD1isSNbzwDThV53HVKqiEbI4VeG9oRTYYg4WKg-wzkQQbqO-tEdC1TDD7F122ojmHDAym4oasGmADDfSB6RCuvcY6sCH0Wcrv1_2TB8mU0nSlJIAh0m_8sf2_xUxDJ53RH8jROBljQ3-UVxihnT666t-FwKsewY858Mb2LKGkxcyuOfRimUv2_l3SRpn14hQiuRjc4vgnai8LLGrgks2RQaR2IAi4e104fONgJw2Wi7XMpRvQy"/>
+</div>
+<div class="flex justify-between items-start gap-2">
+<h3 class="font-label-sm text-label-sm text-on-surface leading-tight">Ironclad Heavy Utility Gloves (L)</h3>
+<span class="font-headline-md text-headline-md text-on-surface">$18.99</span>
+</div>
+<div class="flex justify-between items-end mt-auto pt-2 border-t border-surface-variant">
+<div class="flex flex-col">
+<span class="font-label-mono text-label-mono text-outline text-[10px]">SKU: IC-GLV-L</span>
+<span class="font-label-sm text-label-sm text-emerald-700">45 in stock</span>
+</div>
+<button class="bg-surface-variant text-on-surface p-1.5 rounded group-hover:bg-primary group-hover:text-on-primary transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-3 flex flex-col gap-3 hover:border-secondary transition-colors cursor-pointer group">
+<div class="aspect-video bg-surface-variant rounded flex items-center justify-center overflow-hidden border border-outline-variant/30 relative">
+<div class="absolute top-2 right-2 bg-error text-on-error px-2 py-0.5 rounded font-label-sm text-[10px] uppercase tracking-wider">Out of Stock</div>
+<span class="material-symbols-outlined text-outline text-[48px] opacity-20">hardware</span>
+</div>
+<div class="flex justify-between items-start gap-2">
+<h3 class="font-label-sm text-label-sm text-on-surface leading-tight text-outline">Industrial Laser Level</h3>
+<span class="font-headline-md text-headline-md text-outline">$299.00</span>
+</div>
+<div class="flex justify-between items-end mt-auto pt-2 border-t border-surface-variant">
+<div class="flex flex-col">
+<span class="font-label-mono text-label-mono text-outline text-[10px]">SKU: LVL-900</span>
+<span class="font-label-sm text-label-sm text-error">0 in stock</span>
+</div>
+<button class="bg-surface-dim text-outline p-1.5 rounded cursor-not-allowed flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<aside class="flex-[1] bg-surface-container-lowest border border-outline-variant rounded flex flex-col shadow-sm max-w-[420px] overflow-hidden">
+<div class="p-4 border-b border-outline-variant bg-surface-dim">
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-headline-md text-headline-md text-on-surface font-bold">Transaction Detail</h2>
+<button class="text-outline hover:text-error transition-colors p-1"><span class="material-symbols-outlined">delete_sweep</span></button>
+</div>
+<div class="flex bg-surface-variant border border-outline-variant rounded p-1 mb-4">
+<button class="flex-1 py-1.5 bg-surface-container-lowest text-on-surface font-label-sm text-label-sm rounded shadow-sm border border-outline-variant/50 text-center transition-all">Sale Walk-In</button>
+<button class="flex-1 py-1.5 text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm rounded text-center transition-all">Purchase Order</button>
+</div>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded pl-3 pr-8 py-2 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Assign Customer (Optional)..." type="text"/>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[20px]">person_add</span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-surface-container-lowest">
+<div class="flex justify-between items-start pb-3 border-b border-surface-variant group">
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="font-label-sm text-label-sm text-on-surface pr-2">DeWalt 20V Max Cordless Drill</h4>
+<span class="font-body-md text-body-md font-bold text-on-surface">$129.00</span>
+</div>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center border border-outline-variant rounded bg-surface">
+<button class="px-2 py-1 text-outline hover:text-on-surface hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined text-[16px] block">remove</span></button>
+<span class="px-3 py-1 font-label-mono text-label-mono border-x border-outline-variant bg-surface-container-lowest">1</span>
+<button class="px-2 py-1 text-outline hover:text-on-surface hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined text-[16px] block">add</span></button>
+</div>
+<span class="font-label-mono text-label-mono text-outline text-[10px]">SKU: DW-20V-01</span>
+</div>
+</div>
+<button class="ml-2 text-outline hover:text-error hover:bg-error-container p-1.5 rounded transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[18px] block">close</span>
+</button>
+</div>
+<div class="flex justify-between items-start pb-3 border-b border-surface-variant group">
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="font-label-sm text-label-sm text-on-surface pr-2">ProGrade 12-Piece Screwdriver Set</h4>
+<span class="font-body-md text-body-md font-bold text-on-surface">$69.00</span>
+</div>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center border border-outline-variant rounded bg-surface">
+<button class="px-2 py-1 text-outline hover:text-on-surface hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined text-[16px] block">remove</span></button>
+<span class="px-3 py-1 font-label-mono text-label-mono border-x border-outline-variant bg-surface-container-lowest">2</span>
+<button class="px-2 py-1 text-outline hover:text-on-surface hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined text-[16px] block">add</span></button>
+</div>
+<span class="font-label-mono text-label-mono text-outline text-[10px]">@ $34.50/ea</span>
+</div>
+</div>
+<button class="ml-2 text-outline hover:text-error hover:bg-error-container p-1.5 rounded transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[18px] block">close</span>
+</button>
+</div>
+</div>
+<div class="p-4 border-t border-outline-variant bg-surface-dim flex flex-col gap-4">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface block mb-2">Fulfillment Method</span>
+<div class="grid grid-cols-2 gap-2">
+<button class="py-2 border-2 border-primary bg-primary/5 text-primary font-label-sm text-label-sm rounded flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">shopping_bag</span> In-Store
+                            </button>
+<button class="py-2 border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:border-outline font-label-sm text-label-sm rounded flex items-center justify-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[18px]">local_shipping</span> Delivery
+                            </button>
+</div>
+</div>
+<div class="flex flex-col gap-1 border-t border-outline-variant pt-3">
+<div class="flex justify-between items-center text-on-surface-variant">
+<span class="font-body-md text-body-md">Subtotal</span>
+<span class="font-label-mono text-label-mono">$198.00</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant">
+<span class="font-body-md text-body-md">Tax (8.5%)</span>
+<span class="font-label-mono text-label-mono">$16.83</span>
+</div>
+<div class="flex justify-between items-end mt-2 pt-2 border-t border-outline-variant">
+<span class="font-headline-md text-headline-md text-on-surface font-bold">Total</span>
+<span class="font-display text-[28px] font-bold text-on-surface leading-none">$214.83</span>
+</div>
+</div>
+<button class="w-full bg-secondary-container text-on-secondary py-4 px-4 rounded font-headline-md text-headline-md font-bold flex items-center justify-between hover:bg-secondary transition-colors group mt-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined">credit_card</span>
+<span>Checkout</span>
+</div>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</aside>
+</main>
+</div>
+</body></html>

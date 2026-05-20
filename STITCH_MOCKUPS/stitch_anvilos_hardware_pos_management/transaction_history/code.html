@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AnvilOS - Transaction History</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom Scrollbar for Industrial Feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f2f3ff; /* surface-container-low */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c3c7cb; /* outline-variant */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #73777c; /* outline */
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-fixed": "#341100",
+                      "on-primary": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "outline": "#73777c",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed": "#0a1d29",
+                      "surface-tint": "#4e616e",
+                      "primary-container": "#243642",
+                      "surface-container": "#eaedff",
+                      "background": "#faf8ff",
+                      "surface-bright": "#faf8ff",
+                      "on-secondary-fixed-variant": "#783200",
+                      "surface-dim": "#d2d9f4",
+                      "on-surface-variant": "#43474b",
+                      "error-container": "#ffdad6",
+                      "surface-container-low": "#f2f3ff",
+                      "primary-fixed": "#d2e5f5",
+                      "on-error-container": "#93000a",
+                      "inverse-on-surface": "#eef0ff",
+                      "on-surface": "#131b2e",
+                      "tertiary-container": "#263546",
+                      "on-tertiary": "#ffffff",
+                      "primary-fixed-dim": "#b6c9d8",
+                      "tertiary-fixed": "#d4e4fa",
+                      "surface-container-high": "#e2e7ff",
+                      "secondary": "#9d4300",
+                      "tertiary-fixed-dim": "#b9c8de",
+                      "surface": "#faf8ff",
+                      "secondary-fixed": "#ffdbca",
+                      "surface-variant": "#dae2fd",
+                      "inverse-primary": "#b6c9d8",
+                      "secondary-fixed-dim": "#ffb690",
+                      "on-primary-fixed-variant": "#374956",
+                      "on-primary-container": "#8c9fad",
+                      "surface-container-highest": "#dae2fd",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-fixed-variant": "#39485a",
+                      "on-background": "#131b2e",
+                      "primary": "#0e212c",
+                      "inverse-surface": "#283044",
+                      "on-error": "#ffffff",
+                      "tertiary": "#112030",
+                      "on-tertiary-fixed": "#0d1c2d",
+                      "outline-variant": "#c3c7cb",
+                      "on-tertiary-container": "#8f9db2",
+                      "secondary-container": "#fd761a",
+                      "on-secondary-container": "#5c2400"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "grid-gutter": "20px",
+                      "table-cell-padding": "12px 16px",
+                      "sidebar-width": "260px",
+                      "container-padding": "24px",
+                      "stack-gap": "16px"
+              },
+              "fontFamily": {
+                      "body-md": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "display": ["Inter"],
+                      "label-mono": ["JetBrains Mono"],
+                      "body-lg": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "headline-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
+                      "display": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-mono": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "headline-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-hidden flex h-screen">
+<!-- SideNavBar (Shared Component) -->
+<nav class="fixed left-0 top-0 h-full w-[260px] flex flex-col z-50 bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-fixed border-r border-tertiary-container shadow-2xl shadow-black/50">
+<!-- Header -->
+<div class="p-6 border-b border-tertiary-container">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-8 h-8 rounded bg-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">precision_manufacturing</span>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary">AnvilOS</h1>
+</div>
+<p class="font-label-sm text-label-sm text-on-primary/60 tracking-wider uppercase">Hardware &amp; Supply</p>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto py-4 flex flex-col gap-1 font-label-sm text-label-sm">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">point_of_sale</span>
+                POS Terminal
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+                Inventory
+            </a>
+<!-- Active Navigation -->
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container border-l-4 border-secondary active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+                Transactions
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+                Suppliers
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">security</span>
+                Audit Logs
+            </a>
+</div>
+<!-- Footer Links -->
+<div class="p-4 border-t border-tertiary-container font-label-sm text-label-sm flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+                Support
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95 text-secondary-fixed" href="#">
+<span class="material-symbols-outlined">logout</span>
+                Sign Out
+            </a>
+</div>
+</nav>
+<!-- Main Workspace -->
+<div class="flex-1 ml-[260px] flex flex-col h-full bg-surface-container-low overflow-hidden">
+<!-- TopNavBar (Shared Component) -->
+<header class="flex justify-between items-center w-full px-grid-gutter h-16 sticky top-0 z-40 bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-4 flex-1">
+<!-- Contextual Page Title in Top Nav (often used in industrial apps to confirm location) -->
+<h2 class="font-headline-md text-headline-md text-on-surface mr-6">Transaction History</h2>
+<!-- Search Bar -->
+<div class="relative w-96 flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-dim border border-outline-variant rounded text-body-md text-on-surface focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary placeholder:text-on-surface-variant transition-colors" placeholder="Search by Receipt ID, Buyer, or Item SKU..." type="text"/>
+</div>
+</div>
+<!-- Trailing Icons -->
+<div class="flex items-center gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-variant transition-colors active:opacity-80">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-variant transition-colors active:opacity-80">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-variant transition-colors active:opacity-80">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="w-px h-6 bg-outline-variant mx-2"></div>
+<button class="w-10 h-10 rounded overflow-hidden border border-outline border-2">
+<img alt="Administrator Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-JGBngx3iQsuKktf0HdpkWpuydf2SCA-QfxQi49gseIMQlSB7Dh_JdpoqZ7ljL-q4r_tBo9Ge_jdVNWC22_gmXX6fOwc6t-yygL-QUO8Z7gvOdlijZp5m8L-GxPNkGVsPosdQE25CMB2jZm9X8f9OVuEfTtagD2j5Ct6a0Ap3op24I09SpFvhM8DRkE-HPL8O4WdKeLvbYdZqRq42HXLhqo4AKaqE4qj-aMHWoki6F3QKE4n34xKZL6uMPd9frIBa6wzemNmHt6X4"/>
+</button>
+</div>
+</header>
+<!-- Content Canvas (Split POS/Management Layout) -->
+<main class="flex-1 flex overflow-hidden p-grid-gutter gap-grid-gutter">
+<!-- Left Panel: Transaction List -->
+<section class="flex-[2] flex flex-col bg-surface border border-outline-variant rounded-lg overflow-hidden shadow-sm">
+<!-- Filters Toolbar -->
+<div class="p-4 border-b border-outline-variant bg-surface-container-lowest flex items-center justify-between gap-4">
+<div class="flex gap-2">
+<button class="px-4 py-2 rounded bg-primary text-on-primary font-label-sm text-label-sm uppercase tracking-wide flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">filter_list</span> All Transactions
+                        </button>
+<button class="px-4 py-2 rounded bg-surface border border-outline text-on-surface-variant hover:bg-surface-variant font-label-sm text-label-sm uppercase tracking-wide">
+                            Sales
+                        </button>
+<button class="px-4 py-2 rounded bg-surface border border-outline text-on-surface-variant hover:bg-surface-variant font-label-sm text-label-sm uppercase tracking-wide">
+                            Returns
+                        </button>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-2 rounded border border-outline-variant bg-surface text-on-surface flex items-center gap-2 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span> Last 7 Days
+                        </button>
+<button class="w-9 h-9 flex items-center justify-center rounded border border-outline-variant bg-surface text-on-surface hover:bg-surface-variant">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+</div>
+<!-- Data Table -->
+<div class="flex-1 overflow-auto">
+<table class="w-full text-left border-collapse whitespace-nowrap">
+<thead class="sticky top-0 bg-surface-variant z-10 font-label-sm text-label-sm text-on-surface uppercase tracking-wider">
+<tr>
+<th class="p-table-cell-padding border-b border-outline-variant">Receipt ID</th>
+<th class="p-table-cell-padding border-b border-outline-variant">Date &amp; Time</th>
+<th class="p-table-cell-padding border-b border-outline-variant">Type</th>
+<th class="p-table-cell-padding border-b border-outline-variant">Buyer / Entity</th>
+<th class="p-table-cell-padding border-b border-outline-variant text-right">Total</th>
+<th class="p-table-cell-padding border-b border-outline-variant text-center">Status</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-on-surface divide-y divide-outline-variant">
+<!-- Active Row (Selected) -->
+<tr class="bg-surface-dim hover:bg-surface-dim cursor-pointer transition-colors relative border-l-4 border-l-secondary">
+<td class="p-table-cell-padding font-label-mono text-label-mono text-primary">#TRX-9902A</td>
+<td class="p-table-cell-padding text-on-surface-variant">Oct 24, 14:32</td>
+<td class="p-table-cell-padding">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[16px]">shopping_cart</span> Sale
+                                    </div>
+</td>
+<td class="p-table-cell-padding font-semibold">Apex Construction LLC</td>
+<td class="p-table-cell-padding text-right font-label-mono font-bold">$1,450.00</td>
+<td class="p-table-cell-padding text-center">
+<span class="inline-flex items-center px-2 py-1 rounded bg-surface-container border border-outline text-on-surface font-label-sm text-[10px] uppercase tracking-wider">Completed</span>
+</td>
+</tr>
+<!-- Standard Rows -->
+<tr class="bg-surface hover:bg-surface-container-low cursor-pointer transition-colors border-l-4 border-l-transparent">
+<td class="p-table-cell-padding font-label-mono text-label-mono">#TRX-9901B</td>
+<td class="p-table-cell-padding text-on-surface-variant">Oct 24, 13:15</td>
+<td class="p-table-cell-padding">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[16px]">assignment_return</span> Return
+                                    </div>
+</td>
+<td class="p-table-cell-padding">Walk-in Customer</td>
+<td class="p-table-cell-padding text-right font-label-mono">-$45.50</td>
+<td class="p-table-cell-padding text-center">
+<span class="inline-flex items-center px-2 py-1 rounded bg-surface-container border border-outline text-on-surface font-label-sm text-[10px] uppercase tracking-wider">Completed</span>
+</td>
+</tr>
+<tr class="bg-surface-dim hover:bg-surface-container-low cursor-pointer transition-colors border-l-4 border-l-transparent">
+<td class="p-table-cell-padding font-label-mono text-label-mono">#TRX-9900A</td>
+<td class="p-table-cell-padding text-on-surface-variant">Oct 24, 11:45</td>
+<td class="p-table-cell-padding">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[16px]">shopping_cart</span> Sale
+                                    </div>
+</td>
+<td class="p-table-cell-padding">O'Connor Plumbing</td>
+<td class="p-table-cell-padding text-right font-label-mono">$8,210.75</td>
+<td class="p-table-cell-padding text-center">
+<span class="inline-flex items-center px-2 py-1 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-[10px] uppercase tracking-wider">Ongoing</span>
+</td>
+</tr>
+<tr class="bg-surface hover:bg-surface-container-low cursor-pointer transition-colors border-l-4 border-l-transparent">
+<td class="p-table-cell-padding font-label-mono text-label-mono">#TRX-9899A</td>
+<td class="p-table-cell-padding text-on-surface-variant">Oct 24, 09:20</td>
+<td class="p-table-cell-padding">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[16px]">shopping_cart</span> Sale
+                                    </div>
+</td>
+<td class="p-table-cell-padding">BuildRite Inc.</td>
+<td class="p-table-cell-padding text-right font-label-mono">$320.00</td>
+<td class="p-table-cell-padding text-center">
+<span class="inline-flex items-center px-2 py-1 rounded bg-error-container text-on-error-container font-label-sm text-[10px] uppercase tracking-wider">Cancelled</span>
+</td>
+</tr>
+<tr class="bg-surface-dim hover:bg-surface-container-low cursor-pointer transition-colors border-l-4 border-l-transparent">
+<td class="p-table-cell-padding font-label-mono text-label-mono">#TRX-9898C</td>
+<td class="p-table-cell-padding text-on-surface-variant">Oct 23, 16:50</td>
+<td class="p-table-cell-padding">
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[16px]">inventory</span> Restock
+                                    </div>
+</td>
+<td class="p-table-cell-padding text-on-surface-variant italic">Internal Warehouse</td>
+<td class="p-table-cell-padding text-right font-label-mono text-on-surface-variant">--</td>
+<td class="p-table-cell-padding text-center">
+<span class="inline-flex items-center px-2 py-1 rounded bg-surface-container border border-outline text-on-surface font-label-sm text-[10px] uppercase tracking-wider">Completed</span>
+</td>
+</tr>
+<tr class="bg-surface hover:bg-surface-container-low cursor-pointer transition-colors border-l-4 border-l-transparent">
+<td class="p-table-cell-padding font-label-mono text-label-mono">#TRX-9897D</td>
+<td class="p-table-cell-padding text-on-surface-variant">Oct 23, 14:10</td>
+<td class="p-table-cell-padding">
+<div class="flex items-center gap-1.5 text-error">
+<span class="material-symbols-outlined text-[16px]">broken_image</span> Damage
+                                    </div>
+</td>
+<td class="p-table-cell-padding text-on-surface-variant italic">Forklift Incident A2</td>
+<td class="p-table-cell-padding text-right font-label-mono text-error">-$850.00</td>
+<td class="p-table-cell-padding text-center">
+<span class="inline-flex items-center px-2 py-1 rounded bg-surface-container border border-outline text-on-surface font-label-sm text-[10px] uppercase tracking-wider">Logged</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination / Footer -->
+<div class="p-4 border-t border-outline-variant bg-surface-container-lowest flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Showing 1-6 of 1,204</span>
+<div class="flex gap-1">
+<button class="w-8 h-8 rounded border border-outline flex items-center justify-center bg-surface text-on-surface-variant hover:bg-surface-variant disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded border border-outline flex items-center justify-center bg-surface text-on-surface hover:bg-surface-variant">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Right Panel: Detailed View -->
+<aside class="flex-[1] min-w-[360px] flex flex-col bg-surface border border-outline-variant rounded-lg overflow-hidden shadow-lg relative">
+<!-- Detail Header -->
+<div class="p-5 border-b border-outline-variant bg-primary text-on-primary">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-headline-lg text-headline-lg font-bold">#TRX-9902A</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface/20 border border-surface/30 text-on-primary font-label-sm text-[10px] uppercase tracking-wider">Sale</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface text-primary font-label-sm text-[10px] uppercase tracking-wider">Completed</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded bg-surface/10 hover:bg-surface/20 flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[18px]">print</span>
+</button>
+<button class="w-8 h-8 rounded bg-surface/10 hover:bg-surface/20 flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[18px]">mail</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 font-label-sm text-[12px] opacity-90">
+<div>
+<span class="block opacity-60 uppercase mb-0.5">Date &amp; Time</span>
+                            Oct 24, 2023 - 14:32 PM
+                        </div>
+<div>
+<span class="block opacity-60 uppercase mb-0.5">Cashier / Reg</span>
+                            J. Doe (Reg 04)
+                        </div>
+<div class="col-span-2">
+<span class="block opacity-60 uppercase mb-0.5">Buyer</span>
+<div class="font-semibold text-[14px]">Apex Construction LLC</div>
+<div class="opacity-80">Acc: #AC-8839-B</div>
+</div>
+</div>
+</div>
+<!-- Line Items (Scrollable) -->
+<div class="flex-1 overflow-y-auto p-5 bg-surface">
+<h4 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-4 pb-2 border-b border-outline-variant">Line Items (4)</h4>
+<div class="flex flex-col gap-4">
+<!-- Item 1 -->
+<div class="flex gap-3">
+<div class="w-12 h-12 bg-surface-dim rounded border border-outline-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-[24px]">hardware</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<div class="font-body-md font-semibold text-on-surface truncate pr-2">DeWalt 20V Max Drill Kit</div>
+<div class="font-label-mono font-bold text-on-surface">$299.00</div>
+</div>
+<div class="flex justify-between items-end mt-1">
+<div class="font-label-mono text-[10px] text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded border border-outline-variant">SKU: DW-20V-K1</div>
+<div class="font-label-sm text-on-surface-variant">Qty: 2 x $149.50</div>
+</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex gap-3">
+<div class="w-12 h-12 bg-surface-dim rounded border border-outline-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-[24px]">architecture</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<div class="font-body-md font-semibold text-on-surface truncate pr-2">Industrial Steel Shelving Unit (Heavy Duty)</div>
+<div class="font-label-mono font-bold text-on-surface">$850.00</div>
+</div>
+<div class="flex justify-between items-end mt-1">
+<div class="font-label-mono text-[10px] text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded border border-outline-variant">SKU: SH-HD-99X</div>
+<div class="font-label-sm text-on-surface-variant">Qty: 5 x $170.00</div>
+</div>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex gap-3">
+<div class="w-12 h-12 bg-surface-dim rounded border border-outline-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-[24px]">format_paint</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<div class="font-body-md font-semibold text-on-surface truncate pr-2">Rust-Oleum Pro Enamel (Gal)</div>
+<div class="font-label-mono font-bold text-on-surface">$240.00</div>
+</div>
+<div class="flex justify-between items-end mt-1">
+<div class="font-label-mono text-[10px] text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded border border-outline-variant">SKU: RO-PE-GAL-BLK</div>
+<div class="font-label-sm text-on-surface-variant">Qty: 4 x $60.00</div>
+</div>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="flex gap-3">
+<div class="w-12 h-12 bg-surface-dim rounded border border-outline-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-[24px]">construction</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<div class="font-body-md font-semibold text-on-surface truncate pr-2">Box of Galvanized Nails (50lb)</div>
+<div class="font-label-mono font-bold text-on-surface">$61.00</div>
+</div>
+<div class="flex justify-between items-end mt-1">
+<div class="font-label-mono text-[10px] text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded border border-outline-variant">SKU: NL-GAL-50</div>
+<div class="font-label-sm text-on-surface-variant">Qty: 1 x $61.00</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Summary & Actions -->
+<div class="p-5 bg-surface-container-lowest border-t border-outline-variant">
+<div class="flex flex-col gap-2 mb-6 font-body-md">
+<div class="flex justify-between text-on-surface-variant">
+<span>Subtotal</span>
+<span class="font-label-mono">$1,450.00</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>Tax (8.5%)</span>
+<span class="font-label-mono">$123.25</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span>B2B Discount</span>
+<span class="font-label-mono text-secondary">-$50.00</span>
+</div>
+<div class="flex justify-between items-end mt-2 pt-2 border-t border-outline-variant">
+<span class="font-headline-md text-on-surface font-bold">Total Paid</span>
+<span class="font-headline-lg text-primary font-bold font-label-mono">$1,523.25</span>
+</div>
+<div class="text-right font-label-sm text-label-sm text-on-surface-variant uppercase mt-1">
+                            Paid via Corporate Credit
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<button class="w-full py-3 rounded border border-outline-variant text-on-surface bg-surface hover:bg-surface-variant font-label-sm text-label-sm uppercase tracking-wide transition-colors">
+                            Issue Refund
+                        </button>
+<button class="w-full py-3 rounded bg-secondary text-white font-label-sm text-label-sm uppercase tracking-wide hover:opacity-90 transition-opacity shadow-md shadow-secondary/20">
+                            Reorder Items
+                        </button>
+</div>
+</div>
+</aside>
+</main>
+</div>
+</body></html>

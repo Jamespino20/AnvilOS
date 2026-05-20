@@ -1,0 +1,16 @@
+AnvilOS is a comprehensive, NextJS infra Point of Sale (POS) and Inventory Management System powered by PostgreSQL, specifically designed for hardware stores. It provides robust features for sales, returns, restocking, adjustments, damage tracking, and extensive reporting, all wrapped in a modern, user-friendly desktop interface.
+
+## Database Schema (Prisma)
+- **User**: Sellers with security questions and audit trails.
+- **Category**: Hierarchical product categories.
+- **Supplier**: Contact info and availability.
+- **Product**: Inventory tracking with pricing, quantity, and minimum thresholds.
+- **Transaction**: Detailed sales, returns, and restocking records.
+- **TransactionItem**: Line items for transactions.
+- **Notification**: System alerts and messages.
+- **AuditLog**: Tracking user actions across the panel.
+
+## Key Enums
+- **TransactionType**: SaleWalkIn, SalePO, Restock, Adjustment, Return, Damage.
+- **DeliveryMethod**: Pickup, Delivery, COD, WalkIn.
+- **TransactionStatus**: Ongoing, Completed, Cancelled.

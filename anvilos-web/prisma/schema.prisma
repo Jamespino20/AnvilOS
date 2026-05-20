@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Enums (native PostgreSQL enums)
+// ────────────────────────────────────────────────────────────────────
+
+enum TransactionType {
+  SaleWalkIn
+  SalePO
+  Restock
+  Adjustment
+  Return
+  Damage
+
+  @@map("transaction_type")
+}
+
+enum DeliveryMethod {
+  Pickup
+  Delivery
+  COD
+  WalkIn
+
+  @@map("delivery_method")
+}
+
+enum TransactionStatus {
+  Ongoing
+  Completed
+  Cancelled
+
+  @@map("transaction_status")
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Models
+// ────────────────────────────────────────────────────────────────────
+
+/// System users / cashiers / admins
+model User {
+  id                Int      @id @default(autoincrement()) @map("SELLER_ID")
+  sellerName        String   @unique @map("SELLER_NAME")
+  username          String   @map("USERNAME")
+  passwordHash      String   @map("PASSWORD_HASH")
+  email             String?  @map("EMAIL")
+  registryDate      DateTime @map("REGISTRY_DATE")
+  lastLogin         DateTime @default(now()) @map("LAST_LOGIN")
+  isActive          Boolean  @default(true) @map("IS_ACTIVE")
+  securityQuestion1 String   @map("SECURITY_QUESTION1")
+  securityAnswer1   String   @map("SECURITY_ANSWER1")
+  securityQuestion2 String   @map("SECURITY_QUESTION2")
+  securityAnswer2   String   @map("SECURITY_ANSWER2")
+  securityQuestion3 String   @map("SECURITY_QUESTION3")
+  securityAnswer3   String   @map("SECURITY_ANSWER3")
+
+  transactions Transaction[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+/// Hierarchical product categories (self-referencing via parentCategoryId)
+model Category {
+  id               Int       @id @default(autoincrement()) @map("CATEGORY_ID")
+  name             String    @unique @map("CATEGORY")
+  parentCategoryId Int?      @map("PARENT_CATEGORY_ID")
+  isAvailable      Boolean   @default(true) @map("IS_AVAILABLE")
+  createdAt        DateTime? @map("CREATED_AT")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("UPDATED_AT")
+
+  parentCategory  Category?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id])
+  childCategories Category[] @relation("CategoryHierarchy")
+  products        Product[]
+
+  @@map("categories")
+}
+
+/// Vendors / suppliers
+model Supplier {
+  id            Int     @id @default(autoincrement()) @map("SUPPLIER_ID")
+  supplierName  String  @map("SUPPLIER_NAME")
+  contactName   String? @map("CONTACT_NAME")
+  contactNumber String? @map("CONTACT_NUMBER")
+  email         String? @map("EMAIL")
+  address       String? @map("ADDRESS")
+  isAvailable   Boolean @default(true) @map("IS_AVAILABLE")
+
+  products Product[]
+
+  @@map("suppliers")
+}
+
+/// Inventory items / stock keeping units
+model Product {
+  id           Int      @id @default(autoincrement()) @map("PRODUCT_ID")
+  productName  String   @map("PRODUCT_NAME")
+  categoryId   Int?     @map("CATEGORY_ID")
+  category     String   @map("CATEGORY")
+  supplierId   Int?     @map("SUPPLIER_ID")
+  supplierName String   @map("SUPPLIER_NAME")
+  unitPrice    Decimal  @db.Decimal(10, 2) @map("UNIT_PRICE")
+  quantity     Int      @map("QUANTITY")
+  minThreshold Int      @map("MIN_THRESHOLD")
+  isAvailable  Boolean  @default(true) @map("IS_AVAILABLE")
+  createdAt    DateTime? @map("CREATED_AT")
+  updatedAt    DateTime @default(now()) @updatedAt @map("UPDATED_AT")
+
+  categoryRel    Category?         @relation(fields: [categoryId], references: [id])
+  supplierRel    Supplier?         @relation(fields: [supplierId], references: [id])
+  transactionItems TransactionItem[]
+
+  @@index([categoryId])
+  @@index([supplierId])
+  @@map("products")
+}
+
+/// Transaction headers (one per receipt)
+model Transaction {
+  id                     Int               @id @default(autoincrement()) @map("TRANSACTION_ID")
+  receiptNumber          Int               @map("RECEIPT_NUMBER")
+  buyerName              String            @map("BUYER_NAME")
+  buyerAddress           String?           @map("BUYER_ADDRESS")
+  buyerContact           String?           @map("BUYER_CONTACT")
+  sellerId               Int?              @map("SELLER_ID")
+  sellerName             String?           @map("SELLER_NAME")
+  transactionType        TransactionType   @map("TRANSACTION_TYPE")
+  deliveryMethod         DeliveryMethod    @map("DELIVERY_METHOD")
+  transactionStatus      TransactionStatus @default(Ongoing) @map("TRANSACTION_STATUS")
+  transactionDate        DateTime          @map("TRANSACTION_DATE")
+  grandTotal             Decimal?          @db.Decimal(10, 2) @map("GRAND_TOTAL")
+  paymentMethod          String?           @map("PAYMENT_METHOD")
+  isReturned             Boolean           @default(false) @map("IS_RETURNED")
+  returnForReceiptNumber Int?              @map("RETURN_FOR_RECEIPT_NUMBER")
+  createdAt              DateTime?         @map("CREATED_AT")
+  updatedAt              DateTime          @default(now()) @updatedAt @map("UPDATED_AT")
+
+  seller User?              @relation(fields: [sellerId], references: [id])
+  items  TransactionItem[]
+
+  @@index([sellerId])
+  @@index([receiptNumber])
+  @@index([transactionDate])
+  @@map("transactions")
+}
+
+/// Line items within a transaction
+model TransactionItem {
+  id            Int      @id @default(autoincrement()) @map("ITEM_ID")
+  transactionId Int?     @map("TRANSACTION_ID")
+  productId     Int?     @map("PRODUCT_ID")
+  productName   String?  @map("PRODUCT_NAME")
+  quantity      Int?     @map("QUANTITY")
+  unitPrice     Decimal? @db.Decimal(10, 2) @map("UNIT_PRICE")
+  totalPrice    Decimal? @db.Decimal(10, 2) @map("TOTAL_PRICE")
+
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
+  product     Product?     @relation(fields: [productId], references: [id])
+
+  @@index([transactionId])
+  @@index([productId])
+  @@map("transaction_items")
+}
+
+/// System-generated notifications (stock alerts, transaction reminders)
+model Notification {
+  id                 Int      @id @default(autoincrement()) @map("NOTIFICATION_ID")
+  systemNotification String   @map("SYSTEM_NOTIFICATIONS")
+  message            String   @map("MESSAGE")
+  isRead             Boolean  @default(false) @map("IS_READ")
+  createdAt          DateTime @map("CREATED_AT")
+
+  @@map("notifications")
+}
+
+/// Full audit trail for all user actions
+model AuditLog {
+  id            Int      @id @default(autoincrement()) @map("LOG_ID")
+  sellerId      Int?     @map("SELLER_ID")
+  logTime       DateTime @default(now()) @map("LOG_TIME")
+  successStatus Boolean  @default(true) @map("SUCCESS_STATUS")
+  panel         String?  @map("PANEL")
+  action        String?  @map("ACTION")
+  details       String?  @map("DETAILS")
+
+  seller User? @relation(fields: [sellerId], references: [id])
+
+  @@index([sellerId])
+  @@index([logTime])
+  @@map("audit_log")
+}

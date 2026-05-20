@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AnvilOS - Supplier Management</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed": "#341100",
+                    "on-primary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "outline": "#73777c",
+                    "error": "#ba1a1a",
+                    "on-primary-fixed": "#0a1d29",
+                    "surface-tint": "#4e616e",
+                    "primary-container": "#243642",
+                    "surface-container": "#eaedff",
+                    "background": "#faf8ff",
+                    "surface-bright": "#faf8ff",
+                    "on-secondary-fixed-variant": "#783200",
+                    "surface-dim": "#d2d9f4",
+                    "on-surface-variant": "#43474b",
+                    "error-container": "#ffdad6",
+                    "surface-container-low": "#f2f3ff",
+                    "primary-fixed": "#d2e5f5",
+                    "on-error-container": "#93000a",
+                    "inverse-on-surface": "#eef0ff",
+                    "on-surface": "#131b2e",
+                    "tertiary-container": "#263546",
+                    "on-tertiary": "#ffffff",
+                    "primary-fixed-dim": "#b6c9d8",
+                    "tertiary-fixed": "#d4e4fa",
+                    "surface-container-high": "#e2e7ff",
+                    "secondary": "#9d4300",
+                    "tertiary-fixed-dim": "#b9c8de",
+                    "surface": "#faf8ff",
+                    "secondary-fixed": "#ffdbca",
+                    "surface-variant": "#dae2fd",
+                    "inverse-primary": "#b6c9d8",
+                    "secondary-fixed-dim": "#ffb690",
+                    "on-primary-fixed-variant": "#374956",
+                    "on-primary-container": "#8c9fad",
+                    "surface-container-highest": "#dae2fd",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed-variant": "#39485a",
+                    "on-background": "#131b2e",
+                    "primary": "#0e212c",
+                    "inverse-surface": "#283044",
+                    "on-error": "#ffffff",
+                    "tertiary": "#112030",
+                    "on-tertiary-fixed": "#0d1c2d",
+                    "outline-variant": "#c3c7cb",
+                    "on-tertiary-container": "#8f9db2",
+                    "secondary-container": "#fd761a",
+                    "on-secondary-container": "#5c2400"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "grid-gutter": "20px",
+                    "table-cell-padding": "12px 16px",
+                    "sidebar-width": "260px",
+                    "container-padding": "24px",
+                    "stack-gap": "16px"
+            },
+            "fontFamily": {
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "display": [
+                            "Inter"
+                    ],
+                    "label-mono": [
+                            "JetBrains Mono"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "11px",
+                            {
+                                    "lineHeight": "14px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display": [
+                            "36px",
+                            {
+                                    "lineHeight": "44px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-mono": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-md": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+        },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md min-h-screen flex">
+<!-- SideNavBar Component -->
+<aside class="fixed left-0 top-0 h-full w-[260px] flex flex-col z-50 bg-primary dark:bg-primary-container hidden md:flex">
+<!-- Header -->
+<div class="px-6 py-8 border-b border-outline-variant/20 flex flex-col gap-2">
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary">AnvilOS</h1>
+<span class="font-label-sm text-label-sm text-on-primary/70">Hardware &amp; Supply</span>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 overflow-y-auto py-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">point_of_sale</span>
+<span class="font-label-sm text-label-sm">POS Terminal</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-sm text-label-sm">Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label-sm text-label-sm">Transactions</span>
+</a>
+<!-- Active Tab: Suppliers -->
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container border-l-4 border-secondary hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="font-label-sm text-label-sm">Suppliers</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-label-sm text-label-sm">Audit Logs</span>
+</a>
+</nav>
+<!-- Footer Links -->
+<div class="border-t border-outline-variant/20 py-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+<span class="font-label-sm text-label-sm">Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-container hover:bg-primary-container/50 transition-all active:scale-95" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-sm text-label-sm">Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<div class="flex-1 md:ml-[260px] flex flex-col min-w-0">
+<!-- TopNavBar Component -->
+<header class="flex justify-between items-center w-full px-grid-gutter h-16 sticky top-0 z-40 bg-surface dark:bg-surface-container-high border-b border-outline-variant dark:border-outline">
+<!-- Global Search (Left Aligned per JSON) -->
+<div class="flex-1 max-w-md flex items-center">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="w-full h-9 pl-9 pr-3 bg-surface border border-outline-variant rounded-DEFAULT font-body-md text-body-md text-on-surface focus:border-secondary focus:ring-1 focus:ring-secondary outline-none placeholder:text-on-surface-variant/50 transition-colors" placeholder="Search POs, SKUs, or Contacts..." type="text"/>
+</div>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-4 ml-auto">
+<button class="text-primary dark:text-primary-fixed hover:bg-surface-container-low transition-colors cursor-pointer active:opacity-80 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-primary dark:text-primary-fixed hover:bg-surface-container-low transition-colors cursor-pointer active:opacity-80 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="text-primary dark:text-primary-fixed hover:bg-surface-container-low transition-colors cursor-pointer active:opacity-80 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="h-8 w-px bg-outline-variant mx-2"></div>
+<!-- Profile Avatar -->
+<button class="w-9 h-9 rounded-full bg-tertiary-container overflow-hidden border border-outline-variant flex-shrink-0">
+<img alt="Administrator Profile" class="w-full h-full object-cover" data-alt="A professional headshot of an administrator in a modern, brightly lit office environment. The lighting is crisp and even, highlighting a clean industrial aesthetic. The color palette incorporates subtle steel blues and slate greys in the background, complementing the sharp, high-definition quality of the portrait. The mood is focused and authoritative." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBi6TipDi-3WNBUjmgBRGX0pP-_oB1L5GmXq0hcJCDl1y1g4hQ9WuXOSXRxcHf0K-lZQ5SBktk2lKdZRWxv6FRcADfZrL5TrufAnEWYZT7cBPG0i7ox39PBgtzMTOE4rMuRu2_ymR_dN_IRN-YMi8gGEKZ4Gv8ETCwTF3a0qUNWKN0n09g6HZZVgQ3Ucypl_jdaMInUmLusWSELNDGM_9c_4rHvDc8vKBqpPjJ8wVkGe4hgDyxXK8TixxKQXtxOf2OZMpqdI6fC8v6y"/>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 p-[24px] flex flex-col gap-[20px]">
+<!-- Section Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+<div>
+<h2 class="font-headline-lg text-headline-lg font-semibold text-on-surface">Supplier Directory</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Manage vendor contacts, track supplied categories, and monitor availability status.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant bg-surface text-primary font-label-sm text-label-sm rounded-DEFAULT hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                        Export List
+                    </button>
+<!-- Primary Action Button (Safety Orange) -->
+<button class="flex items-center gap-2 px-4 py-2 bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold rounded-DEFAULT hover:opacity-90 transition-opacity shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        New Supplier
+                    </button>
+</div>
+</div>
+<!-- Data Table Card (Industrial Structure) -->
+<div class="bg-surface border border-outline-variant rounded-DEFAULT flex flex-col">
+<!-- Table Toolbar -->
+<div class="px-4 py-3 border-b border-outline-variant bg-surface-container-lowest flex flex-col md:flex-row gap-4 items-center justify-between">
+<div class="relative w-full md:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[16px]">filter_list</span>
+<input class="w-full h-8 pl-9 pr-3 bg-background border border-outline-variant rounded-DEFAULT font-body-md text-body-md text-on-surface focus:border-secondary focus:ring-0 outline-none text-sm" placeholder="Filter suppliers..." type="text"/>
+</div>
+<div class="flex items-center gap-3 w-full md:w-auto">
+<select class="h-8 pl-3 pr-8 bg-background border border-outline-variant rounded-DEFAULT font-label-sm text-label-sm text-on-surface focus:border-secondary outline-none appearance-none">
+<option>All Categories</option>
+<option>Fasteners</option>
+<option>Power Tools</option>
+<option>Lumber</option>
+</select>
+<select class="h-8 pl-3 pr-8 bg-background border border-outline-variant rounded-DEFAULT font-label-sm text-label-sm text-on-surface focus:border-secondary outline-none appearance-none">
+<option>Status: All</option>
+<option>Available</option>
+<option>Out of Stock</option>
+</select>
+</div>
+</div>
+<!-- High-Density Data Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[800px]">
+<thead>
+<tr class="border-b border-outline-variant bg-surface-container-low">
+<th class="px-4 py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Supplier Name</th>
+<th class="px-4 py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Primary Contact</th>
+<th class="px-4 py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Location / Address</th>
+<th class="px-4 py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Categories Supplied</th>
+<th class="px-4 py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Status</th>
+<th class="px-4 py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/50">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-variant/30 transition-colors bg-surface">
+<td class="px-4 py-3">
+<div class="font-headline-md text-headline-md text-on-surface text-[15px] leading-tight">Apex Fasteners Industrial</div>
+<div class="font-label-mono text-label-mono text-on-surface-variant mt-1 text-[10px]">VEN-00102</div>
+</td>
+<td class="px-4 py-3">
+<div class="font-body-md text-body-md text-on-surface font-medium">Sarah Jenkins</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-[13px]">s.jenkins@apexfast.com</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-[13px]">(555) 019-2834</div>
+</td>
+<td class="px-4 py-3">
+<div class="font-body-md text-body-md text-on-surface">1420 Industrial Pkwy</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-[13px]">Detroit, MI 48202</div>
+</td>
+<td class="px-4 py-3">
+<div class="flex flex-wrap gap-1">
+<span class="inline-block bg-surface-dim text-on-surface font-label-mono text-label-mono px-1.5 py-0.5 border border-outline-variant rounded-sm text-[10px]">Hardware</span>
+<span class="inline-block bg-surface-dim text-on-surface font-label-mono text-label-mono px-1.5 py-0.5 border border-outline-variant rounded-sm text-[10px]">Bolts &amp; Screws</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<!-- Status Chip: Available -->
+<span class="inline-flex items-center gap-1.5 px-2 py-1 bg-surface-container-high text-on-surface border border-outline-variant rounded-sm font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                        Available
+                                    </span>
+</td>
+<td class="px-4 py-3 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 (Zebra Stripe) -->
+<tr class="hover:bg-surface-variant/30 transition-colors bg-surface-container-lowest">
+<td class="px-4 py-3">
+<div class="font-headline-md text-headline-md text-on-surface text-[15px] leading-tight">National Lumber Co.</div>
+<div class="font-label-mono text-label-mono text-on-surface-variant mt-1 text-[10px]">VEN-00244</div>
+</td>
+<td class="px-4 py-3">
+<div class="font-body-md text-body-md text-on-surface font-medium">Marcus Thorne</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-[13px]">orders@natlumber.com</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-[13px]">(555) 833-1102</div>
+</td>
+<td class="px-4 py-3">
+<div class="font-body-md text-body-md text-on-surface">88 Timberline Rd</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-[13px]">Portland, OR 97204</div>
+</td>
+<td class="px-4 py-3">
+<div class="flex flex-wrap gap-1">
+<span class="inline-block bg-surface-dim text-on-surface font-label-mono text-label-mono px-1.5 py-0.5 border border-outline-variant rounded-sm text-[10px]">Raw Materials</span>
+<span class="inline-block bg-surface-dim text-on-surface font-label-mono text-label-mono px-1.5 py-0.5 border border-outline-variant rounded-sm text-[10px]">Wood</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<!-- Status Chip: Warning / Delays -->
+<span class="inline-flex items-center gap-1.5 px-2 py-1 bg-surface-variant text-on-surface border border-outline-variant rounded-sm font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                        Delayed Shipping
+                                    </span>
+</td>
+<td class="px-4 py-3 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-variant/30 transition-colors bg-surface">
+<td class="px-4 py-3">
+<div class="font-headline-md text-headline-md text-on-surface text-[15px] leading-tight">Makita Power Tools Dist.</div>
+<div class="font-label-mono text-label-mono text-on-surface-variant mt-1 text-[10px]">VEN-00812</div>
+</td>
+<td class="px-4 py-3">
+<div class="font-body-md text-body-md text-on-surface font-medium">Elena Rodriguez</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-[13px]">erodriguez@makitadist.com</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-[13px]">(555) 441-9900</div>
+</td>
+<td class="px-4 py-3">
+<div class="font-body-md text-body-md text-on-surface">2000 Manufacturing Way</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-[13px]">Chicago, IL 60601</div>
+</td>
+<td class="px-4 py-3">
+<div class="flex flex-wrap gap-1">
+<span class="inline-block bg-surface-dim text-on-surface font-label-mono text-label-mono px-1.5 py-0.5 border border-outline-variant rounded-sm text-[10px]">Power Tools</span>
+<span class="inline-block bg-surface-dim text-on-surface font-label-mono text-label-mono px-1.5 py-0.5 border border-outline-variant rounded-sm text-[10px]">Batteries</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<span class="inline-flex items-center gap-1.5 px-2 py-1 bg-surface-container-high text-on-surface border border-outline-variant rounded-sm font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                        Available
+                                    </span>
+</td>
+<td class="px-4 py-3 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 (Zebra Stripe - Out of Stock) -->
+<tr class="hover:bg-surface-variant/30 transition-colors bg-surface-container-lowest">
+<td class="px-4 py-3">
+<div class="font-headline-md text-headline-md text-on-surface text-[15px] leading-tight">SteelCo Supply Hub</div>
+<div class="font-label-mono text-label-mono text-on-surface-variant mt-1 text-[10px]">VEN-00056</div>
+</td>
+<td class="px-4 py-3">
+<div class="font-body-md text-body-md text-on-surface font-medium">David Chen</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-[13px]">d.chen@steelco.net</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-[13px]">(555) 772-4011</div>
+</td>
+<td class="px-4 py-3">
+<div class="font-body-md text-body-md text-on-surface">Building 4, Steel Park</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-[13px]">Pittsburgh, PA 15222</div>
+</td>
+<td class="px-4 py-3">
+<div class="flex flex-wrap gap-1">
+<span class="inline-block bg-surface-dim text-on-surface font-label-mono text-label-mono px-1.5 py-0.5 border border-outline-variant rounded-sm text-[10px]">Metal framing</span>
+<span class="inline-block bg-surface-dim text-on-surface font-label-mono text-label-mono px-1.5 py-0.5 border border-outline-variant rounded-sm text-[10px]">Rebar</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<!-- Status Chip: Error / Out of Stock -->
+<span class="inline-flex items-center gap-1.5 px-2 py-1 bg-error-container text-on-error-container border border-error/30 rounded-sm font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                                        Halted / Out of Stock
+                                    </span>
+</td>
+<td class="px-4 py-3 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Pagination Footer -->
+<div class="px-4 py-3 border-t border-outline-variant bg-surface flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Showing 1-4 of 124 Suppliers</span>
+<div class="flex items-center gap-1">
+<button class="p-1 border border-outline-variant rounded-sm text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="p-1 border border-outline-variant rounded-sm text-on-surface-variant hover:bg-surface-container-low">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
