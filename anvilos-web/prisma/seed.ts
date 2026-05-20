@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { auditLogs } from "./seed-data/audit-logs";
 
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
+  adapter: new PrismaPg({ connectionString: process.env.ANVILOS_DATABASE_URL! }),
 });
 
 async function main() {
