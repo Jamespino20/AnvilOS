@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
-export const auditLogs: Prisma.AuditLogCreateInput[] = [
+export const auditLogs: Prisma.AuditLogUncheckedCreateInput[] = [
   { id: 1, sellerId: 1, logTime: new Date("2025-06-03 21:15:38"), successStatus: true, panel: "LoginPanel", action: "Login", details: "Login successful for user: Jamespino" },
   { id: 2, sellerId: 1, logTime: new Date("2025-06-04 21:55:37"), successStatus: true, panel: "LoginPanel", action: "Login", details: "Login successful for user: Jamespino" },
   { id: 3, sellerId: 1, logTime: new Date("2025-06-04 22:12:26"), successStatus: true, panel: "LoginPanel", action: "Login", details: "Login successful for user: Jamespino" },
