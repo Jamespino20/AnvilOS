@@ -1,3 +1,6 @@
+# agentic skills for ide
+.agent/
+
 # dependencies
 node_modules/
 .pnp
