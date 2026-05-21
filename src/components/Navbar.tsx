@@ -39,24 +39,49 @@ export function Navbar() {
     <>
       <nav
         className={cn(
+<<<<<<< HEAD:src/components/Navbar.tsx
           "fixed top-0 z-50 w-full transition-all duration-500 px-6 py-4",
           isScrolled 
             ? "bg-background/95 backdrop-blur-xl border-b border-white/10 py-3 shadow-sm" 
             : "bg-transparent border-b border-transparent"
+=======
+          "fixed top-0 z-50 w-full transition-all duration-300 px-6 py-4",
+          isScrolled 
+            ? "bg-background/80 backdrop-blur-md border-b border-border py-3" 
+            : "bg-transparent"
+>>>>>>> 4b67bbb83dde4c9bc714c65e3e20be60e14e8fdd:anvilos-web/src/components/Navbar.tsx
         )}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
+<<<<<<< HEAD:src/components/Navbar.tsx
             <div className="relative h-9 min-w-[140px] overflow-hidden">
               <img 
                 src="/images/anvilos_landscapelogo.png" 
                 alt="AnvilOS" 
                 className={cn(
                   "h-full w-auto object-contain transition-all duration-500",
+=======
+            <div className="relative w-10 h-10 overflow-hidden">
+              <img 
+                src="/images/anvilos_logo.png" 
+                alt="AnvilOS Logo" 
+                className={cn(
+                  "w-full h-full object-contain transition-all duration-500",
+>>>>>>> 4b67bbb83dde4c9bc714c65e3e20be60e14e8fdd:anvilos-web/src/components/Navbar.tsx
                   !isScrolled && "brightness-0 invert"
                 )}
               />
             </div>
+<<<<<<< HEAD:src/components/Navbar.tsx
+=======
+            <span className={cn(
+              "text-xl font-bold tracking-tight transition-colors duration-300 uppercase",
+              isScrolled ? "text-foreground" : "text-white"
+            )}>
+              ANVIL<span className="text-safety-orange">OS</span>
+            </span>
+>>>>>>> 4b67bbb83dde4c9bc714c65e3e20be60e14e8fdd:anvilos-web/src/components/Navbar.tsx
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
