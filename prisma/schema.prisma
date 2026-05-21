@@ -46,7 +46,7 @@ enum TransactionStatus {
 model User {
   id                Int      @id @default(autoincrement()) @map("SELLER_ID")
   sellerName        String   @unique @map("SELLER_NAME")
-  username          String   @map("USERNAME")
+  username          String   @unique @map("USERNAME")
   passwordHash      String   @map("PASSWORD_HASH")
   email             String?  @map("EMAIL")
   registryDate      DateTime @map("REGISTRY_DATE")

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import bcrypt from "bcryptjs";
+import { Eye, EyeOff } from "lucide-react";
 
 const SECURITY_QUESTIONS = [
   "What is your mother's maiden name?",
@@ -26,6 +27,8 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -96,14 +99,24 @@ export default function RegisterPage() {
             <input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} className="w-full rounded-lg border border-outline px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Password</label>
-              <input type="password" value={form.password} onChange={(e) => update("password", e.target.value)} className="w-full rounded-lg border border-outline px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" required />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Confirm Password</label>
-              <input type="password" value={form.confirmPassword} onChange={(e) => update("confirmPassword", e.target.value)} className="w-full rounded-lg border border-outline px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" required />
-            </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Password</label>
+                <div className="relative">
+                  <input type={showPw ? "text" : "password"} value={form.password} onChange={(e) => update("password", e.target.value)} className="w-full rounded-lg border border-outline px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" required />
+                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] transition-colors">
+                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Confirm Password</label>
+                <div className="relative">
+                  <input type={showConfirmPw ? "text" : "password"} value={form.confirmPassword} onChange={(e) => update("confirmPassword", e.target.value)} className="w-full rounded-lg border border-outline px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" required />
+                  <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] transition-colors">
+                    {showConfirmPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
           </div>
           <hr className="border-outline-variant" />
           <p className="text-sm text-on-surface-variant">Security Questions (for password recovery)</p>
@@ -112,7 +125,7 @@ export default function RegisterPage() {
               <select value={form[`securityQ${i + 1}` as keyof typeof form] as string} onChange={(e) => update(`securityQ${i + 1}`, e.target.value)} className="w-full rounded-lg border border-outline px-3 py-2 text-sm">
                 {SECURITY_QUESTIONS.map((q) => <option key={q} value={q}>{q}</option>)}
               </select>
-              <input type="text" value={form[`securityA${i + 1}` as keyof typeof form] as string} onChange={(e) => update(`securityA${i + 1}`, e.target.value)} className="w-full rounded-lg border border-outline px-3 py-2 text-sm" placeholder={`Answer ${i + 1}`} required />
+              <input type="text" value={form[`securityA${i + 1}` as keyof typeof form] as string} onChange={(e) => update(`securityA${i + 1}`, e.target.value)} className="w-full rounded-lg border border-outline px-3 py-2 text-sm" placeholder={`Answer ${i + 1} (optional)`} />
             </div>
           ))}
           <button type="submit" disabled={loading} className="w-full py-2.5 bg-secondary text-on-secondary rounded-lg font-semibold hover:bg-secondary/90 transition-colors disabled:opacity-50">

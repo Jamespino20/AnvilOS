@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Plus, Minus, Trash2, ShoppingCart, User, MapPin, Phone, Loader2, CheckCircle, Package, ArrowDownUp, RotateCcw, AlertTriangle } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingCart, User, MapPin, Phone, Loader2, CheckCircle, Package, ArrowDownUp, RotateCcw, AlertTriangle, CreditCard, Truck } from "lucide-react";
 import { createTransaction } from "@/actions";
 import type { Product } from "@prisma/client";
 
@@ -21,6 +21,9 @@ interface CartItem {
   quantity: number;
 }
 
+const PAYMENT_METHODS = ["Cash", "Card", "GCash", "Credit"];
+const DELIVERY_METHODS = ["WalkIn", "Pickup", "Delivery", "COD"];
+
 const TXN_TYPES = [
   { value: "SaleWalkIn" as const, label: "Sale Walk-In", icon: ShoppingCart },
   { value: "SalePO" as const, label: "Sale P.O.", icon: Package },
@@ -39,6 +42,8 @@ export function POSClient({ products, buyers }: Props) {
   const [buyerContact, setBuyerContact] = useState("");
   const [showBuyerDropdown, setShowBuyerDropdown] = useState(false);
   const [txnType, setTxnType] = useState<typeof TXN_TYPES[number]["value"]>("SaleWalkIn");
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [deliveryMethod, setDeliveryMethod] = useState("WalkIn");
   const [returnReceipt, setReturnReceipt] = useState("");
   const [checkingOut, setCheckingOut] = useState(false);
   const [done, setDone] = useState<{ receipt: number } | null>(null);
@@ -52,9 +57,9 @@ export function POSClient({ products, buyers }: Props) {
   const categories = useMemo(() => [...new Set(products.map((p) => p.category))], [products]);
 
   const filtered = products.filter((p) => {
+    if (p.quantity <= 0) return false; // hide nostock
     if (search && !p.productName.toLowerCase().includes(search.toLowerCase())) return false;
     if (category && p.category !== category) return false;
-    if (txnType === "Return") return p.quantity > 0; // can only return items that were sold
     return true;
   });
 
@@ -88,9 +93,11 @@ export function POSClient({ products, buyers }: Props) {
     setCheckingOut(true);
     try {
       const result = await createTransaction({
-        buyerName,
-        buyerAddress,
-        buyerContact,
+        buyerName: txnType === "Restock" ? "CWL Hardware (Company Restock)" : buyerName,
+        buyerAddress: txnType === "Restock" ? "Company Restock" : buyerAddress,
+        buyerContact: txnType === "Restock" ? "" : buyerContact,
+        paymentMethod: txnType === "Restock" ? "Company Restock" : paymentMethod,
+        deliveryMethod: deliveryMethod as any,
         transactionType: txnType,
         transactionStatus: txnType === "SaleWalkIn" || txnType === "Return" || txnType === "Adjustment" ? "Completed" : "Ongoing",
         grandTotal,
@@ -108,6 +115,8 @@ export function POSClient({ products, buyers }: Props) {
       setBuyerAddress("");
       setBuyerContact("");
       setReturnReceipt("");
+      setPaymentMethod("Cash");
+      setDeliveryMethod("WalkIn");
       setTimeout(() => setDone(null), 5000);
     } catch (e: any) {
       setError(e.message || "Transaction failed");
@@ -118,36 +127,19 @@ export function POSClient({ products, buyers }: Props) {
 
   function getTxnTypeColor(type: typeof TXN_TYPES[number]["value"]) {
     const colors: Record<string, string> = {
-      SaleWalkIn: "border-emerald-500 text-emerald-600",
-      SalePO: "border-blue-500 text-blue-600",
-      Return: "border-amber-500 text-amber-600",
-      Restock: "border-purple-500 text-purple-600",
-      Damage: "border-rose-500 text-rose-600",
-      Adjustment: "border-slate-500 text-slate-600",
+      SaleWalkIn: "text-emerald-600",
+      SalePO: "text-blue-600",
+      Return: "text-amber-600",
+      Restock: "text-purple-600",
+      Damage: "text-rose-600",
+      Adjustment: "text-slate-600",
     };
-    return colors[type] || "border-gray-500 text-gray-600";
+    return colors[type] || "text-gray-600";
   }
 
   return (
     <div className="flex gap-5 h-[calc(100vh-8rem)]">
       <div className="flex-[2] flex flex-col gap-4">
-        {/* Transaction Type Tabs */}
-        <div className="flex gap-1.5 flex-wrap">
-          {TXN_TYPES.map((t) => {
-            const active = txnType === t.value;
-            return (
-              <button key={t.value} onClick={() => { setTxnType(t.value); setCart([]); setError(""); }}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all duration-200 border ${
-                  active
-                    ? `bg-white shadow-sm ${getTxnTypeColor(t.value)} border-current`
-                    : "border-[#e2e8f0] text-[#94a3b8] hover:bg-white hover:border-[#cbd5e1]"
-                }`}>
-                <t.icon className="h-3.5 w-3.5" /> {t.label}
-              </button>
-            );
-          })}
-        </div>
-
         <div className="flex gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
@@ -159,15 +151,6 @@ export function POSClient({ products, buyers }: Props) {
           </select>
         </div>
 
-        {txnType === "Return" && (
-          <div className="flex gap-3 items-center bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <RotateCcw className="h-4 w-4 text-amber-600 shrink-0" />
-            <input type="number" value={returnReceipt} onChange={(e) => setReturnReceipt(e.target.value)}
-              placeholder="Original receipt number" className="flex-1 px-3 py-2 border border-amber-200 rounded-lg text-sm bg-white focus:outline-none focus:border-amber-400" />
-            <span className="text-xs text-amber-600 font-medium">Enter the original sale receipt to return against</span>
-          </div>
-        )}
-
         <div className="flex-1 overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-3 content-start">
           {filtered.map((product) => (
             <button key={product.id} onClick={() => addToCart(product)}
@@ -175,12 +158,12 @@ export function POSClient({ products, buyers }: Props) {
               <p className="font-semibold text-sm text-[#0e212c] truncate group-hover:text-[#fd761a] transition-colors">{product.productName}</p>
               <p className="text-lg font-bold text-[#fd761a] mt-1">₱{Number(product.unitPrice).toLocaleString()}</p>
               <p className={`text-xs mt-1 ${product.quantity <= product.minThreshold ? "text-rose-500 font-semibold" : "text-[#94a3b8]"}`}>
-                Stock: {product.quantity} {product.quantity <= product.minThreshold && product.quantity > 0 ? "(Low)" : product.quantity === 0 ? "(Out)" : ""}
+                Stock: {product.quantity} {product.quantity <= product.minThreshold ? "(Low)" : ""}
               </p>
             </button>
           ))}
           {filtered.length === 0 && (
-            <div className="col-span-full text-center py-12 text-[#94a3b8]">No products match your search</div>
+            <div className="col-span-full text-center py-12 text-[#94a3b8]">No available products match your search</div>
           )}
         </div>
       </div>
@@ -191,38 +174,84 @@ export function POSClient({ products, buyers }: Props) {
             <ShoppingCart className="h-4 w-4 text-[#fd761a]" /> Cart
             {cart.length > 0 && <span className="ml-auto text-[#fd761a]">{cart.length} item{cart.length > 1 ? "s" : ""}</span>}
           </h2>
+
           <div className="space-y-2.5 text-sm">
-            <div className="flex items-center gap-2.5 relative">
-              <User className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
-              <input type="text" value={buyerName} onChange={(e) => { setBuyerName(e.target.value); setShowBuyerDropdown(true); }}
-                onFocus={() => setShowBuyerDropdown(true)} onBlur={() => setTimeout(() => setShowBuyerDropdown(false), 200)}
-                placeholder="Buyer/Supplier name *"
-                className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
-              {showBuyerDropdown && buyerSuggestions.length > 0 && (
-                <div className="absolute left-5 top-full mt-1 w-full bg-white border border-[#e2e8f0] rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
-                  {buyerSuggestions.map((b) => (
-                    <button key={b.buyerName} type="button" onMouseDown={(e) => { e.preventDefault(); setBuyerName(b.buyerName); setBuyerAddress(b.buyerAddress || ""); setBuyerContact(b.buyerContact || ""); setShowBuyerDropdown(false); }}
-                      className="w-full text-left px-3.5 py-2.5 text-sm text-[#0e212c] hover:bg-[#fff5ed] hover:text-[#fd761a] transition-colors border-b border-[#e2e8f0] last:border-b-0">
-                      <span className="font-medium">{b.buyerName}</span>
-                      {(b.buyerAddress || b.buyerContact) && (
-                        <span className="text-[#94a3b8] ml-2 text-xs">{b.buyerAddress || b.buyerContact}</span>
-                      )}
-                    </button>
-                  ))}
+            <div className="flex items-center gap-2.5">
+              <ShoppingCart className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+              <select value={txnType} onChange={(e) => { setTxnType(e.target.value as any); setCart([]); setError(""); setReturnReceipt(""); }}
+                className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors">
+                {TXN_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {txnType === "Return" && (
+              <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                <RotateCcw className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                <input type="number" value={returnReceipt} onChange={(e) => setReturnReceipt(e.target.value)}
+                  placeholder="Original receipt number" className="flex-1 bg-transparent text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none" />
+              </div>
+            )}
+
+            {txnType !== "Restock" && txnType !== "Return" && (
+              <>
+                <div className="flex items-center gap-2.5 relative">
+                  <User className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+                  <input type="text" value={buyerName} onChange={(e) => { setBuyerName(e.target.value); setShowBuyerDropdown(true); }}
+                    onFocus={() => setShowBuyerDropdown(true)} onBlur={() => setTimeout(() => setShowBuyerDropdown(false), 200)}
+                    placeholder="Buyer name *"
+                    className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
+                  {showBuyerDropdown && buyerSuggestions.length > 0 && (
+                    <div className="absolute left-5 top-full mt-1 w-full bg-white border border-[#e2e8f0] rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
+                      {buyerSuggestions.map((b) => (
+                        <button key={b.buyerName} type="button" onMouseDown={(e) => { e.preventDefault(); setBuyerName(b.buyerName); setBuyerAddress(b.buyerAddress || ""); setBuyerContact(b.buyerContact || ""); setShowBuyerDropdown(false); }}
+                          className="w-full text-left px-3.5 py-2.5 text-sm text-[#0e212c] hover:bg-[#fff5ed] hover:text-[#fd761a] transition-colors border-b border-[#e2e8f0] last:border-b-0">
+                          <span className="font-medium">{b.buyerName}</span>
+                          {(b.buyerAddress || b.buyerContact) && (
+                            <span className="text-[#94a3b8] ml-2 text-xs">{b.buyerAddress || b.buyerContact}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+                <div className="flex items-center gap-2.5">
+                  <MapPin className="h-3.5 w-3.5 text-[#94a3b8]" />
+                  <input type="text" value={buyerAddress} onChange={(e) => setBuyerAddress(e.target.value)}
+                    placeholder="Address (optional)"
+                    className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Phone className="h-3.5 w-3.5 text-[#94a3b8]" />
+                  <input type="text" value={buyerContact} onChange={(e) => setBuyerContact(e.target.value)}
+                    placeholder="Contact (optional)"
+                    className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
+                </div>
+              </>
+            )}
+
+            {txnType === "Restock" && (
+              <div className="flex items-center gap-2.5 bg-purple-50 border border-purple-200 rounded-lg p-2.5">
+                <ArrowDownUp className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                <span className="text-sm text-purple-700 font-medium">Restocking: CWL Hardware (Company Restock)</span>
+              </div>
+            )}
+
             <div className="flex items-center gap-2.5">
-              <MapPin className="h-3.5 w-3.5 text-[#94a3b8]" />
-              <input type="text" value={buyerAddress} onChange={(e) => setBuyerAddress(e.target.value)}
-                placeholder="Address (optional)"
-                className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
+              <CreditCard className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+              <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}
+                className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors">
+                {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
             </div>
+
             <div className="flex items-center gap-2.5">
-              <Phone className="h-3.5 w-3.5 text-[#94a3b8]" />
-              <input type="text" value={buyerContact} onChange={(e) => setBuyerContact(e.target.value)}
-                placeholder="Contact (optional)"
-                className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
+              <Truck className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+              <select value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)}
+                className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors">
+                {DELIVERY_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
             </div>
           </div>
         </div>
@@ -262,7 +291,7 @@ export function POSClient({ products, buyers }: Props) {
               <CheckCircle className="h-4 w-4" /> Completed — Receipt #{done.receipt}
             </div>
           ) : (
-            <button onClick={handleCheckout} disabled={cart.length === 0 || !buyerName || checkingOut}
+            <button onClick={handleCheckout} disabled={cart.length === 0 || (!buyerName && txnType !== "Restock") || checkingOut}
               className="w-full py-3 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white rounded-lg font-semibold text-sm hover:from-[#e56600] hover:to-[#d45d00] shadow-lg shadow-[#fd761a]/20 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               {checkingOut ? <><Loader2 className="h-4 w-4 animate-spin" /> Processing...</> : `Process ${TXN_TYPES.find((t) => t.value === txnType)?.label || "Transaction"}`}
             </button>

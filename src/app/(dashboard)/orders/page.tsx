@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getTransactions, updateTransactionStatus, updateTransaction } from "@/actions";
+import { getTransactions, getProducts, updateTransactionStatus, updateTransaction } from "@/actions";
 import { Search, Loader2, Package, CheckCircle, XCircle, Edit3, X, ChevronDown, ChevronUp } from "lucide-react";
-import type { Transaction, TransactionItem } from "@prisma/client";
+import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<TxnWithItems[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
@@ -23,11 +24,20 @@ export default function OrdersPage() {
   const [editItems, setEditItems] = useState<{ productId: number; quantity: number; unitPrice: number; totalPrice: number }[]>([]);
 
   useEffect(() => {
-    getTransactions({ status: "Ongoing", type: "SalePO" }).then((data) => {
-      setOrders(data as TxnWithItems[]);
+    Promise.all([
+      getTransactions({ status: "Ongoing", type: "SalePO" }),
+      getProducts({ status: "available" }),
+    ]).then(([txns, prods]) => {
+      setOrders(txns as TxnWithItems[]);
+      setProducts(prods as Product[]);
       setLoading(false);
     });
   }, []);
+
+  function productLabel(id: number) {
+    const p = products.find((p) => p.id === id);
+    return p ? `#${id} · ${p.productName}` : `#${id}`;
+  }
 
   function openEdit(t: TxnWithItems) {
     setEditId(t.id);
@@ -158,7 +168,7 @@ export default function OrdersPage() {
                     <tbody className="divide-y divide-[#e2e8f0]">
                       {order.items.map((item) => (
                         <tr key={item.id}>
-                          <td className="py-2 text-[#0e212c] font-medium">Product #{item.productId}</td>
+                          <td className="py-2 text-[#0e212c] font-medium">{productLabel(item.productId!)}</td>
                           <td className="py-2 text-right text-[#64748b]">{item.quantity}</td>
                           <td className="py-2 text-right font-mono text-[#64748b]">₱{Number(item.unitPrice).toLocaleString()}</td>
                           <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">₱{Number(item.totalPrice).toLocaleString()}</td>
@@ -224,30 +234,30 @@ export default function OrdersPage() {
                     <div className="space-y-2">
                       {editItems.map((item, i) => (
                         <div key={i} className="flex items-center gap-2">
-                          <input type="number" placeholder="Product ID" value={item.productId || ""}
+                          <select value={item.productId || ""}
                             onChange={(e) => {
                               const newItems = [...editItems];
-                              newItems[i] = { ...item, productId: Number(e.target.value) };
+                              const pid = Number(e.target.value);
+                              const prod = products.find((p) => p.id === pid);
+                              newItems[i] = { ...item, productId: pid, unitPrice: Number(prod?.unitPrice || 0), totalPrice: Number(prod?.unitPrice || 0) * item.quantity };
                               setEditItems(newItems);
                             }}
-                            className="w-24 px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]" />
-                          <input type="number" placeholder="Qty" value={item.quantity}
+                            className="flex-1 min-w-[180px] px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]">
+                            <option value="">Select product</option>
+                            {products.map((p) => <option key={p.id} value={p.id}>#{p.id} · {p.productName}</option>)}
+                          </select>
+                          <label className="text-[10px] font-semibold text-[#94a3b8] uppercase shrink-0">Qty</label>
+                          <input type="number" min={1} value={item.quantity}
                             onChange={(e) => {
                               const newItems = [...editItems];
-                              const qty = Number(e.target.value);
+                              const qty = Math.max(1, Number(e.target.value) || 1);
                               newItems[i] = { ...item, quantity: qty, totalPrice: qty * item.unitPrice };
                               setEditItems(newItems);
                             }}
-                            className="w-20 px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]" />
-                          <input type="number" placeholder="Price" value={item.unitPrice}
-                            onChange={(e) => {
-                              const newItems = [...editItems];
-                              const price = Number(e.target.value);
-                              newItems[i] = { ...item, unitPrice: price, totalPrice: price * item.quantity };
-                              setEditItems(newItems);
-                            }}
-                            className="w-28 px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]" />
-                          <span className="text-sm font-mono text-[#0e212c] font-semibold w-24 text-right">₱{item.totalPrice.toLocaleString()}</span>
+                            className="w-16 px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]" />
+                          <label className="text-[10px] font-semibold text-[#94a3b8] uppercase shrink-0">Price</label>
+                          <span className="text-sm font-mono text-[#0e212c] w-20 text-right">₱{item.unitPrice.toLocaleString()}</span>
+                          <span className="text-sm font-mono text-[#fd761a] font-semibold w-24 text-right">₱{item.totalPrice.toLocaleString()}</span>
                           <button onClick={() => setEditItems(editItems.filter((_, j) => j !== i))}
                             className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded transition-all">
                             <X className="h-3.5 w-3.5" />

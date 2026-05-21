@@ -200,6 +200,8 @@ export async function createTransaction(data: {
   transactionType: "SaleWalkIn" | "SalePO" | "Restock" | "Adjustment" | "Return" | "Damage";
   transactionStatus: "Ongoing" | "Completed" | "Cancelled";
   grandTotal: number;
+  paymentMethod?: string;
+  deliveryMethod?: "WalkIn" | "Pickup" | "Delivery" | "COD";
   items: { productId: number; quantity: number; unitPrice: number; totalPrice: number }[];
   returnForReceiptNumber?: number;
 }) {
@@ -254,7 +256,8 @@ export async function createTransaction(data: {
       sellerId: sellerId || undefined,
       sellerName,
       transactionType: data.transactionType,
-      deliveryMethod: "WalkIn",
+      deliveryMethod: data.deliveryMethod || "WalkIn",
+      paymentMethod: data.paymentMethod || undefined,
       transactionStatus: data.transactionStatus,
       transactionDate: new Date(),
       grandTotal: data.grandTotal,

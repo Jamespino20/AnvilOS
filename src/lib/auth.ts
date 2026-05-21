@@ -22,24 +22,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        const username = credentials.username as string;
+        const identifier = credentials.username as string;
         const password = credentials.password as string;
 
         try {
-          const user = await prisma.user.findUnique({ where: { sellerName: username } });
+          const user = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { username: { equals: identifier, mode: "insensitive" } },
+                { email: { equals: identifier, mode: "insensitive" } },
+              ],
+            },
+          });
+
           if (!user) {
-            console.log("User not found:", username);
+            console.log("User not found:", identifier);
             return null;
           }
 
           const isValid = await bcrypt.compare(password, user.passwordHash);
           if (!isValid) {
-            console.log("Invalid password for:", username);
+            console.log("Invalid password for:", identifier);
             return null;
           }
           
           if (!user.isActive) {
-            console.log("User inactive:", username);
+            console.log("User inactive:", identifier);
             return null;
           }
 

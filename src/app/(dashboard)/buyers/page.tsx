@@ -20,10 +20,13 @@ export default function BuyersPage() {
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [minOrders, setMinOrders] = useState("");
   const [selectedBuyer, setSelectedBuyer] = useState<string | null>(null);
   const [history, setHistory] = useState<TxnWithItems[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [expandedReceipt, setExpandedReceipt] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const perPage = 10;
 
   useEffect(() => {
     getBuyers().then((data) => {
@@ -44,9 +47,14 @@ export default function BuyersPage() {
     }
   }
 
-  const filtered = buyers.filter((b) =>
-    b.buyerName.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = buyers.filter((b) => {
+    if (search && !b.buyerName.toLowerCase().includes(search.toLowerCase())) return false;
+    if (minOrders && b.totalOrders < Number(minOrders)) return false;
+    return true;
+  });
+
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const paged = filtered.slice((page - 1) * perPage, page * perPage);
 
   if (loading) return <div className="flex items-center justify-center h-64 text-[#64748b]">Loading buyers...</div>;
 
@@ -165,19 +173,24 @@ export default function BuyersPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0e212c] tracking-tight">Buyers</h1>
-          <p className="text-sm text-[#64748b] mt-1">{buyers.length} unique buyer{buyers.length !== 1 ? "s" : ""}</p>
+      <div>
+        <h1 className="text-2xl font-bold text-[#0e212c] tracking-tight">Buyers</h1>
+        <p className="text-sm text-[#64748b] mt-1">{buyers.length} unique buyer{buyers.length !== 1 ? "s" : ""}</p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
+          <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search buyers..." className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
         </div>
-        <div className="relative w-72">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search buyers..." className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+        <div className="flex items-center gap-2 text-sm text-[#64748b]">
+          <span className="text-[10px] font-semibold uppercase">Min Orders</span>
+          <input type="number" min={0} value={minOrders} onChange={(e) => { setMinOrders(e.target.value); setPage(1); }} placeholder="0" className="w-16 px-2 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
         </div>
       </div>
 
       <div className="grid gap-3">
-        {filtered.map((buyer) => (
+        {paged.map((buyer) => (
           <button key={buyer.buyerName} onClick={() => selectBuyer(buyer.buyerName)}
             className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex items-center gap-4 text-left hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 group">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0e212c] to-[#1a3a4a] text-white flex items-center justify-center text-lg font-bold shadow-sm shrink-0">
@@ -213,6 +226,16 @@ export default function BuyersPage() {
           </div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 text-sm">
+          <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1} className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all">Prev</button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button key={p} onClick={() => setPage(p)} className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${p === page ? "bg-[#fd761a] text-white" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>{p}</button>
+          ))}
+          <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages} className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all">Next</button>
+        </div>
+      )}
     </div>
   );
 }

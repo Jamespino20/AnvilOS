@@ -165,7 +165,7 @@ export function InventoryClient({ products: initialProducts, categories, supplie
                   <select value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value, supplierName: suppliers.find(s => s.id === Number(e.target.value))?.supplierName || "" })}
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]">
                     <option value="">Select supplier</option>
-                    {suppliers.map((s) => <option key={s.id} value={s.id}>{s.supplierName}</option>)}
+                    {suppliers.filter((s) => s.isAvailable).map((s) => <option key={s.id} value={s.id}>{s.supplierName}</option>)}
                   </select>
                 </div>
               </div>
