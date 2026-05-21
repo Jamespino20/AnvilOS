@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Package, X, Loader2, Pencil, Trash2 } from "lucide-react";
-import { createProduct, updateProduct, deleteProduct } from "@/actions";
+import { Plus, Search, Package, X, Loader2, Pencil, Trash2, FolderPlus } from "lucide-react";
+import { createProduct, updateProduct, deleteProduct, createCategory } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type { Product, Category, Supplier } from "@prisma/client";
@@ -28,6 +28,10 @@ export function InventoryClient({ products: initialProducts, categories, supplie
   const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState({ productName: "", category: "", categoryId: "", supplierName: "", supplierId: "", unitPrice: "", quantity: "", minThreshold: "" });
   const defaultForm = { productName: "", category: "", categoryId: "", supplierName: "", supplierId: "", unitPrice: "", quantity: "", minThreshold: "" };
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [catName, setCatName] = useState("");
+  const [catParent, setCatParent] = useState("");
+  const [addingCategory, setAddingCategory] = useState(false);
 
   const filtered = initialProducts.filter((p) => {
     if (search && !p.productName.toLowerCase().includes(search.toLowerCase())) return false;
@@ -42,6 +46,15 @@ export function InventoryClient({ products: initialProducts, categories, supplie
     if (product.quantity === 0) return { label: "OUT OF STOCK", className: "bg-rose-50 text-rose-700 border border-rose-200" };
     if (product.quantity <= product.minThreshold) return { label: "LOW STOCK", className: "bg-amber-50 text-amber-700 border border-amber-200" };
     return { label: "IN STOCK", className: "bg-emerald-50 text-emerald-700 border border-emerald-200" };
+  }
+
+  function renderCategoryOptions(cats: typeof categories, depth = 0): ReactNode[] {
+    return cats.flatMap((c) => [
+      <option key={c.id} value={c.id}>
+        {depth > 0 ? `${"—".repeat(depth)} ` : ""}{c.name}
+      </option>,
+      ...(c.childCategories?.length ? renderCategoryOptions(c.childCategories as any, depth + 1) : []),
+    ]);
   }
 
   async function handleAddProduct(e: React.FormEvent) {
@@ -133,7 +146,7 @@ export function InventoryClient({ products: initialProducts, categories, supplie
         </div>
         <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="min-w-[160px] px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]">
           <option value="">All Categories</option>
-          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {renderCategoryOptions(categories)}
         </select>
         <select value={filterSupplier} onChange={(e) => setFilterSupplier(e.target.value)} className="min-w-[160px] px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]">
           <option value="">All Suppliers</option>
@@ -147,6 +160,10 @@ export function InventoryClient({ products: initialProducts, categories, supplie
         <button onClick={() => setShowAdd(true)}
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]">
           <Plus className="h-4 w-4" /> Add Product
+        </button>
+        <button onClick={() => setShowCategoryModal(true)}
+          className="flex items-center gap-2 px-4 py-2.5 border border-[#e2e8f0] text-sm font-medium rounded-lg text-[#64748b] hover:bg-white hover:shadow-sm transition-all">
+          <FolderPlus className="h-4 w-4" /> Category
         </button>
       </div>
 
@@ -225,7 +242,7 @@ export function InventoryClient({ products: initialProducts, categories, supplie
                   <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value, category: categories.find(c => c.id === Number(e.target.value))?.name || "" })}
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]">
                     <option value="">Select category</option>
-                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {renderCategoryOptions(categories)}
                   </select>
                 </div>
                 <div>
@@ -287,7 +304,7 @@ export function InventoryClient({ products: initialProducts, categories, supplie
                   <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value, category: categories.find(c => c.id === Number(e.target.value))?.name || "" })}
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]">
                     <option value="">Select category</option>
-                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {renderCategoryOptions(categories)}
                   </select>
                 </div>
                 <div>
@@ -339,6 +356,57 @@ export function InventoryClient({ products: initialProducts, categories, supplie
         confirmLabel={deleting ? "Deleting..." : "Delete"}
         variant="danger"
       />
+
+      {/* Create Category Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center" onClick={() => { setShowCategoryModal(false); setCatName(""); setCatParent(""); }}>
+          <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
+              <h2 className="text-lg font-bold text-[#0e212c]">Create Category</h2>
+              <button onClick={() => { setShowCategoryModal(false); setCatName(""); setCatParent(""); }} className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">Category Name *</label>
+                <input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="e.g. Power Tools"
+                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">Parent Category (optional)</label>
+                <select value={catParent} onChange={(e) => setCatParent(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white text-[#0e212c] focus:outline-none focus:border-[#fd761a]">
+                  <option value="">None (top-level)</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}{c.childCategories.length > 0 ? ` (${c.childCategories.length} children)` : ""}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => { setShowCategoryModal(false); setCatName(""); setCatParent(""); }}
+                  className="flex-1 py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-[#f8fafc] transition-all">Cancel</button>
+                <button onClick={async () => {
+                  if (!catName.trim()) return;
+                  setAddingCategory(true);
+                  try {
+                    await createCategory(catName.trim(), catParent ? Number(catParent) : undefined);
+                    setShowCategoryModal(false);
+                    setCatName("");
+                    setCatParent("");
+                    router.refresh();
+                  } catch (e) {
+                    console.error("Failed to create category", e);
+                  } finally {
+                    setAddingCategory(false);
+                  }
+                }} disabled={!catName.trim() || addingCategory}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                  {addingCategory ? <><Loader2 className="h-4 w-4 animate-spin" /> Creating...</> : "Create"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

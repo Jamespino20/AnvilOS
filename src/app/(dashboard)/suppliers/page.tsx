@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { getSuppliers as fetchSuppliers, createSupplier, updateSupplier } from "@/actions";
 import { Plus, Truck, Mail, Phone, MapPin, X, Loader2, Edit3, Save } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { CardSkeleton } from "@/components/ui/skeleton";
 import type { Supplier } from "@prisma/client";
 
 export default function SuppliersPage() {
@@ -68,7 +69,7 @@ export default function SuppliersPage() {
     }
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-[#64748b]">Loading suppliers...</div>;
+  if (loading) return <div className="space-y-5"><PageHeader title="Supplier Management" subtitle="Loading..." /><CardSkeleton count={6} /></div>;
 
   return (
     <div className="space-y-5">

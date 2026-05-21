@@ -8,21 +8,30 @@ Last Update Date:
 "use client";
 
 import { useState, useEffect } from "react";
-import { getTransactions } from "@/actions";
+import { getTransactions, getProducts } from "@/actions";
 import { Search, ArrowDownUp, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import type { Transaction, TransactionItem } from "@prisma/client";
+import { CardSkeleton } from "@/components/ui/skeleton";
+import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
 
 export default function RestocksPage() {
   const [restocks, setRestocks] = useState<TxnWithItems[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
-    getTransactions({ type: "Restock" }).then((data) => setRestocks(data as TxnWithItems[])).finally(() => setLoading(false));
+    Promise.all([
+      getTransactions({ type: "Restock" }),
+      getProducts({}),
+    ]).then(([data, prods]) => {
+      setRestocks(data as TxnWithItems[]);
+      setProducts(prods as Product[]);
+      setLoading(false);
+    });
   }, []);
 
   const filtered = restocks.filter(
@@ -31,7 +40,7 @@ export default function RestocksPage() {
       String(r.receiptNumber).includes(search)
   );
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-[#64748b]"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading...</div>;
+  if (loading) return <div className="space-y-5"><PageHeader title="Restocks" subtitle="Loading..." /><CardSkeleton count={4} /></div>;
 
   return (
     <div className="space-y-5">
@@ -88,7 +97,7 @@ export default function RestocksPage() {
                     <tbody className="divide-y divide-[#e2e8f0]">
                       {r.items.map((item) => (
                         <tr key={item.id}>
-                          <td className="py-2 text-[#0e212c] font-medium">#{item.productId}</td>
+                          <td className="py-2 text-[#0e212c] font-medium">{products.find(p => p.id === item.productId)?.productName || `#${item.productId}`}</td>
                           <td className="py-2 text-right text-[#64748b]">{item.quantity}</td>
                           <td className="py-2 text-right font-mono text-[#64748b]">₱{Number(item.unitPrice).toLocaleString()}</td>
                           <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">₱{Number(item.totalPrice).toLocaleString()}</td>

@@ -193,3 +193,17 @@
     transition-timing-function: var(--snappy-transition);
   }
 }
+
+/* Ensure dashboard inputs and selects always have visible text */
+select, input, textarea {
+  color: #0e212c;
+}
+
+.dark select, .dark input, .dark textarea {
+  color: #e2e8f0;
+}
+
+.dark select option {
+  color: #0e212c;
+  background: white;
+}

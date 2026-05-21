@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import { getTransactions, getProducts, updateTransactionStatus, updateTransaction } from "@/actions";
 import { Search, Loader2, Package, CheckCircle, XCircle, Edit3, X, ChevronDown, ChevronUp } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { CardSkeleton } from "@/components/ui/skeleton";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
@@ -94,7 +95,7 @@ export default function OrdersPage() {
       String(o.receiptNumber).includes(search)
   );
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-[#64748b]">Loading orders...</div>;
+  if (loading) return <div className="space-y-5"><PageHeader title="Purchase Orders" subtitle="Loading..." /><CardSkeleton count={4} /></div>;
 
   return (
     <div className="space-y-5">

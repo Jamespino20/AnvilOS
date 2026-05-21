@@ -8,10 +8,11 @@ Last Update Date:
 "use client";
 
 import { useState, useEffect } from "react";
-import { getTransactions, updateTransactionStatus } from "@/actions";
+import { getTransactions, updateTransactionStatus, getProducts } from "@/actions";
 import { Search, Receipt, Filter, Loader2, CheckCircle, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import type { Transaction, TransactionItem } from "@prisma/client";
+import { TableSkeleton } from "@/components/ui/skeleton";
+import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
 
@@ -30,6 +31,7 @@ function statusBadge(status: string) {
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<TxnWithItems[]>([]);
   const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -38,8 +40,12 @@ export default function TransactionsPage() {
   const perPage = 15;
 
   useEffect(() => {
-    getTransactions({ status: statusFilter || undefined, type: typeFilter || undefined, search: search || undefined }).then((data) => {
+    Promise.all([
+      getTransactions({ status: statusFilter || undefined, type: typeFilter || undefined, search: search || undefined }),
+      getProducts({}),
+    ]).then(([data, prods]) => {
       setTransactions(data as TxnWithItems[]);
+      setProducts(prods as Product[]);
       setLoading(false);
     });
   }, [statusFilter, typeFilter, search]);
@@ -53,7 +59,7 @@ export default function TransactionsPage() {
   const totalPages = Math.ceil(transactions.length / perPage);
   const paged = transactions.slice((page - 1) * perPage, page * perPage);
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-[#64748b]"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading...</div>;
+  if (loading) return <div className="space-y-5"><PageHeader title="Transactions" subtitle="Loading..." /><TableSkeleton rows={10} cols={7} /></div>;
 
   return (
     <div className="space-y-5">
@@ -136,7 +142,7 @@ export default function TransactionsPage() {
                             <tbody className="divide-y divide-[#e2e8f0]">
                               {t.items.map((item) => (
                                 <tr key={item.id}>
-                                  <td className="py-1.5 text-[#0e212c] font-medium">#{item.productId}</td>
+                                  <td className="py-1.5 text-[#0e212c] font-medium">{products.find(p => p.id === item.productId)?.productName || `#${item.productId}`}</td>
                                   <td className="py-1.5 text-right text-[#64748b]">{item.quantity}</td>
                                   <td className="py-1.5 text-right font-mono text-[#64748b]">₱{Number(item.unitPrice).toLocaleString()}</td>
                                   <td className="py-1.5 text-right font-mono text-[#0e212c] font-semibold">₱{Number(item.totalPrice).toLocaleString()}</td>

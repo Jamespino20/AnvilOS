@@ -8,10 +8,11 @@ Last Update Date:
 "use client";
 
 import { useState, useEffect } from "react";
-import { getBuyers, getBuyerTransactions, updateBuyerInfo } from "@/actions";
+import { getBuyers, getBuyerTransactions, getProducts, updateBuyerInfo } from "@/actions";
 import { Search, Loader2, Users, Receipt, ArrowLeft, ChevronDown, ChevronUp, Phone, MapPin, Calendar, Pencil, X, Save } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import type { Transaction, TransactionItem } from "@prisma/client";
+import { CardSkeleton } from "@/components/ui/skeleton";
+import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
 
@@ -27,6 +28,7 @@ interface Buyer {
 export default function BuyersPage() {
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [minOrders, setMinOrders] = useState("");
   const [selectedBuyer, setSelectedBuyer] = useState<string | null>(null);
@@ -41,8 +43,12 @@ export default function BuyersPage() {
   const perPage = 10;
 
   useEffect(() => {
-    getBuyers().then((data) => {
+    Promise.all([
+      getBuyers(),
+      getProducts({}),
+    ]).then(([data, prods]) => {
       setBuyers(data as Buyer[]);
+      setProducts(prods as Product[]);
       setLoading(false);
     });
   }, []);
@@ -72,7 +78,7 @@ export default function BuyersPage() {
   const totalPages = Math.ceil(filtered.length / perPage);
   const paged = filtered.slice((page - 1) * perPage, page * perPage);
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-[#64748b]">Loading buyers...</div>;
+  if (loading) return <div className="space-y-5"><PageHeader title="Buyers" subtitle="Loading..." /><CardSkeleton count={6} /></div>;
 
   if (selectedBuyer) {
     return (
@@ -161,7 +167,7 @@ export default function BuyersPage() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                            <th className="text-left pb-2">Product ID</th>
+                            <th className="text-left pb-2">Product</th>
                             <th className="text-right pb-2">Qty</th>
                             <th className="text-right pb-2">Unit Price</th>
                             <th className="text-right pb-2">Total</th>
@@ -170,7 +176,7 @@ export default function BuyersPage() {
                         <tbody className="divide-y divide-[#e2e8f0]">
                           {txn.items.map((item) => (
                             <tr key={item.id}>
-                              <td className="py-2 text-[#0e212c] font-medium">#{item.productId}</td>
+                              <td className="py-2 text-[#0e212c] font-medium">{products.find(p => p.id === item.productId)?.productName || `#${item.productId}`}</td>
                               <td className="py-2 text-right text-[#64748b]">{item.quantity}</td>
                               <td className="py-2 text-right font-mono text-[#64748b]">₱{Number(item.unitPrice).toLocaleString()}</td>
                               <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">₱{Number(item.totalPrice).toLocaleString()}</td>

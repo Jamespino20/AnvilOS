@@ -98,7 +98,7 @@ export function POSClient({ products, buyers }: Props) {
   );
 
   async function handleCheckout() {
-    if (cart.length === 0 || !buyerName) return;
+    if (cart.length === 0 || (!buyerName && txnType !== "Restock")) return;
     setError("");
     setCheckingOut(true);
     try {
@@ -277,9 +277,14 @@ export function POSClient({ products, buyers }: Props) {
                 <p className="text-sm font-medium text-[#0e212c] truncate">{item.product.productName}</p>
                 {!isRestock && <p className="text-xs text-[#94a3b8]">₱{Number(item.product.unitPrice).toLocaleString()} ea</p>}
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1.5 rounded-md hover:bg-white text-[#64748b] hover:text-[#0e212c] transition-all"><Minus className="h-3.5 w-3.5" /></button>
-                <span className="w-8 text-center text-sm font-semibold text-[#0e212c]">{item.quantity}</span>
+                <input type="number" min={1} value={item.quantity}
+                  onChange={(e) => {
+                    const q = Math.max(1, Number(e.target.value) || 1);
+                    setCart((prev) => prev.map((c) => c.product.id === item.product.id ? { ...c, quantity: q } : c));
+                  }}
+                  className="w-12 text-center text-sm font-semibold text-[#0e212c] bg-transparent border border-[#e2e8f0] rounded-md py-1 focus:outline-none focus:border-[#fd761a] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                 <button onClick={() => updateQuantity(item.product.id, 1)} className="p-1.5 rounded-md hover:bg-white text-[#64748b] hover:text-[#0e212c] transition-all"><Plus className="h-3.5 w-3.5" /></button>
               </div>
               {!isRestock && <p className="text-sm font-semibold text-[#0e212c] w-20 text-right font-mono">₱{(Number(item.product.unitPrice) * item.quantity).toLocaleString()}</p>}
