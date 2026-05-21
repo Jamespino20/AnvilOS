@@ -1,3 +1,10 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Montserrat, Instrument_Sans } from "next/font/google";
 import "./globals.css";

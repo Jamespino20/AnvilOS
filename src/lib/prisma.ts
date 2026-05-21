@@ -1,3 +1,10 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";

@@ -1,8 +1,16 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { getTransactions, updateTransactionStatus } from "@/actions";
 import { Search, Receipt, Filter, Loader2, CheckCircle, XCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import type { Transaction, TransactionItem } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
@@ -50,7 +58,7 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-[#0e212c] tracking-tight">Transactions</h1>
+        <PageHeader title="Transactions" subtitle="View and manage all sales, returns, restocks, and adjustments. Filter by status or type to find specific records." />
         <div className="flex gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />

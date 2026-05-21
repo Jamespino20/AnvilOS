@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ShoppingCart, Package, Receipt, Truck, Shield, ClipboardList, Users, LogOut, ChevronDown, ArrowDownUp } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Receipt, Truck, Shield, ClipboardList, Users, LogOut, ChevronDown, ArrowDownUp, PanelLeftClose, PanelLeft } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
 
@@ -38,33 +38,45 @@ const groups = [
   },
 ];
 
-export function DashboardSidebar() {
+interface Props {
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+export function DashboardSidebar({ collapsed, onToggle }: Props) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   function toggleGroup(label: string) {
-    setCollapsed((prev) => ({ ...prev, [label]: !prev[label] }));
+    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
   }
 
   return (
-    <nav className="fixed left-0 top-0 h-full w-[260px] bg-[#0e212c] flex flex-col z-50">
-      <div className="px-6 py-6 border-b border-white/10">
-        <h1 className="text-xl font-bold text-white tracking-tight">
-          <span className="text-[#fd761a]">A</span>nvil<span className="text-[#fd761a]">OS</span>
-        </h1>
-        <p className="text-xs text-white/50 mt-0.5 uppercase tracking-widest font-medium">Hardware & Supply</p>
+    <nav className={`fixed left-0 top-0 h-full bg-[#0e212c] flex flex-col z-50 transition-all duration-300 ${collapsed ? "w-0 overflow-hidden" : "w-[260px]"}`}>
+      <div className="px-6 py-6 border-b border-white/10 flex items-center justify-between">
+        {!collapsed && (
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-tight">
+              <span className="text-[#fd761a]">A</span>nvil<span className="text-[#fd761a]">OS</span>
+            </h1>
+            <p className="text-xs text-white/50 mt-0.5 uppercase tracking-widest font-medium">Hardware & Supply</p>
+          </div>
+        )}
+        <button onClick={onToggle} className="p-1.5 text-white/40 hover:text-white transition-colors">
+          <PanelLeftClose className="h-5 w-5" />
+        </button>
       </div>
       <div className="flex-1 overflow-y-auto py-4 space-y-4">
         {groups.map((group) => {
-          const isCollapsed = collapsed[group.label];
+          const isOpen = openGroups[group.label] !== false;
           return (
             <div key={group.label}>
               <button onClick={() => toggleGroup(group.label)}
                 className="flex items-center justify-between w-full px-6 py-1.5 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] hover:text-white/50 transition-colors">
                 {group.label}
-                <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isCollapsed ? "-rotate-90" : ""}`} />
+                <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isOpen ? "" : "-rotate-90"}`} />
               </button>
-              {!isCollapsed && (
+              {isOpen && (
                 <div className="mt-0.5 space-y-0.5">
                   {group.items.map((item) => {
                     const isActive = pathname === item.href;

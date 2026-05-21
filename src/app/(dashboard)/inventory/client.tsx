@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Package, X, Loader2 } from "lucide-react";
-import { createProduct } from "@/actions";
+import { Plus, Search, Package, X, Loader2, Pencil, Trash2 } from "lucide-react";
+import { createProduct, updateProduct, deleteProduct } from "@/actions";
+import { PageHeader } from "@/components/ui/page-header";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type { Product, Category, Supplier } from "@prisma/client";
 
 interface Props {
@@ -19,8 +21,13 @@ export function InventoryClient({ products: initialProducts, categories, supplie
   const [filterSupplier, setFilterSupplier] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState({ productName: "", category: "", categoryId: "", supplierName: "", supplierId: "", unitPrice: "", quantity: "", minThreshold: "" });
+  const defaultForm = { productName: "", category: "", categoryId: "", supplierName: "", supplierId: "", unitPrice: "", quantity: "", minThreshold: "" };
 
   const filtered = initialProducts.filter((p) => {
     if (search && !p.productName.toLowerCase().includes(search.toLowerCase())) return false;
@@ -53,7 +60,7 @@ export function InventoryClient({ products: initialProducts, categories, supplie
         minThreshold: Number(form.minThreshold) || 5,
       });
       setShowAdd(false);
-      setForm({ productName: "", category: "", categoryId: "", supplierName: "", supplierId: "", unitPrice: "", quantity: "", minThreshold: "" });
+      setForm(defaultForm);
       router.refresh();
     } catch (e) {
       console.error("Failed to add product", e);
@@ -62,15 +69,61 @@ export function InventoryClient({ products: initialProducts, categories, supplie
     }
   }
 
+  function openEdit(product: Product) {
+    setForm({
+      productName: product.productName,
+      category: product.category,
+      categoryId: String(product.categoryId ?? ""),
+      supplierName: product.supplierName,
+      supplierId: String(product.supplierId ?? ""),
+      unitPrice: String(product.unitPrice),
+      quantity: String(product.quantity),
+      minThreshold: String(product.minThreshold),
+    });
+    setShowEdit(product.id);
+  }
+
+  async function handleEditProduct(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.productName || showEdit === null) return;
+    setSaving(true);
+    try {
+      await updateProduct(showEdit, {
+        productName: form.productName,
+        category: form.category || "Uncategorized",
+        categoryId: Number(form.categoryId) || undefined,
+        supplierName: form.supplierName || "Unknown",
+        supplierId: Number(form.supplierId) || undefined,
+        unitPrice: Number(form.unitPrice) || 0,
+        minThreshold: Number(form.minThreshold) || 5,
+      });
+      setShowEdit(null);
+      setForm(defaultForm);
+      router.refresh();
+    } catch (e) {
+      console.error("Failed to update product", e);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (deleteTarget === null) return;
+    setDeleting(true);
+    try {
+      await deleteProduct(deleteTarget);
+      setDeleteTarget(null);
+      router.refresh();
+    } catch (e) {
+      console.error("Failed to delete product", e);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[#0e212c] tracking-tight">Inventory Management</h1>
-        <button onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]">
-          <Plus className="h-4 w-4" /> Add Product
-        </button>
-      </div>
+      <PageHeader title="Inventory Management" subtitle="Manage your product catalog — add, edit, and remove stock items. Track quantities and thresholds for each product." />
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-wrap gap-4 items-center">
         <div className="relative flex-1 min-w-[200px]">
@@ -91,6 +144,10 @@ export function InventoryClient({ products: initialProducts, categories, supplie
           <option value="low">Low Stock</option>
           <option value="out">Out of Stock</option>
         </select>
+        <button onClick={() => setShowAdd(true)}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]">
+          <Plus className="h-4 w-4" /> Add Product
+        </button>
       </div>
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
@@ -105,6 +162,7 @@ export function InventoryClient({ products: initialProducts, categories, supplie
                 <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">Qty</th>
                 <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">Min Thr.</th>
                 <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">Status</th>
+                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
@@ -123,11 +181,21 @@ export function InventoryClient({ products: initialProducts, categories, supplie
                         {badge.label}
                       </span>
                     </td>
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => openEdit(product)} className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all" title="Edit">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => setDeleteTarget(product.id)} className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all" title="Delete">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="p-8 text-center text-[#94a3b8]">No products found</td></tr>
+                <tr><td colSpan={8} className="p-8 text-center text-[#94a3b8]">No products found</td></tr>
               )}
             </tbody>
           </table>
@@ -198,6 +266,79 @@ export function InventoryClient({ products: initialProducts, categories, supplie
           </div>
         </div>
       )}
+
+      {/* Edit Product Modal */}
+      {showEdit !== null && (
+        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center" onClick={() => { setShowEdit(null); setForm(defaultForm); }}>
+          <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
+              <h2 className="text-lg font-bold text-[#0e212c]">Edit Product</h2>
+              <button onClick={() => { setShowEdit(null); setForm(defaultForm); }} className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"><X className="h-5 w-5" /></button>
+            </div>
+            <form onSubmit={handleEditProduct} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">Product Name *</label>
+                <input value={form.productName} onChange={(e) => setForm({ ...form, productName: e.target.value })} required
+                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">Category</label>
+                  <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value, category: categories.find(c => c.id === Number(e.target.value))?.name || "" })}
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]">
+                    <option value="">Select category</option>
+                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">Supplier</label>
+                  <select value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value, supplierName: suppliers.find(s => s.id === Number(e.target.value))?.supplierName || "" })}
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]">
+                    <option value="">Select supplier</option>
+                    {suppliers.filter((s) => s.isAvailable).map((s) => <option key={s.id} value={s.id}>{s.supplierName}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">Unit Price</label>
+                  <input type="number" value={form.unitPrice} onChange={(e) => setForm({ ...form, unitPrice: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">Quantity</label>
+                  <input type="number" value={form.quantity} disabled
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#94a3b8] bg-[#f8fafc] focus:outline-none cursor-not-allowed" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">Min Threshold</label>
+                  <input type="number" value={form.minThreshold} onChange={(e) => setForm({ ...form, minThreshold: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]" />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => { setShowEdit(null); setForm(defaultForm); }}
+                  className="flex-1 py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-[#f8fafc] transition-all">Cancel</button>
+                <button type="submit" disabled={saving}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                  {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      <ConfirmModal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete Product"
+        message="This action cannot be undone. The product will be permanently removed from inventory."
+        confirmLabel={deleting ? "Deleting..." : "Delete"}
+        variant="danger"
+      />
     </div>
   );
 }

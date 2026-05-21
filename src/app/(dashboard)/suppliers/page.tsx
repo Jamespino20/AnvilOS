@@ -1,9 +1,17 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getSuppliers as fetchSuppliers, createSupplier, updateSupplier } from "@/actions";
 import { Plus, Truck, Mail, Phone, MapPin, X, Loader2, Edit3, Save } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import type { Supplier } from "@prisma/client";
 
 export default function SuppliersPage() {
@@ -65,7 +73,7 @@ export default function SuppliersPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[#0e212c] tracking-tight">Supplier Management</h1>
+        <PageHeader title="Supplier Management" subtitle="Manage your supply chain partners — add, edit, and toggle supplier availability." />
         <button onClick={() => setShowAdd(true)}
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]">
           <Plus className="h-4 w-4" /> Add Supplier

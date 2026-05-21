@@ -1,3 +1,10 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2 } from "lucide-react";

@@ -1,3 +1,10 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 import type { Prisma } from "@prisma/client";
 
 export const auditLogs: Prisma.AuditLogUncheckedCreateInput[] = [

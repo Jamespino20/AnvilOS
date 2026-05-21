@@ -1,3 +1,10 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 export function Hero() {
   return (
     <section className="relative h-screen w-full overflow-hidden bg-industrial-blue">

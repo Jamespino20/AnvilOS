@@ -1,8 +1,16 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { getTransactions } from "@/actions";
 import { Search, ArrowDownUp, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import type { Transaction, TransactionItem } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
@@ -28,10 +36,7 @@ export default function RestocksPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0e212c] tracking-tight">Restocks</h1>
-          <p className="text-sm text-[#64748b] mt-1">{restocks.length} restock record{restocks.length !== 1 ? "s" : ""}</p>
-        </div>
+        <PageHeader title="Restocks" subtitle={`${restocks.length} restock record${restocks.length !== 1 ? "s" : ""} — track inventory replenishment from suppliers.`} />
         <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search restocks..." className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />

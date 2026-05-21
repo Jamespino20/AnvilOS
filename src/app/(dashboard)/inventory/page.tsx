@@ -1,3 +1,10 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 import { getProducts, getCategories, getSuppliers } from "@/actions";
 import { InventoryClient } from "./client";
 

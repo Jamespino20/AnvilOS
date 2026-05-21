@@ -1,3 +1,10 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -489,4 +496,28 @@ export async function getDashboardKpis() {
     totalProducts,
     totalTransactions,
   };
+}
+
+export async function updateProfile(data: { name: string }) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const user = await prisma.user.update({
+    where: { id: Number(session.user.id) },
+    data: { sellerName: data.name },
+  });
+  await logAudit("Settings", "Update Profile", `Name changed to ${data.name}`);
+  revalidatePath("/settings");
+  return user;
+}
+
+export async function updateBuyerInfo(buyerName: string, data: { buyerAddress?: string; buyerContact?: string }) {
+  const session = await auth();
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const txns = await prisma.transaction.updateMany({
+    where: { buyerName },
+    data: { ...(data.buyerAddress !== undefined && { buyerAddress: data.buyerAddress }), ...(data.buyerContact !== undefined && { buyerContact: data.buyerContact }) },
+  });
+  await logAudit("Buyers", "Update Buyer Info", `${buyerName}: address/contact updated`);
+  revalidatePath("/buyers");
+  return txns;
 }

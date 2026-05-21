@@ -1,8 +1,16 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { getTransactions, getProducts, updateTransactionStatus, updateTransaction } from "@/actions";
 import { Search, Loader2, Package, CheckCircle, XCircle, Edit3, X, ChevronDown, ChevronUp } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
@@ -91,10 +99,7 @@ export default function OrdersPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0e212c] tracking-tight">Purchase Orders</h1>
-          <p className="text-sm text-[#64748b] mt-1">{orders.length} ongoing order{orders.length !== 1 ? "s" : ""}</p>
-        </div>
+        <PageHeader title="Purchase Orders" subtitle={`${orders.length} ongoing order${orders.length !== 1 ? "s" : ""} — manage purchase orders, update items, and track delivery status.`} />
         <div className="relative w-72">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by buyer or receipt..." className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />

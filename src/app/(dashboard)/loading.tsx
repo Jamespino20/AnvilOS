@@ -1,9 +1,16 @@
-import { Loader2 } from "lucide-react";
+import { TableSkeleton } from "@/components/ui/skeleton";
 
 export default function DashboardLoading() {
   return (
-    <div className="flex items-center justify-center h-64">
-      <Loader2 className="h-6 w-6 animate-spin text-[#fd761a]" />
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1.5">
+          <div className="h-7 w-48 bg-[#e2e8f0] rounded-lg animate-pulse" />
+          <div className="h-4 w-72 bg-[#e2e8f0] rounded-lg animate-pulse" />
+        </div>
+        <div className="h-10 w-32 bg-[#e2e8f0] rounded-lg animate-pulse" />
+      </div>
+      <TableSkeleton rows={8} cols={6} />
     </div>
   );
 }

@@ -1,4 +1,13 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 import { getDashboardKpis, getRevenueTrend, getTransactions } from "@/actions";
+import { PageHeader } from "@/components/ui/page-header";
+import { DashboardExport } from "@/components/dashboard-export";
 import { TrendingUp, Receipt, Package, AlertTriangle, DollarSign, ArrowUpRight } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -13,14 +22,8 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0e212c] tracking-tight">Dashboard</h1>
-          <p className="text-sm text-[#64748b] mt-1">Real-time operational overview</p>
-        </div>
-        <div className="flex gap-3">
-          <button className="px-5 py-2.5 border border-[#e2e8f0] text-sm font-medium rounded-lg text-[#64748b] hover:bg-white hover:shadow-sm transition-all duration-200">Export Report</button>
-          <button className="px-5 py-2.5 bg-[#fd761a] text-white text-sm font-semibold rounded-lg hover:bg-[#e56600] shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]">New Sale</button>
-        </div>
+        <PageHeader title="Dashboard" subtitle="Real-time operational overview" />
+        <DashboardExport data={{ dailySales: kpis.dailySales, totalTransactions: kpis.totalTransactions, totalProducts: kpis.totalProducts, lowStockCount: kpis.lowStockCount, revenueTrend, recentTransactions: recentTransactions as any[] }} />
       </div>
 
       <div className="grid grid-cols-12 gap-5">

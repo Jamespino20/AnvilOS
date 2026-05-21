@@ -1,7 +1,14 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 import { prisma } from "./prisma";
 import { auth } from "./auth";
 
-type AuditPanel = "POSPanel" | "InventoryPanel" | "SupplierPanel" | "ProductDialog" | "EditTransactionDialog" | "System";
+type AuditPanel = "POSPanel" | "InventoryPanel" | "SupplierPanel" | "ProductDialog" | "EditTransactionDialog" | "Settings" | "Buyers" | "System";
 type AuditAction = string;
 
 export async function logAudit(

@@ -1,8 +1,16 @@
+/*
+App Name: AnvilOS
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: 
+*/
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { getBuyers, getBuyerTransactions } from "@/actions";
-import { Search, Loader2, Users, Receipt, ArrowLeft, ChevronDown, ChevronUp, Phone, MapPin, Calendar } from "lucide-react";
+import { getBuyers, getBuyerTransactions, updateBuyerInfo } from "@/actions";
+import { Search, Loader2, Users, Receipt, ArrowLeft, ChevronDown, ChevronUp, Phone, MapPin, Calendar, Pencil, X, Save } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import type { Transaction, TransactionItem } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
@@ -26,6 +34,10 @@ export default function BuyersPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [expandedReceipt, setExpandedReceipt] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  const [showEditBuyer, setShowEditBuyer] = useState(false);
+  const [editAddress, setEditAddress] = useState("");
+  const [editContact, setEditContact] = useState("");
+  const [savingBuyer, setSavingBuyer] = useState(false);
   const perPage = 10;
 
   useEffect(() => {
@@ -42,6 +54,10 @@ export default function BuyersPage() {
     try {
       const data = await getBuyerTransactions(name);
       setHistory(data as TxnWithItems[]);
+      if (data.length > 0) {
+        setEditAddress(data[0].buyerAddress || "");
+        setEditContact(data[0].buyerContact || "");
+      }
     } finally {
       setHistoryLoading(false);
     }
@@ -83,9 +99,14 @@ export default function BuyersPage() {
                 )}
               </div>
             </div>
-            <div className="text-right shrink-0">
-              <p className="text-xs text-[#94a3b8] uppercase tracking-wider font-semibold">Total Spent</p>
-              <p className="text-xl font-bold text-[#fd761a]">₱{history.reduce((s, t) => s + Number(t.grandTotal || 0), 0).toLocaleString()}</p>
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={() => setShowEditBuyer(true)} className="p-2 text-[#64748b] hover:bg-[#f1f5f9] rounded-lg transition-all text-sm flex items-center gap-1.5">
+                <Pencil className="h-4 w-4" /> Edit Info
+              </button>
+              <div className="text-right">
+                <p className="text-xs text-[#94a3b8] uppercase tracking-wider font-semibold">Total Spent</p>
+                <p className="text-xl font-bold text-[#fd761a]">₱{history.reduce((s, t) => s + Number(t.grandTotal || 0), 0).toLocaleString()}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -167,18 +188,57 @@ export default function BuyersPage() {
             )}
           </div>
         )}
+
+        {/* Edit Buyer Info Modal */}
+        {showEditBuyer && (
+          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center" onClick={() => setShowEditBuyer(false)}>
+            <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
+                <h2 className="text-lg font-bold text-[#0e212c]">Edit Buyer Info</h2>
+                <button onClick={() => setShowEditBuyer(false)} className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"><X className="h-5 w-5" /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">Address</label>
+                  <input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} placeholder="Enter address"
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">Contact</label>
+                  <input value={editContact} onChange={(e) => setEditContact(e.target.value)} placeholder="Enter contact number"
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]" />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => setShowEditBuyer(false)}
+                    className="flex-1 py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-[#f8fafc] transition-all">Cancel</button>
+                  <button onClick={async () => {
+                    setSavingBuyer(true);
+                    try {
+                      await updateBuyerInfo(selectedBuyer!, { buyerAddress: editAddress, buyerContact: editContact });
+                      setHistory((prev) => prev.map((t) => ({ ...t, buyerAddress: editAddress, buyerContact: editContact })));
+                      setShowEditBuyer(false);
+                    } catch (e) {
+                      console.error("Failed to update", e);
+                    } finally {
+                      setSavingBuyer(false);
+                    }
+                  }} disabled={savingBuyer}
+                    className="flex-1 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                    {savingBuyer ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <><Save className="h-4 w-4" /> Save</>}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-[#0e212c] tracking-tight">Buyers</h1>
-        <p className="text-sm text-[#64748b] mt-1">{buyers.length} unique buyer{buyers.length !== 1 ? "s" : ""}</p>
-      </div>
-
-      <div className="flex items-center gap-3">
+        <PageHeader title="Buyers" subtitle={`${filtered.length} buyer${filtered.length !== 1 ? "s" : ""} found — view customer purchase histories and contact details.`} />
+        <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search buyers..." className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
