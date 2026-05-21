@@ -39,30 +39,24 @@ export function Navbar() {
     <>
       <nav
         className={cn(
-          "fixed top-0 z-50 w-full transition-all duration-300 px-6 py-4",
+          "fixed top-0 z-50 w-full transition-all duration-500 px-6 py-4",
           isScrolled 
-            ? "bg-background/80 backdrop-blur-md border-b border-border py-3" 
-            : "bg-transparent"
+            ? "bg-background/95 backdrop-blur-xl border-b border-white/10 py-3 shadow-sm" 
+            : "bg-transparent border-b border-transparent"
         )}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative w-10 h-10 overflow-hidden">
+            <div className="relative h-9 min-w-[140px] overflow-hidden">
               <img 
-                src="/images/anvilos_logo.png" 
-                alt="AnvilOS Logo" 
+                src="/images/anvilos_landscapelogo.png" 
+                alt="AnvilOS" 
                 className={cn(
-                  "w-full h-full object-contain transition-all duration-500",
+                  "h-full w-auto object-contain transition-all duration-500",
                   !isScrolled && "brightness-0 invert"
                 )}
               />
             </div>
-            <span className={cn(
-              "text-xl font-bold tracking-tight transition-colors duration-300 uppercase",
-              isScrolled ? "text-foreground" : "text-white"
-            )}>
-              ANVIL<span className="text-safety-orange">OS</span>
-            </span>
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
