@@ -34,10 +34,10 @@ export default async function DashboardPage() {
           { icon: Package, label: "Active Products", value: kpis.totalProducts.toLocaleString(), sub: "SKUs in system", color: "from-violet-500 to-purple-600", bg: "bg-violet-50" },
           { icon: AlertTriangle, label: "Low Stock Alerts", value: kpis.lowStockCount.toLocaleString(), sub: "Below minimum threshold", color: "from-rose-500 to-pink-600", bg: "bg-rose-50" },
         ].map((card, i) => (
-          <div key={i} className="col-span-12 md:col-span-3 bg-white rounded-xl border border-[#e2e8f0] p-5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300 hover:-translate-y-0.5">
+          <div key={i} className="col-span-12 md:col-span-3 bg-white/90 backdrop-blur-sm rounded-xl border border-[#e2e8f0] p-5 hover:shadow-lg hover:shadow-black/5 hover:bg-white transition-all duration-300 hover:-translate-y-0.5 group">
             <div className="flex justify-between items-start mb-4">
-              <span className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">{card.label}</span>
-              <div className={`w-9 h-9 rounded-lg ${card.bg} flex items-center justify-center`}>
+              <span className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider group-hover:text-[#fd761a] transition-colors">{card.label}</span>
+              <div className={`w-9 h-9 rounded-lg ${card.bg} group-hover:scale-110 transition-transform duration-300 flex items-center justify-center`}>
                 <card.icon className="h-4 w-4 text-[#0e212c]" />
               </div>
             </div>

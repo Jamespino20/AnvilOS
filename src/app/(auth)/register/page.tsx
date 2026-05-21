@@ -87,7 +87,12 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F1F5F9] py-12 px-4">
-      <div className="w-full max-w-lg bg-white rounded-xl p-8 shadow-lg border border-outline-variant">
+      <div className="w-full max-w-lg">
+        <div className="text-center mb-6">
+          <img src="/images/anvilos_landscapelogo.png" alt="AnvilOS" className="h-10 w-auto mx-auto brightness-0" style={{ filter: "brightness(0) sepia(1) hue-rotate(190deg) saturate(3)" }} />
+          <p className="text-on-surface-variant mt-1 text-xs">Hardware & Supply</p>
+        </div>
+        <div className="bg-white/90 backdrop-blur-xl rounded-xl p-8 shadow-2xl shadow-black/10 border border-white/20">
         <h1 className="text-2xl font-bold text-center mb-6">Create Account</h1>
         {error && <p className="text-sm text-error bg-error-container/30 rounded-md px-3 py-2 mb-4">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -142,7 +147,8 @@ export default function RegisterPage() {
             Already have an account? <Link href="/login" className="text-primary hover:underline">Sign in</Link>
           </p>
         </form>
+          </div>
+        </div>
       </div>
-    </div>
   );
 }

@@ -250,7 +250,11 @@ export default function OrdersPage() {
                             }}
                             className="flex-1 min-w-[180px] px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]">
                             <option value="">Select product</option>
-                            {products.map((p) => <option key={p.id} value={p.id}>#{p.id} · {p.productName}</option>)}
+                            {products.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                #{p.id} · {p.productName}{(p as any).imageUrl ? " 📷" : ""}
+                              </option>
+                            ))}
                           </select>
                           <label className="text-[10px] font-semibold text-[#94a3b8] uppercase shrink-0">Qty</label>
                           <input type="number" min={1} value={item.quantity}

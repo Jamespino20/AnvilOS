@@ -11,7 +11,10 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { logAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
+import { withTimeout } from "@/lib/timeout";
 import type { Prisma } from "@prisma/client";
+
+const DB_TIMEOUT = 20000;
 
 // ─────────── Products ───────────
 
@@ -26,7 +29,7 @@ export async function getProducts(opts?: { categoryId?: number; supplierId?: num
   if (opts?.status === "out") where.quantity = 0;
   if (opts?.status === "available") where.isAvailable = true;
 
-  return prisma.product.findMany({ where, orderBy: { updatedAt: "desc" }, include: { categoryRel: true, supplierRel: true } });
+  return withTimeout(prisma.product.findMany({ where, orderBy: { updatedAt: "desc" }, include: { categoryRel: true, supplierRel: true } }), DB_TIMEOUT, "Loading products");
 }
 
 export async function getProduct(id: number) {
@@ -35,7 +38,7 @@ export async function getProduct(id: number) {
 
 export async function createProduct(data: {
   productName: string; categoryId?: number; category: string; supplierId?: number; supplierName: string;
-  unitPrice: number; quantity: number; minThreshold: number;
+  unitPrice: number; quantity: number; minThreshold: number; imageUrl?: string;
 }) {
   const fn = async () => {
     const product = await prisma.product.create({ data: { ...data, isAvailable: true } });
@@ -56,7 +59,7 @@ export async function createProduct(data: {
 
 export async function updateProduct(id: number, data: Partial<{
   productName: string; categoryId: number; category: string; supplierId: number; supplierName: string;
-  unitPrice: number; quantity: number; minThreshold: number; isAvailable: boolean;
+  unitPrice: number; quantity: number; minThreshold: number; isAvailable: boolean; imageUrl: string;
 }>) {
   const product = await prisma.product.update({ where: { id }, data });
   await logAudit("InventoryPanel", "Edit Product", `${product.productName} (#${id}) updated`);
@@ -157,12 +160,12 @@ export async function getTransactions(opts?: { status?: string; type?: string; s
     ].filter(Boolean);
   }
 
-  return prisma.transaction.findMany({
+  return withTimeout(prisma.transaction.findMany({
     where,
     orderBy: { transactionDate: "desc" },
     include: { items: true, seller: { select: { sellerName: true } } },
     take: 100,
-  });
+  }), DB_TIMEOUT, "Loading transactions");
 }
 
 export async function getTransaction(id: number) {
@@ -183,9 +186,11 @@ async function applyStockChanges(
         newQty = product.quantity - item.quantity;
         if (newQty < 0) throw new Error(`Insufficient stock for "${product.productName}" (have ${product.quantity}, need ${item.quantity})`);
         break;
-      case "Restock":
       case "Return":
         newQty = product.quantity + item.quantity;
+        break;
+      case "Restock":
+        // Stock increased only when processed via Restocks module
         break;
       case "Adjustment":
         newQty = item.quantity; // absolute override
@@ -254,7 +259,7 @@ export async function createTransaction(data: {
     await applyStockChanges(data.transactionType, data.items);
   }
 
-  const transaction = await prisma.transaction.create({
+  const transaction = await withTimeout(prisma.transaction.create({
     data: {
       receiptNumber,
       buyerName: data.buyerName,
@@ -272,7 +277,9 @@ export async function createTransaction(data: {
       isReturned: data.transactionType === "Return",
       items: { create: data.items },
     },
-  });
+  }),
+  DB_TIMEOUT, "Processing transaction"
+  );
 
   await logAudit("POSPanel", "Complete Transaction", `${data.transactionType} #${receiptNumber} — ${data.buyerName} — ₱${data.grandTotal.toLocaleString()}`);
 
@@ -508,6 +515,63 @@ export async function updateProfile(data: { name: string }) {
   await logAudit("Settings", "Update Profile", `Name changed to ${data.name}`);
   revalidatePath("/settings");
   return user;
+}
+
+export async function updateSecurityQuestions(data: {
+  question1: string; answer1: string;
+  question2: string; answer2: string;
+  question3: string; answer3: string;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const user = await prisma.user.update({
+    where: { id: Number(session.user.id) },
+    data: {
+      securityQuestion1: data.question1, securityAnswer1: data.answer1,
+      securityQuestion2: data.question2, securityAnswer2: data.answer2,
+      securityQuestion3: data.question3, securityAnswer3: data.answer3,
+    },
+  });
+  await logAudit("Settings", "Update Security Questions", "Security questions updated");
+  revalidatePath("/settings");
+  return user;
+}
+
+export async function updatePassword(newPassword: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const bcrypt = await import("bcryptjs");
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  const user = await prisma.user.update({
+    where: { id: Number(session.user.id) },
+    data: { passwordHash },
+  });
+  await logAudit("Settings", "Change Password", "Password changed");
+  revalidatePath("/settings");
+  return user;
+}
+
+export async function processRestock(transactionId: number) {
+  const txn = await prisma.transaction.findUniqueOrThrow({
+    where: { id: transactionId },
+    include: { items: true },
+  });
+  if (txn.transactionType !== "Restock") throw new Error("Not a restock transaction");
+
+  for (const item of txn.items) {
+    const product = await prisma.product.findUniqueOrThrow({ where: { id: item.productId! } });
+    await prisma.product.update({
+      where: { id: item.productId! },
+      data: {
+        quantity: product.quantity + (item.quantity ?? 0),
+        isAvailable: true,
+      },
+    });
+  }
+  await logAudit("Restocks", "Process Restock", `#${txn.receiptNumber} processed (${txn.items.length} items)`);
+  revalidatePath("/restocks");
+  revalidatePath("/inventory");
+  return txn;
 }
 
 export async function updateBuyerInfo(buyerName: string, data: { buyerAddress?: string; buyerContact?: string }) {

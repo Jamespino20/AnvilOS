@@ -8,7 +8,7 @@ Last Update Date:
 import { prisma } from "./prisma";
 import { auth } from "./auth";
 
-type AuditPanel = "POSPanel" | "InventoryPanel" | "SupplierPanel" | "ProductDialog" | "EditTransactionDialog" | "Settings" | "Buyers" | "System";
+type AuditPanel = "POSPanel" | "InventoryPanel" | "SupplierPanel" | "ProductDialog" | "EditTransactionDialog" | "Settings" | "Buyers" | "Restocks" | "System";
 type AuditAction = string;
 
 export async function logAudit(

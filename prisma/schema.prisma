@@ -115,6 +115,7 @@ model Product {
   unitPrice    Decimal  @db.Decimal(10, 2) @map("UNIT_PRICE")
   quantity     Int      @map("QUANTITY")
   minThreshold Int      @map("MIN_THRESHOLD")
+  imageUrl     String?  @map("IMAGE_URL")
   isAvailable  Boolean  @default(true) @map("IS_AVAILABLE")
   createdAt    DateTime? @map("CREATED_AT")
   updatedAt    DateTime @default(now()) @updatedAt @map("UPDATED_AT")

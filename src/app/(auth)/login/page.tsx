@@ -47,12 +47,12 @@ export default function LoginPage() {
       <div className="absolute inset-0 bg-[url('/images/warehouse-bg.jpg')] bg-cover bg-center opacity-10" />
       <div className="relative w-full max-w-md mx-4">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary">AnvilOS</h1>
-          <p className="text-on-surface-variant mt-2">Hardware & Supply</p>
+          <img src="/images/anvilos_landscapelogo.png" alt="AnvilOS" className="h-10 w-auto mx-auto brightness-0" style={{ filter: "brightness(0) sepia(1) hue-rotate(190deg) saturate(3)" }} />
+          <p className="text-on-surface-variant mt-2 text-sm">Hardware & Supply</p>
         </div>
         <form
           onSubmit={handleSubmit}
-          className="bg-white/90 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-outline-variant space-y-5"
+          className="          bg-white/90 backdrop-blur-xl rounded-xl p-8 shadow-2xl shadow-black/10 border border-white/20 space-y-5"
         >
           <h2 className="text-xl font-semibold text-center">Sign In</h2>
           {error && (

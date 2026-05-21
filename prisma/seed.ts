@@ -278,7 +278,7 @@ async function main() {
     const safe = batch.map((r) => ({
       id: r.id,
       sellerId: r.sellerId ?? null,
-      logTime: r.logTime,
+      logTime: new Date(new Date(r.logTime ?? new Date()).getTime() + Math.floor(Math.random() * 999)),
       successStatus: r.successStatus,
       panel: r.panel ?? null,
       action: r.action ?? null,

@@ -7,11 +7,11 @@ Last Update Date:
 
 import Link from "next/link";
 
-const footerLinks = {
-  Product: ["Features", "Pricing", "Integrations", "Changelog"],
-  Company: ["About", "Blog", "Careers", "Press"],
-  Support: ["Documentation", "API Reference", "Status", "Contact"],
-  Legal: ["Privacy Policy", "Terms of Service", "Cookie Policy", "GDPR"],
+const footerLinks: Record<string, [string, string][]> = {
+  Product: [["Features", "/solutions"], ["Pricing", "/pricing"], ["Integrations", "/solutions"], ["Changelog", "/changelog"]],
+  Company: [["About", "/about"], ["Blog", "/blog"], ["Careers", "/careers"], ["Press", "/press"]],
+  Support: [["Documentation", "/docs"], ["API Reference", "/api-docs"], ["Status", "/status"], ["Contact", "/contact"]],
+  Legal: [["Privacy Policy", "/privacy"], ["Terms of Service", "/terms"], ["Cookie Policy", "/cookies"], ["GDPR", "/gdpr"]],
 };
 
 export function Footer() {
@@ -20,9 +20,7 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="font-black text-2xl text-primary tracking-tight">
-              <span className="text-accent">A</span>nvil<span className="text-accent">OS</span>
-            </Link>
+            <img src="/images/anvilos_landscapelogo.png" alt="AnvilOS" className="h-8 w-auto brightness-0" style={{ filter: "brightness(0) sepia(1) hue-rotate(190deg) saturate(3)" }} />
             <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
               Industrial-grade POS and inventory management for hardware stores and warehouse operations.
             </p>
@@ -31,9 +29,9 @@ export function Footer() {
             <div key={heading}>
               <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">{heading}</h4>
               <ul className="space-y-3">
-                {links.map((link) => (
-                  <li key={link}>
-                    <Link href="#" className="text-xs text-primary hover:text-accent transition-colors">{link}</Link>
+                {links.map(([label, href]) => (
+                  <li key={label}>
+                    <Link href={href} className="text-xs text-primary hover:text-accent transition-colors">{label}</Link>
                   </li>
                 ))}
               </ul>
