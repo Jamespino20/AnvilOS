@@ -1,9 +1,10 @@
-"use client";
-
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { signIn } from "next-auth/react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -37,12 +38,92 @@ export function AuthModal({
   updateField 
 }: AuthModalProps) {
   const [activeTab, setActiveTab] = useState<AuthView>(initialView);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      const result = await signIn("credentials", {
+        username: formData.email, // Using email field as username for credentials
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast.error("Authentication Failed", {
+          description: "Please check your credentials and security clearance.",
+        });
+      } else {
+        toast.success("Access Granted", {
+          description: "Establishing secure connection to dashboard...",
+        });
+        onClose();
+        router.push("/inventory");
+      }
+    } catch (error) {
+      toast.error("System Error", {
+        description: "An unexpected error occurred during authentication.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: formData.sellerName, // Map legal name to username for now
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error("Initialization Failed", {
+          description: data.error || "Profile forging could not be completed.",
+        });
+      } else {
+        toast.success("Profile Forged", {
+          description: "Identity recognized. Logging in...",
+        });
+        
+        // Auto sign in after registration
+        const result = await signIn("credentials", {
+          username: formData.sellerName,
+          password: formData.password,
+          redirect: false,
+        });
+
+        if (result?.ok) {
+          onClose();
+          router.push("/inventory");
+        }
+      }
+    } catch (error) {
+      toast.error("Protocol Violation", {
+        description: "Communication with the registration server failed.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogPortal>
         <DialogOverlay className="fixed inset-0 z-50 bg-background/40 backdrop-blur-md transition-all duration-500" />
-        <DialogContent className="fixed left-[50%] top-[50%] z-50 w-full max-w-[440px] translate-x-[-50%] translate-y-[-50%] p-0 shadow-2xl border border-white/10 overflow-hidden工业级 rounded-sm bg-background industrial-grain animate-snappy">
+        <DialogContent className="fixed left-[50%] top-[50%] z-50 w-full max-w-[440px] translate-x-[-50%] translate-y-[-50%] p-0 shadow-2xl border border-white/10 overflow-hidden rounded-sm bg-background industrial-grain animate-snappy">
           
           <div className="flex flex-col relative">
             {/* Premium Header */}
@@ -92,56 +173,72 @@ export function AuthModal({
                     transition={{ duration: 0.3, ease: [0.19, 1, 0.22, 1] }}
                   >
                     <TabsContent value="login" className="space-y-5 m-0 border-none p-0">
-                      <div className="space-y-4">
+                      <form onSubmit={handleLogin} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="login-email">Merchant Identity / Email</Label>
+                          <Label htmlFor="login-email">Merchant Identity / Username</Label>
                           <Input 
                             id="login-email" 
-                            type="email" 
-                            placeholder="operator@anvilos.com"
+                            type="text" 
+                            required
+                            placeholder="operator01"
                             value={formData.email}
                             onChange={(e) => updateField("email", e.target.value)}
                             className="focus-visible:border-b-safety-orange"
+                            disabled={isLoading}
                           />
                         </div>
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
                             <Label htmlFor="login-pass">Security Protocol / Password</Label>
-                            <button className="text-[10px] font-bold text-safety-orange uppercase hover:underline">Reset</button>
+                            <button type="button" className="text-[10px] font-bold text-safety-orange uppercase hover:underline">Reset</button>
                           </div>
                           <Input 
                             id="login-pass" 
                             type="password" 
+                            required
                             placeholder="••••••••"
                             value={formData.password}
                             onChange={(e) => updateField("password", e.target.value)}
                             className="focus-visible:border-b-safety-orange"
+                            disabled={isLoading}
                           />
                         </div>
-                        <Button className="w-full h-12 bg-industrial-blue hover:bg-industrial-blue/90 text-white font-bold uppercase tracking-widest text-[11px] rounded-none mt-2 shadow-xl shadow-industrial-blue/10 animate-snappy group">
-                          Proceed to Dashboard
-                          <motion.span 
-                            initial={{ x: 0 }}
-                            whileHover={{ x: 5 }}
-                            className="ml-2 inline-block"
-                          >
-                            →
-                          </motion.span>
+                        <Button 
+                          type="submit"
+                          disabled={isLoading}
+                          className="w-full h-12 bg-industrial-blue hover:bg-industrial-blue/90 text-white font-bold uppercase tracking-widest text-[11px] rounded-none mt-2 shadow-xl shadow-industrial-blue/10 animate-snappy group"
+                        >
+                          {isLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              Proceed to Dashboard
+                              <motion.span 
+                                initial={{ x: 0 }}
+                                whileHover={{ x: 5 }}
+                                className="ml-2 inline-block"
+                              >
+                                →
+                              </motion.span>
+                            </>
+                          )}
                         </Button>
-                      </div>
+                      </form>
                     </TabsContent>
 
                     <TabsContent value="register" className="space-y-5 m-0 border-none p-0">
-                      <div className="space-y-4">
+                      <form onSubmit={handleRegister} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="reg-name">Legal Entity / Full Name</Label>
+                          <Label htmlFor="reg-name">Legal Entity / Merchant ID</Label>
                           <Input 
                             id="reg-name" 
                             type="text" 
-                            placeholder="John R. Doe"
+                            required
+                            placeholder="operator01"
                             value={formData.sellerName}
                             onChange={(e) => updateField("sellerName", e.target.value)}
                             className="focus-visible:border-b-safety-orange"
+                            disabled={isLoading}
                           />
                         </div>
                         <div className="space-y-2">
@@ -149,10 +246,12 @@ export function AuthModal({
                           <Input 
                             id="reg-email" 
                             type="email" 
+                            required
                             placeholder="enterprise@company.com"
                             value={formData.email}
                             onChange={(e) => updateField("email", e.target.value)}
                             className="focus-visible:border-b-safety-orange"
+                            disabled={isLoading}
                           />
                         </div>
                         <div className="space-y-2">
@@ -160,23 +259,35 @@ export function AuthModal({
                           <Input 
                             id="reg-pass" 
                             type="password" 
+                            required
                             placeholder="Minimum 8 characters"
                             value={formData.password}
                             onChange={(e) => updateField("password", e.target.value)}
                             className="focus-visible:border-b-safety-orange"
+                            disabled={isLoading}
                           />
                         </div>
-                        <Button className="w-full h-12 bg-safety-orange hover:bg-safety-orange/90 text-white font-bold uppercase tracking-widest text-[11px] rounded-none mt-2 shadow-xl shadow-safety-orange/10 animate-snappy group">
-                          Forge New Profile
-                          <motion.span 
-                            initial={{ x: 0 }}
-                            whileHover={{ x: 5 }}
-                            className="ml-2 inline-block"
-                          >
-                            →
-                          </motion.span>
+                        <Button 
+                          type="submit"
+                          disabled={isLoading}
+                          className="w-full h-12 bg-safety-orange hover:bg-safety-orange/90 text-white font-bold uppercase tracking-widest text-[11px] rounded-none mt-2 shadow-xl shadow-safety-orange/10 animate-snappy group"
+                        >
+                          {isLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              Forge New Profile
+                              <motion.span 
+                                initial={{ x: 0 }}
+                                whileHover={{ x: 5 }}
+                                className="ml-2 inline-block"
+                              >
+                                →
+                              </motion.span>
+                            </>
+                          )}
                         </Button>
-                      </div>
+                      </form>
                     </TabsContent>
                   </motion.div>
                 </AnimatePresence>
@@ -186,9 +297,12 @@ export function AuthModal({
             {/* Status Footer */}
             <div className="bg-slate-50/80 backdrop-blur-sm px-8 py-5 border-t border-border flex items-center justify-between">
                <div className="flex items-center gap-2">
-                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                 <span className={cn(
+                   "w-1.5 h-1.5 rounded-full",
+                   isLoading ? "bg-amber-500 animate-pulse" : "bg-green-500 animate-pulse"
+                 )} />
                  <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                   System Online
+                   {isLoading ? "Processing Link..." : "System Online"}
                  </span>
                </div>
                <span className="text-[9px] font-mono text-muted-foreground opacity-50">

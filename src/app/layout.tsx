@@ -25,11 +25,15 @@ export const metadata: Metadata = {
   },
 };
 
+import { Providers } from "@/components/providers";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={cn("font-sans", montserrat.variable, instrumentSansHeading.variable)}>
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-inter antialiased`}>
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
