@@ -5,8 +5,15 @@ import { Search, Plus, Minus, Trash2, ShoppingCart, User, MapPin, Phone, Loader2
 import { createTransaction } from "@/actions";
 import type { Product } from "@prisma/client";
 
+interface BuyerInfo {
+  buyerName: string;
+  buyerAddress?: string | null;
+  buyerContact?: string | null;
+}
+
 interface Props {
   products: Product[];
+  buyers: BuyerInfo[];
 }
 
 interface CartItem {
@@ -23,18 +30,24 @@ const TXN_TYPES = [
   { value: "Adjustment" as const, label: "Adjustment", icon: ArrowDownUp },
 ];
 
-export function POSClient({ products }: Props) {
+export function POSClient({ products, buyers }: Props) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [buyerName, setBuyerName] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
   const [buyerContact, setBuyerContact] = useState("");
+  const [showBuyerDropdown, setShowBuyerDropdown] = useState(false);
   const [txnType, setTxnType] = useState<typeof TXN_TYPES[number]["value"]>("SaleWalkIn");
   const [returnReceipt, setReturnReceipt] = useState("");
   const [checkingOut, setCheckingOut] = useState(false);
   const [done, setDone] = useState<{ receipt: number } | null>(null);
   const [error, setError] = useState("");
+
+  const buyerSuggestions = useMemo(
+    () => buyers.filter((b) => b.buyerName.toLowerCase().includes(buyerName.toLowerCase())),
+    [buyerName, buyers]
+  );
 
   const categories = useMemo(() => [...new Set(products.map((p) => p.category))], [products]);
 
@@ -179,16 +192,38 @@ export function POSClient({ products }: Props) {
             {cart.length > 0 && <span className="ml-auto text-[#fd761a]">{cart.length} item{cart.length > 1 ? "s" : ""}</span>}
           </h2>
           <div className="space-y-2.5 text-sm">
-            {[{ icon: User, placeholder: "Buyer/Supplier name *", value: buyerName, set: setBuyerName },
-              { icon: MapPin, placeholder: "Address (optional)", value: buyerAddress, set: setBuyerAddress },
-              { icon: Phone, placeholder: "Contact (optional)", value: buyerContact, set: setBuyerContact },
-            ].map((f, i) => (
-              <div key={i} className="flex items-center gap-2.5">
-                <f.icon className="h-3.5 w-3.5 text-[#94a3b8]" />
-                <input type="text" value={f.value} onChange={(e) => f.set(e.target.value)} placeholder={f.placeholder}
-                  className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
-              </div>
-            ))}
+            <div className="flex items-center gap-2.5 relative">
+              <User className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+              <input type="text" value={buyerName} onChange={(e) => { setBuyerName(e.target.value); setShowBuyerDropdown(true); }}
+                onFocus={() => setShowBuyerDropdown(true)} onBlur={() => setTimeout(() => setShowBuyerDropdown(false), 200)}
+                placeholder="Buyer/Supplier name *"
+                className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
+              {showBuyerDropdown && buyerSuggestions.length > 0 && (
+                <div className="absolute left-5 top-full mt-1 w-full bg-white border border-[#e2e8f0] rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
+                  {buyerSuggestions.map((b) => (
+                    <button key={b.buyerName} type="button" onMouseDown={(e) => { e.preventDefault(); setBuyerName(b.buyerName); setBuyerAddress(b.buyerAddress || ""); setBuyerContact(b.buyerContact || ""); setShowBuyerDropdown(false); }}
+                      className="w-full text-left px-3.5 py-2.5 text-sm text-[#0e212c] hover:bg-[#fff5ed] hover:text-[#fd761a] transition-colors border-b border-[#e2e8f0] last:border-b-0">
+                      <span className="font-medium">{b.buyerName}</span>
+                      {(b.buyerAddress || b.buyerContact) && (
+                        <span className="text-[#94a3b8] ml-2 text-xs">{b.buyerAddress || b.buyerContact}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2.5">
+              <MapPin className="h-3.5 w-3.5 text-[#94a3b8]" />
+              <input type="text" value={buyerAddress} onChange={(e) => setBuyerAddress(e.target.value)}
+                placeholder="Address (optional)"
+                className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
+            </div>
+            <div className="flex items-center gap-2.5">
+              <Phone className="h-3.5 w-3.5 text-[#94a3b8]" />
+              <input type="text" value={buyerContact} onChange={(e) => setBuyerContact(e.target.value)}
+                placeholder="Contact (optional)"
+                className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
+            </div>
           </div>
         </div>
 

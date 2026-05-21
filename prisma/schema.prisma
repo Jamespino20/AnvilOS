@@ -60,6 +60,7 @@ model User {
   securityAnswer3   String   @map("SECURITY_ANSWER3")
 
   transactions Transaction[]
+  buyers       Buyer[]
   auditLogs    AuditLog[]
 
   @@map("users")
@@ -137,10 +138,12 @@ model Transaction {
   paymentMethod          String?           @map("PAYMENT_METHOD")
   isReturned             Boolean           @default(false) @map("IS_RETURNED")
   returnForReceiptNumber Int?              @map("RETURN_FOR_RECEIPT_NUMBER")
+  buyerId                Int?              @map("BUYER_ID")
   createdAt              DateTime?         @map("CREATED_AT")
   updatedAt              DateTime          @default(now()) @updatedAt @map("UPDATED_AT")
 
   seller User?              @relation(fields: [sellerId], references: [id])
+  buyer  Buyer?             @relation(fields: [buyerId], references: [id])
   items  TransactionItem[]
 
   @@index([sellerId])
@@ -176,6 +179,27 @@ model Notification {
   createdAt          DateTime @map("CREATED_AT")
 
   @@map("notifications")
+}
+
+/// Customers / clients who purchase products
+model Buyer {
+  id           Int      @id @default(autoincrement()) @map("BUYER_ID")
+  name         String   @map("BUYER_NAME")
+  email        String?  @map("EMAIL")
+  phone        String?  @map("PHONE")
+  address      String?  @map("ADDRESS")
+  notes        String?  @map("NOTES")
+  totalOrders  Int      @default(0) @map("TOTAL_ORDERS")
+  totalSpent   Decimal  @default(0) @db.Decimal(10, 2) @map("TOTAL_SPENT")
+  sellerId     Int?     @map("SELLER_ID")
+  createdAt    DateTime @default(now()) @map("CREATED_AT")
+  updatedAt    DateTime @default(now()) @updatedAt @map("UPDATED_AT")
+
+  seller       User?         @relation(fields: [sellerId], references: [id])
+  transactions Transaction[]
+
+  @@index([sellerId])
+  @@map("buyers")
 }
 
 /// Full audit trail for all user actions

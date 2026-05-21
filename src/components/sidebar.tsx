@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ShoppingCart, Package, Receipt, Truck, Shield, Bell, LifeBuoy, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Receipt, Truck, Shield, Bell, LifeBuoy, Settings, LogOut, ClipboardList, Users } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 const navItems = [
@@ -11,6 +11,8 @@ const navItems = [
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/transactions", label: "Transactions", icon: Receipt },
   { href: "/suppliers", label: "Suppliers", icon: Truck },
+  { href: "/orders", label: "Purchase Orders", icon: ClipboardList },
+  { href: "/buyers", label: "Buyers", icon: Users },
   { href: "/audit-log", label: "Audit Logs", icon: Shield },
   { href: "/notifications", label: "Notifications", icon: Bell },
   { href: "/settings", label: "Settings", icon: Settings },

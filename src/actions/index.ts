@@ -426,6 +426,40 @@ export async function getUnreadNotificationCount() {
   return prisma.notification.count({ where: { isRead: false } });
 }
 
+// ─────────── Buyers ───────────
+
+export async function getBuyers() {
+  const buyers = await prisma.transaction.groupBy({
+    by: ["buyerName"],
+    _count: { id: true },
+    _sum: { grandTotal: true },
+    orderBy: { _sum: { grandTotal: "desc" } },
+  });
+
+  // Fetch latest transaction per buyer for address/contact
+  const latest = await prisma.transaction.groupBy({
+    by: ["buyerName"],
+    _max: { transactionDate: true, buyerAddress: true, buyerContact: true },
+  });
+
+  const latestMap = new Map(latest.map((l) => [l.buyerName, { buyerAddress: l._max.buyerAddress, buyerContact: l._max.buyerContact, lastOrder: l._max.transactionDate }]));
+
+  return buyers.map((b) => ({
+    buyerName: b.buyerName,
+    totalOrders: b._count.id,
+    totalSpent: Number(b._sum.grandTotal || 0),
+    ...(latestMap.get(b.buyerName) || {}),
+  }));
+}
+
+export async function getBuyerTransactions(buyerName: string) {
+  return prisma.transaction.findMany({
+    where: { buyerName },
+    orderBy: { transactionDate: "desc" },
+    include: { items: true, seller: { select: { sellerName: true } } },
+  });
+}
+
 // ─────────── Dashboard KPIs ───────────
 
 export async function getDashboardKpis() {
