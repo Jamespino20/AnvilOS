@@ -74,6 +74,25 @@ export default function RestocksPage() {
     );
   }
 
+  const [editingQty, setEditingQty] = useState<number | null>(null);
+  const [qtyInput, setQtyInput] = useState("");
+
+  function startQtyEdit(productId: number, currentQty: number) {
+    setEditingQty(productId);
+    setQtyInput(String(currentQty));
+  }
+
+  function commitQtyEdit(productId: number) {
+    const val = parseInt(qtyInput, 10);
+    if (!isNaN(val) && val > 0) {
+      setCart((prev) =>
+        prev.map((i) => i.productId === productId ? { ...i, quantity: val } : i)
+      );
+    }
+    setEditingQty(null);
+    setQtyInput("");
+  }
+
   function removeFromCart(productId: number) {
     setCart((prev) => prev.filter((i) => i.productId !== productId));
   }
@@ -90,7 +109,7 @@ export default function RestocksPage() {
         paymentMethod: "Company Restock",
         deliveryMethod: "WalkIn",
         transactionType: "Restock",
-        transactionStatus: "Completed",
+        transactionStatus: "Ongoing",
         grandTotal: 0,
         items: cart.map((i) => ({
           productId: i.productId,
@@ -266,7 +285,15 @@ export default function RestocksPage() {
                       </div>
                       <div className="flex items-center gap-1">
                         <button type="button" onClick={() => updateCartQty(item.productId, -1)} className="p-1 rounded hover:bg-white text-[#64748b] transition-colors"><Minus className="h-3 w-3" /></button>
-                        <span className="w-8 text-center text-xs font-semibold text-[#0e212c]">{item.quantity}</span>
+                        {editingQty === item.productId ? (
+                          <input type="number" min={1} value={qtyInput} autoFocus
+                            onChange={(e) => setQtyInput(e.target.value)}
+                            onBlur={() => commitQtyEdit(item.productId)}
+                            onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur(); } if (e.key === "Escape") { setEditingQty(null); } }}
+                            className="w-14 text-center text-xs font-semibold text-[#0e212c] border border-[#fd761a] rounded-md px-1 py-0.5 focus:outline-none" />
+                        ) : (
+                          <button type="button" onClick={() => startQtyEdit(item.productId, item.quantity)} className="min-w-[32px] text-center text-xs font-semibold text-[#0e212c] px-1 py-0.5 hover:bg-white rounded transition-colors">{item.quantity}</button>
+                        )}
                         <button type="button" onClick={() => updateCartQty(item.productId, 1)} className="p-1 rounded hover:bg-white text-[#64748b] transition-colors"><Plus className="h-3 w-3" /></button>
                       </div>
                       <button type="button" onClick={() => removeFromCart(item.productId)} className="p-1 rounded text-[#e2e8f0] hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"><X className="h-3 w-3" /></button>

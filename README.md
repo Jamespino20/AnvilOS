@@ -74,38 +74,38 @@ AnvilOS/
 
 ## Routes (25 total)
 
-| Route              | Type     | Description                              |
-| ------------------ | -------- | ---------------------------------------- |
-| `/`                | Static   | Landing page                             |
-| `/login`           | Static   | Standalone login                         |
-| `/register`        | Static   | Standalone registration                  |
-| `/forgot-password` | Static   | Password reset                           |
-| `/dashboard`       | Dynamic  | KPI cards, revenue chart, export         |
-| `/pos`             | Dynamic  | POS Terminal with full cart flow         |
-| `/inventory`       | Dynamic  | Product CRUD + category management       |
-| `/transactions`    | Dynamic  | Transaction log with inline actions      |
-| `/orders`          | Dynamic  | Purchase Order management                |
-| `/buyers`          | Dynamic  | Buyer profiles & history                 |
-| `/suppliers`       | Dynamic  | Supplier CRUD                            |
-| `/restocks`        | Dynamic  | Restock history                          |
-| `/audit-log`       | Dynamic  | Audit trail with delta expand            |
-| `/settings`        | Dynamic  | Profile & appearance settings            |
-| `/notifications`   | Dynamic  | Redirects to dashboard                   |
-| `/support`         | Dynamic  | Redirects to dashboard                   |
-| `/company`         | Dynamic  | Company info                             |
-| `/marketplace`     | Dynamic  | Marketplace                              |
-| `/solutions`       | Dynamic  | Solutions                                |
-| `/api/auth/*`      | Dynamic  | Auth.js v5 route handlers + custom APIs  |
+| Route              | Type    | Description                             |
+| ------------------ | ------- | --------------------------------------- |
+| `/`                | Static  | Landing page                            |
+| `/login`           | Static  | Standalone login                        |
+| `/register`        | Static  | Standalone registration                 |
+| `/forgot-password` | Static  | Password reset                          |
+| `/dashboard`       | Dynamic | KPI cards, revenue chart, export        |
+| `/pos`             | Dynamic | POS Terminal with full cart flow        |
+| `/inventory`       | Dynamic | Product CRUD + category management      |
+| `/transactions`    | Dynamic | Transaction log with inline actions     |
+| `/orders`          | Dynamic | Purchase Order management               |
+| `/buyers`          | Dynamic | Buyer profiles & history                |
+| `/suppliers`       | Dynamic | Supplier CRUD                           |
+| `/restocks`        | Dynamic | Restock history with cart flow          |
+| `/audit-log`       | Dynamic | Audit trail with delta expand           |
+| `/settings`        | Dynamic | Profile & appearance settings           |
+| `/notifications`   | Dynamic | Redirects to dashboard                  |
+| `/support`         | Dynamic | Redirects to dashboard                  |
+| `/company`         | Dynamic | Company info                            |
+| `/marketplace`     | Dynamic | Marketplace                             |
+| `/solutions`       | Dynamic | Solutions                               |
+| `/api/auth/*`      | Dynamic | Auth.js v5 route handlers + custom APIs |
 
 ## Features
 
-- **POS Terminal** — Sale (Walk-in / P.O.), Return, Restock, Damage, Adjustment with payment method (Cash/Card/GCash/Credit) and delivery method (Walk-in/Pickup/Delivery/COD) selectors. Recurring-buyer autocomplete with address/contact fill. Restock mode hides prices, shows out-of-stock products, auto-sets buyer to company name.
+- **POS Terminal** — Sale (Walk-in / P.O.), Return, Damage, Adjustment with payment method (Cash/Card/GCash/Credit) and delivery method (Walk-in/Pickup/Delivery/COD) selectors. Recurring-buyer autocomplete with address/contact fill.
 - **Inventory Management** — Product CRUD, hierarchical categories (parent-child with indentation), low-stock/out-of-stock badges, supplier availability filtering.
 - **Supplier Management** — Vendor profiles, contact info, active/inactive toggle, connected product counts.
 - **Purchase Orders** — Manage SalePO transactions, edit line items with product name+ID dropdowns, qty labels, read-only prices.
 - **Buyers** — Buyer list with order count and total spent, detail view with transaction history, edit contact/address info.
 - **Transaction History** — Searchable, filterable by type/status, pagination (15/page), inline Complete/Cancel for Ongoing orders, expandable line items with product names.
-- **Restocks** — Dedicated restock history page with expandable item details.
+- **Restocks** — Dedicated restock history page with expandable item details. Restock mode hides prices, shows out-of-stock products, auto-sets buyer to company name.
 - **Audit Logs** — Immutable activity trail, search/panel/date-range filters, expandable rows with before/after delta parsing (`→` pattern detection), timestamp includes seconds.
 - **Dashboard** — Daily gross sales, transaction count, active products, low-stock alerts, 7-day revenue bar chart, CSV export (dashboard + transactions).
 - **User Management** — Auth.js v5 credentials provider, JWT strategy, username/email login, registration with optional security questions, session inactivity guard (1-hour timeout with warning modal).
@@ -114,16 +114,16 @@ AnvilOS/
 
 ## Database Schema (8 models)
 
-| Model             | Purpose                                                  |
-| ----------------- | -------------------------------------------------------- |
-| `User`            | System users — sellerName, username (unique), email, 3 security Q&A pairs |
-| `Category`        | Hierarchical product categories (self-referencing via parentCategoryId) |
-| `Supplier`        | Vendor/supplier contact & availability tracking          |
+| Model             | Purpose                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| `User`            | System users — sellerName, username (unique), email, 3 security Q&A pairs            |
+| `Category`        | Hierarchical product categories (self-referencing via parentCategoryId)              |
+| `Supplier`        | Vendor/supplier contact & availability tracking                                      |
 | `Product`         | Inventory items — pricing, quantities, min thresholds, linked to category & supplier |
-| `Transaction`     | Sales, returns, restocks, adjustments, damages — includes payment/delivery method |
-| `TransactionItem` | Line items within each transaction (productId, qty, unitPrice, totalPrice) |
-| `Notification`    | System-generated stock alerts & messages                 |
-| `AuditLog`        | Full audit trail — panel, action, details, success status, timestamp |
+| `Transaction`     | Sales, returns, restocks, adjustments, damages — includes payment/delivery method    |
+| `TransactionItem` | Line items within each transaction (productId, qty, unitPrice, totalPrice)           |
+| `Notification`    | System-generated stock alerts & messages                                             |
+| `AuditLog`        | Full audit trail — panel, action, details, success status, timestamp                 |
 
 ## Getting Started
 
@@ -148,11 +148,11 @@ npm run dev
 
 ### Environment Variables
 
-| Variable                  | Description                            |
-| ------------------------- | -------------------------------------- |
-| `ANVILOS_DATABASE_URL`    | PostgreSQL connection (sslmode=verify-full) |
-| `AUTH_SECRET`             | Auth.js encryption secret              |
-| `NEXT_PUBLIC_API_URL`     | Public API base URL                    |
+| Variable               | Description                                 |
+| ---------------------- | ------------------------------------------- |
+| `ANVILOS_DATABASE_URL` | PostgreSQL connection (sslmode=verify-full) |
+| `AUTH_SECRET`          | Auth.js encryption secret                   |
+| `NEXT_PUBLIC_API_URL`  | Public API base URL                         |
 
 ## Build
 
@@ -188,4 +188,4 @@ Apache 2.0 — see [APACHE_LICENSE.md](APACHE_LICENSE.md).
 
 ---
 
-*Built by James Bryant D. Espino — [GitHub](https://github.com/Jamespino20)*
+_Built by James Bryant D. Espino — [GitHub](https://github.com/Jamespino20)_
