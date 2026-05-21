@@ -9,7 +9,7 @@ import { RevealUp } from "./RevealUp";
 
 export function StatsBar() {
   return (
-    <section className="py-16 bg-surface-container border-y border-border relative overflow-hidden">
+    <section className="py-16 bg-muted border-y border-border relative overflow-hidden">
       {/* Industrial Grid Overlay */}
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"

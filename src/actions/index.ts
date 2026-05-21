@@ -758,6 +758,28 @@ export async function getDashboardKpis() {
   };
 }
 
+export async function getDashboardCharts() {
+  const [txnTypes, stockStatuses] = await Promise.all([
+    prisma.transaction.groupBy({
+      by: ["transactionType"],
+      _count: true,
+    }),
+    prisma.product.findMany({
+      where: { isAvailable: true },
+      select: { quantity: true, minThreshold: true },
+    }),
+  ]);
+
+  const inStock = stockStatuses.filter((p) => p.quantity > p.minThreshold).length;
+  const lowStock = stockStatuses.filter((p) => p.quantity <= p.minThreshold && p.quantity > 0).length;
+  const outOfStock = stockStatuses.filter((p) => p.quantity === 0).length;
+
+  return {
+    transactionTypes: txnTypes.map((t) => ({ type: t.transactionType, count: t._count })),
+    stockStatus: { inStock, lowStock, outOfStock },
+  };
+}
+
 export async function updateProfile(data: { name: string }) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");

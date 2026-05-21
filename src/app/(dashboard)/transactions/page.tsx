@@ -101,13 +101,13 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <PageHeader
           title="Transactions"
-          subtitle="View and manage all sales, returns, restocks, and adjustments. Filter by status or type to find specific records."
+          subtitle="View and manage all sales, returns, restocks, and adjustments."
         />
-        <div className="flex gap-3">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
             <input
               type="text"
@@ -116,46 +116,54 @@ export default function TransactionsPage() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="Search buyer or receipt..."
-              className="w-56 pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+              placeholder="Search receipt..."
+              className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
             />
           </div>
-          <select
-            value={typeFilter}
-            onChange={(e) => {
-              setTypeFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-          >
-            <option value="">All Types</option>
-            {TYPE_OPTIONS.slice(1).map((t) => (
-              <option key={t} value={t}>
-                {t.replace(/([A-Z])/g, " $1").trim()}
-              </option>
-            ))}
-          </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-          >
-            <option value="">All Status</option>
-            {STATUS_OPTIONS.slice(1).map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <select
+              value={typeFilter}
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
+                setPage(1);
+              }}
+              className="flex-1 sm:w-40 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+            >
+              <option value="">All Types</option>
+              {TYPE_OPTIONS.slice(1).map((t) => (
+                <option key={t} value={t}>
+                  {t.replace(/([A-Z])/g, " $1").trim()}
+                </option>
+              ))}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="flex-1 sm:w-40 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+            >
+              <option value="">All Status</option>
+              {STATUS_OPTIONS.slice(1).map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden relative group">
+        <div className="absolute top-1/2 right-4 -translate-y-1/2 px-2 py-4 bg-white/80 border border-[#e2e8f0] rounded-l-lg shadow-sm z-10 lg:hidden pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-[10px] font-bold text-[#64748b] uppercase vertical-text">Scroll</span>
+            <ChevronDown className="h-3 w-3 text-[#fd761a] -rotate-90" />
+          </div>
+        </div>
+        <div className="overflow-x-auto scrollbar-hide">
+          <table className="w-full text-sm min-w-[800px] lg:min-w-0">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">

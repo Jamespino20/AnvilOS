@@ -10,10 +10,13 @@ Last Update Date: May 21, 2026
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Menu, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { AuthModal } from "./auth/AuthModal";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authView, setAuthView] = useState<"login" | "register">("login");
 
@@ -32,6 +35,7 @@ export function Navbar() {
   const openAuth = (view: "login" | "register") => {
     setAuthView(view);
     setAuthModalOpen(true);
+    setIsMobileMenuOpen(false); // Close mobile menu when opening auth
   };
 
   useEffect(() => {
@@ -42,14 +46,21 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const navLinks = [
+    { name: "Marketplace", href: "/marketplace" },
+    { name: "Inventory", href: "/inventory" },
+    { name: "Solutions", href: "/solutions" },
+    { name: "Company", href: "/company" },
+  ];
+
   return (
     <>
       <nav
         className={cn(
-          "fixed top-0 z-50 w-full transition-all duration-500 px-6 py-4",
+          "fixed z-50 w-full transition-all duration-500 px-6",
           isScrolled
-            ? "bg-background/95 backdrop-blur-xl border-b border-white/10 py-3 shadow-sm"
-            : "bg-transparent border-b border-transparent",
+            ? "top-4 left-4 right-4 w-[calc(100%-2rem)] bg-background/95 backdrop-blur-xl border border-white/10 py-3 shadow-xl rounded-xl"
+            : "top-0 bg-transparent border-b border-transparent py-4",
         )}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -60,27 +71,26 @@ export function Navbar() {
                 alt="AnvilOS"
                 className={cn(
                   "h-full w-auto object-contain transition-all duration-500",
-                  !isScrolled && "brightness-0 invert",
+                  !isScrolled && !isMobileMenuOpen && "brightness-0 invert",
                 )}
               />
             </div>
           </Link>
 
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            {["Marketplace", "Inventory", "Solutions", "Company"].map(
-              (item) => (
-                <Link
-                  key={item}
-                  href={`/${item.toLowerCase()}`}
-                  className={cn(
-                    "text-sm font-bold uppercase tracking-widest transition-colors hover:text-safety-orange",
-                    isScrolled ? "text-muted-foreground" : "text-white/80",
-                  )}
-                >
-                  {item}
-                </Link>
-              ),
-            )}
+            {navLinks.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "text-sm font-bold uppercase tracking-widest transition-colors hover:text-safety-orange",
+                  isScrolled ? "text-muted-foreground" : "text-white/80",
+                )}
+              >
+                {item.name}
+              </Link>
+            ))}
 
             <div className="flex items-center gap-4 border-l border-white/10 pl-8 ml-4">
               <button
@@ -105,8 +115,83 @@ export function Navbar() {
               </button>
             </div>
           </div>
+
+          {/* Mobile Menu Trigger */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className={cn(
+              "md:hidden p-2 rounded-lg transition-colors",
+              isScrolled || isMobileMenuOpen ? "text-foreground" : "text-white"
+            )}
+          >
+            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
       </nav>
+
+      {/* Mobile Drawer Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[55] md:hidden"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-background border-l border-white/10 z-[60] md:hidden shadow-2xl p-8 flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-12">
+                <img
+                  src="/images/anvilos_landscapelogo.png"
+                  alt="AnvilOS"
+                  className="h-8 w-auto"
+                />
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-6">
+                {navLinks.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="text-lg font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-safety-orange transition-colors"
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
+
+              <div className="mt-auto pt-8 border-t border-white/10 flex flex-col gap-4">
+                <button
+                  onClick={() => openAuth("login")}
+                  className="w-full py-4 text-sm font-bold uppercase tracking-widest text-foreground bg-secondary hover:bg-secondary/80 rounded-sm transition-all"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => openAuth("register")}
+                  className="w-full py-4 text-sm font-bold uppercase tracking-widest text-primary-foreground bg-primary hover:bg-primary/90 rounded-sm shadow-lg shadow-primary/20 transition-all font-bold"
+                >
+                  Start Building
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <AuthModal
         isOpen={authModalOpen}

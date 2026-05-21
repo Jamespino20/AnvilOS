@@ -43,10 +43,7 @@ export function Footer() {
             <img
               src="/images/anvilos_landscapelogo.png"
               alt="AnvilOS"
-              className="h-8 w-auto brightness-0"
-              style={{
-                filter: "brightness(0) sepia(1) hue-rotate(190deg) saturate(3)",
-              }}
+              className="h-8 w-auto opacity-80 dark:brightness-0 dark:invert"
             />
             <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
               Industrial-grade POS and inventory management for hardware stores

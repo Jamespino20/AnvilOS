@@ -25,7 +25,11 @@ import {
   AlertTriangle,
   CreditCard,
   Truck,
+  X,
+  Pencil,
+  FolderPlus,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { createTransaction } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { downloadReceipt } from "@/lib/receipt";
@@ -73,7 +77,7 @@ export function POSClient({ products, buyers }: Props) {
   const [deliveryMethod, setDeliveryMethod] = useState("WalkIn");
   const [returnReceipt, setReturnReceipt] = useState("");
   const [checkingOut, setCheckingOut] = useState(false);
-  const [done, setDone] = useState<{ receipt: number; items: any[] } | null>(
+  const [done, setDone] = useState<{ receipt: number; items: any[]; buyerName: string; grandTotal: number } | null>(
     null,
   );
   const [error, setError] = useState("");
@@ -165,6 +169,8 @@ export function POSClient({ products, buyers }: Props) {
       });
       setDone({
         receipt: result.receiptNumber,
+        buyerName: buyerName,
+        grandTotal: grandTotal,
         items: cart.map((c) => ({
           productName: c.product.productName,
           quantity: c.quantity,
@@ -187,26 +193,30 @@ export function POSClient({ products, buyers }: Props) {
     }
   }
 
-  function getTxnTypeColor(type: (typeof TXN_TYPES)[number]["value"]) {
-    const colors: Record<string, string> = {
-      SaleWalkIn: "text-emerald-600",
-      SalePO: "text-blue-600",
-      Return: "text-amber-600",
-      Damage: "text-rose-600",
-      Adjustment: "text-slate-600",
-    };
-    return colors[type] || "text-gray-600";
-  }
+  const [showCartMobile, setShowCartMobile] = useState(false);
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="POS Terminal"
-        subtitle="Process sales, returns, adjustments, and damages. Scan or search products to add them to the cart."
-      />
-      <div className="flex gap-5 h-[calc(100vh-12rem)]">
-        <div className="flex-[2] flex flex-col gap-4">
-          <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeader
+          title="POS Terminal"
+          subtitle="Process sales, returns, adjustments, and damages."
+        />
+        {cart.length > 0 && (
+          <button
+            onClick={() => setShowCartMobile(true)}
+            className="lg:hidden flex items-center justify-center gap-2 px-6 py-3 bg-[#fd761a] text-white rounded-lg font-bold shadow-lg shadow-[#fd761a]/20 active:scale-95 transition-all"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            View Cart ({cart.length})
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-5 h-auto lg:h-[calc(100vh-12rem)] relative">
+        {/* Product Selection Area */}
+        <div className="flex-[2] flex flex-col gap-4 min-w-0">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
               <input
@@ -220,7 +230,7 @@ export function POSClient({ products, buyers }: Props) {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="min-w-[160px] px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+              className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
             >
               <option value="">All Categories</option>
               {categories.map((c) => (
@@ -231,35 +241,40 @@ export function POSClient({ products, buyers }: Props) {
             </select>
           </div>
 
-          <div className="flex-1 overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-3 content-start">
+          <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 content-start pb-20 lg:pb-0">
             {filtered.map((product) => (
               <button
                 key={product.id}
-                onClick={() => addToCart(product)}
-                className={`bg-white border border-[#e2e8f0] rounded-xl p-4 text-left hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 group ${product.quantity <= 0 ? "opacity-60" : ""}`}
+                onClick={() => {
+                  addToCart(product);
+                  // Optional: Vibrate or feedback for mobile
+                }}
+                className={`bg-white border border-[#e2e8f0] rounded-xl p-3 sm:p-4 text-left hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 group ${product.quantity <= 0 ? "opacity-60 cursor-not-allowed" : ""}`}
               >
                 {(product as any).imageUrl ? (
                   <img
                     src={(product as any).imageUrl}
                     alt=""
-                    className="w-full h-24 object-cover rounded-lg mb-3 border border-[#e2e8f0]"
+                    className="w-full h-20 sm:h-24 object-cover rounded-lg mb-3 border border-[#e2e8f0]"
                   />
                 ) : (
-                  <div className="w-full h-24 rounded-lg mb-3 bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center">
+                  <div className="w-full h-20 sm:h-24 rounded-lg mb-3 bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center">
                     <Package className="h-8 w-8 text-[#94a3b8]" />
                   </div>
                 )}
-                <p className="font-semibold text-sm text-[#0e212c] truncate group-hover:text-[#fd761a] transition-colors">
+                <p className="font-semibold text-[13px] sm:text-sm text-[#0e212c] truncate group-hover:text-[#fd761a] transition-colors leading-tight">
                   {product.productName}
                 </p>
-                <p className="text-lg font-bold text-[#fd761a] mt-1">
-                  ₱{Number(product.unitPrice).toLocaleString()}
-                </p>
-                <p
-                  className={`text-xs mt-1 ${product.quantity <= product.minThreshold && product.quantity > 0 ? "text-rose-500 font-semibold" : "text-[#94a3b8]"}`}
-                >
-                  {`Stock: ${product.quantity} ${product.quantity <= product.minThreshold && product.quantity > 0 ? "(Low)" : product.quantity <= 0 ? "(Out)" : ""}`}
-                </p>
+                <div className="flex items-baseline justify-between mt-1 gap-1">
+                  <p className="text-base sm:text-lg font-bold text-[#fd761a]">
+                    ₱{Number(product.unitPrice).toLocaleString()}
+                  </p>
+                  <p
+                    className={`text-[10px] ${product.quantity <= product.minThreshold && product.quantity > 0 ? "text-rose-500 font-bold" : "text-[#94a3b8]"}`}
+                  >
+                    {product.quantity}
+                  </p>
+                </div>
               </button>
             ))}
             {filtered.length === 0 && (
@@ -270,8 +285,25 @@ export function POSClient({ products, buyers }: Props) {
           </div>
         </div>
 
-        <div className="flex-1 bg-white border border-[#e2e8f0] rounded-xl flex flex-col shadow-sm">
-          <div className="p-5 border-b border-[#e2e8f0] space-y-3">
+        {/* Cart Sidebar (Desktop) / Drawer (Mobile) */}
+        <div className={cn(
+          "lg:flex flex-col w-full lg:w-[380px] bg-white border border-[#e2e8f0] rounded-xl shadow-sm lg:relative",
+          "fixed inset-x-0 bottom-0 z-[100] lg:z-auto h-[90vh] lg:h-auto transform transition-transform duration-300 ease-in-out lg:translate-y-0 translate-y-full",
+          showCartMobile && "translate-y-0"
+        )}>
+          {/* Mobile Handle / Header */}
+          <div className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-[#e2e8f0]">
+            <div className="w-12 h-1.5 bg-[#e2e8f0] rounded-full absolute top-2 left-1/2 -translate-x-1/2" />
+            <h2 className="font-bold text-[#0e212c]">Checkout Cart</h2>
+            <button
+              onClick={() => setShowCartMobile(false)}
+              className="p-2 text-[#94a3b8] hover:text-[#0e212c]"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          <div className="hidden lg:block p-5 border-b border-[#e2e8f0]">
             <h2 className="font-semibold text-[#0e212c] flex items-center gap-2 text-sm">
               <ShoppingCart className="h-4 w-4 text-[#fd761a]" /> Cart
               {cart.length > 0 && (
@@ -280,8 +312,10 @@ export function POSClient({ products, buyers }: Props) {
                 </span>
               )}
             </h2>
+          </div>
 
-            <div className="space-y-2.5 text-sm">
+          <div className="p-5 border-b border-[#e2e8f0] space-y-3">
+            <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="flex items-center gap-2.5">
                 <ShoppingCart className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
                 <select
@@ -292,7 +326,7 @@ export function POSClient({ products, buyers }: Props) {
                     setError("");
                     setReturnReceipt("");
                   }}
-                  className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors"
+                  className="flex-1 border-b border-[#e2e8f0] py-1.5 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors"
                 >
                   {TXN_TYPES.map((t) => (
                     <option key={t.value} value={t.value}>
@@ -303,91 +337,90 @@ export function POSClient({ products, buyers }: Props) {
               </div>
 
               {txnType === "Return" && (
-                <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-2 flex-1">
                   <RotateCcw className="h-3.5 w-3.5 text-amber-600 shrink-0" />
                   <input
                     type="number"
                     value={returnReceipt}
                     onChange={(e) => setReturnReceipt(e.target.value)}
-                    placeholder="Original receipt number"
-                    className="flex-1 bg-transparent text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
+                    placeholder="Receipt #"
+                    className="w-full bg-transparent text-xs text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                   />
                 </div>
               )}
+            </div>
 
-              {txnType !== "Return" && (
-                <>
-                  <div className="flex items-center gap-2.5 relative">
-                    <User className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
-                    <input
-                      type="text"
-                      value={buyerName}
-                      onChange={(e) => {
-                        setBuyerName(e.target.value);
-                        setShowBuyerDropdown(true);
-                      }}
-                      onFocus={() => setShowBuyerDropdown(true)}
-                      onBlur={() =>
-                        setTimeout(() => setShowBuyerDropdown(false), 200)
-                      }
-                      placeholder="Buyer name *"
-                      className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
-                    />
-                    {showBuyerDropdown && buyerSuggestions.length > 0 && (
-                      <div className="absolute left-5 top-full mt-1 w-full bg-white border border-[#e2e8f0] rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
-                        {buyerSuggestions.map((b) => (
-                          <button
-                            key={b.buyerName}
-                            type="button"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              setBuyerName(b.buyerName);
-                              setBuyerAddress(b.buyerAddress || "");
-                              setBuyerContact(b.buyerContact || "");
-                              setShowBuyerDropdown(false);
-                            }}
-                            className="w-full text-left px-3.5 py-2.5 text-sm text-[#0e212c] hover:bg-[#fff5ed] hover:text-[#fd761a] transition-colors border-b border-[#e2e8f0] last:border-b-0"
-                          >
-                            <span className="font-medium">{b.buyerName}</span>
-                            {(b.buyerAddress || b.buyerContact) && (
-                              <span className="text-[#94a3b8] ml-2 text-xs">
-                                {b.buyerAddress || b.buyerContact}
-                              </span>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2.5">
+            {txnType !== "Return" && (
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center gap-2.5 relative">
+                  <User className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+                  <input
+                    type="text"
+                    value={buyerName}
+                    onChange={(e) => {
+                      setBuyerName(e.target.value);
+                      setShowBuyerDropdown(true);
+                    }}
+                    onFocus={() => setShowBuyerDropdown(true)}
+                    onBlur={() =>
+                      setTimeout(() => setShowBuyerDropdown(false), 200)
+                    }
+                    placeholder="Buyer name *"
+                    className="flex-1 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
+                  />
+                  {showBuyerDropdown && buyerSuggestions.length > 0 && (
+                    <div className="absolute left-5 top-full mt-1 w-full bg-white border border-[#e2e8f0] rounded-lg shadow-xl z-[110] max-h-48 overflow-y-auto">
+                      {buyerSuggestions.map((b) => (
+                        <button
+                          key={b.buyerName}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setBuyerName(b.buyerName);
+                            setBuyerAddress(b.buyerAddress || "");
+                            setBuyerContact(b.buyerContact || "");
+                            setShowBuyerDropdown(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2.5 text-xs text-[#0e212c] hover:bg-[#fff5ed] hover:text-[#fd761a] transition-colors border-b border-[#e2e8f0] last:border-b-0"
+                        >
+                          <span className="font-medium">{b.buyerName}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex items-center gap-2.5 flex-1">
                     <MapPin className="h-3.5 w-3.5 text-[#94a3b8]" />
                     <input
                       type="text"
                       value={buyerAddress}
                       onChange={(e) => setBuyerAddress(e.target.value)}
-                      placeholder="Address (optional)"
-                      className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
+                      placeholder="Address (opt)"
+                      className="flex-1 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                     />
                   </div>
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 flex-1">
                     <Phone className="h-3.5 w-3.5 text-[#94a3b8]" />
                     <input
                       type="text"
                       value={buyerContact}
                       onChange={(e) => setBuyerContact(e.target.value)}
-                      placeholder="Contact (optional)"
-                      className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
+                      placeholder="Contact (opt)"
+                      className="flex-1 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                     />
                   </div>
-                </>
-              )}
+                </div>
+              </div>
+            )}
 
+            <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center gap-2.5">
                 <CreditCard className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors"
+                  className="flex-1 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none"
                 >
                   {PAYMENT_METHODS.map((m) => (
                     <option key={m} value={m}>
@@ -396,13 +429,12 @@ export function POSClient({ products, buyers }: Props) {
                   ))}
                 </select>
               </div>
-
               <div className="flex items-center gap-2.5">
                 <Truck className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
                 <select
                   value={deliveryMethod}
                   onChange={(e) => setDeliveryMethod(e.target.value)}
-                  className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors"
+                  className="flex-1 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none"
                 >
                   {DELIVERY_METHODS.map((m) => (
                     <option key={m} value={m}>
@@ -414,131 +446,107 @@ export function POSClient({ products, buyers }: Props) {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+          <div className="flex-1 overflow-y-auto p-3 space-y-1.5 min-h-[150px]">
             {cart.map((item) => (
               <div
                 key={item.product.id}
-                className="flex items-center gap-3 bg-[#f8fafc] rounded-lg p-3 group hover:bg-[#f1f5f9] transition-colors"
+                className="flex items-center gap-2 sm:gap-3 bg-[#f8fafc] rounded-lg p-2.5 sm:p-3 group hover:bg-[#f1f5f9] transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#0e212c] truncate">
+                  <p className="text-[13px] font-semibold text-[#0e212c] truncate">
                     {item.product.productName}
                   </p>
-                  <p className="text-xs text-[#94a3b8]">
-                    ₱{Number(item.product.unitPrice).toLocaleString()} each
+                  <p className="text-[10px] text-[#94a3b8] font-mono">
+                    ₱{Number(item.product.unitPrice).toLocaleString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => updateQuantity(item.product.id, -1)}
-                    className="p-1.5 rounded-md hover:bg-white text-[#64748b] hover:text-[#0e212c] transition-all"
+                    className="p-1 px-1.5 bg-white border border-[#e2e8f0] rounded-md text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors"
                   >
-                    <Minus className="h-3.5 w-3.5" />
+                    <Minus className="h-3 w-3" />
                   </button>
-                  <input
-                    type="number"
-                    min={1}
-                    value={item.quantity}
-                    onChange={(e) => {
-                      const q = Math.max(1, Number(e.target.value) || 1);
-                      setCart((prev) =>
-                        prev.map((c) =>
-                          c.product.id === item.product.id
-                            ? { ...c, quantity: q }
-                            : c,
-                        ),
-                      );
-                    }}
-                    className="w-12 text-center text-sm font-semibold text-[#0e212c] bg-transparent border border-[#e2e8f0] rounded-md py-1 focus:outline-none focus:border-[#fd761a] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  />
+                  <span className="w-8 text-center text-xs font-bold text-[#0e212c]">
+                    {item.quantity}
+                  </span>
                   <button
                     onClick={() => updateQuantity(item.product.id, 1)}
-                    className="p-1.5 rounded-md hover:bg-white text-[#64748b] hover:text-[#0e212c] transition-all"
+                    className="p-1 px-1.5 bg-white border border-[#e2e8f0] rounded-md text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors"
                   >
-                    <Plus className="h-3.5 w-3.5" />
+                    <Plus className="h-3 w-3" />
                   </button>
                 </div>
-                <p className="text-sm font-semibold text-[#0e212c] w-20 text-right font-mono">
-                  ₱
-                  {(
-                    Number(item.product.unitPrice) * item.quantity
-                  ).toLocaleString()}
-                </p>
                 <button
                   onClick={() => removeFromCart(item.product.id)}
-                  className="p-1.5 rounded-md text-[#e2e8f0] hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
+                  className="p-1.5 text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
             ))}
             {cart.length === 0 && (
-              <p className="text-sm text-[#94a3b8] text-center py-8">
+              <p className="text-sm text-[#94a3b8] text-center py-12">
                 Cart is empty
               </p>
             )}
           </div>
 
-          {error && (
-            <div className="px-5 py-3 bg-rose-50 border-t border-rose-200 text-sm text-rose-700 font-medium">
-              {error}
-            </div>
-          )}
-
-          <div className="p-5 border-t border-[#e2e8f0] space-y-4">
+          <div className="p-6 border-t border-[#e2e8f0] space-y-4 bg-white sticky bottom-0">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-semibold text-[#0e212c]">
-                Grand Total
-              </span>
-              <span className="text-xl font-bold text-[#fd761a]">
+              <span className="text-sm font-bold text-[#0e212c]">Total</span>
+              <span className="text-xl font-black text-[#fd761a]">
                 ₱{grandTotal.toLocaleString()}
               </span>
             </div>
-            {done ? (
-              <div className="flex flex-col gap-2">
-                <div className="w-full py-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm font-semibold text-center flex items-center justify-center gap-2">
-                  <CheckCircle className="h-4 w-4" /> Completed — Receipt #
-                  {done.receipt}
-                </div>
-                <button
-                  onClick={() =>
-                    downloadReceipt({
-                      receiptNumber: done.receipt,
-                      date: new Date(),
-                      sellerName: session?.user?.name || "Unknown",
-                      buyerName: buyerName || "CWL Hardware (Company Restock)",
-                      buyerAddress: buyerAddress || undefined,
-                      buyerContact: buyerContact || undefined,
-                      items: done.items,
-                      grandTotal: grandTotal,
-                      paymentMethod,
-                      transactionType: txnType,
-                    })
-                  }
-                  className="w-full py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#0e212c] rounded-lg hover:bg-[#f8fafc] transition-all flex items-center justify-center gap-2"
-                >
-                  <CheckCircle className="h-4 w-4 text-[#fd761a]" /> Download
-                  Receipt
-                </button>
-              </div>
-            ) : (
+            
+            {error && (
+              <p className="text-xs text-rose-600 font-bold bg-rose-50 p-2 rounded border border-rose-100">
+                {error}
+              </p>
+            )}
+
+            <div className="flex gap-2">
               <button
                 onClick={handleCheckout}
                 disabled={cart.length === 0 || !buyerName || checkingOut}
-                className="w-full py-3 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white rounded-lg font-semibold text-sm hover:from-[#e56600] hover:to-[#d45d00] shadow-lg shadow-[#fd761a]/20 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 py-3.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-[#fd761a]/20 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
               >
                 {checkingOut ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Processing...
-                  </>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  `Process ${TXN_TYPES.find((t) => t.value === txnType)?.label || "Transaction"}`
+                  "Process Order"
                 )}
               </button>
-            )}
+              {done && (
+                 <button
+                  onClick={() => downloadReceipt({
+                    receiptNumber: done.receipt,
+                    date: new Date(),
+                    sellerName: session?.user?.name || "Unknown",
+                    buyerName: done.buyerName,
+                    items: done.items,
+                    grandTotal: done.grandTotal,
+                    paymentMethod,
+                    transactionType: txnType,
+                  })}
+                  className="px-4 bg-[#0e212c] text-white rounded-xl hover:bg-[#1a3a4a] transition-colors"
+                >
+                  <CheckCircle className="h-5 w-5" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Mobile Scrim */}
+      {showCartMobile && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]"
+          onClick={() => setShowCartMobile(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardSidebar } from "@/components/sidebar";
 import { DashboardTopbar } from "@/components/topbar";
 import { InactivityGuard } from "@/components/inactivity-guard";
+import { cn } from "@/lib/utils";
 
 interface Props {
   children: React.ReactNode;
@@ -14,10 +15,28 @@ interface Props {
 export function DashboardShell({ children, user, unreadCount }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // Handle auto-collapse on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#e2e8f0]">
       <DashboardSidebar collapsed={!sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? "ml-[260px]" : "ml-[0px]"}`}>
+      <div className={cn(
+        "flex-1 flex flex-col min-h-screen transition-all duration-300",
+        sidebarOpen ? "md:ml-[260px]" : "ml-0"
+      )}>
         <DashboardTopbar user={user} unreadCount={unreadCount} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 p-6 overflow-auto">
           {children}
@@ -27,3 +46,4 @@ export function DashboardShell({ children, user, unreadCount }: Props) {
     </div>
   );
 }
+

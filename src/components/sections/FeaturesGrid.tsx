@@ -106,7 +106,7 @@ export function FeaturesGrid() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((f, i) => (
             <RevealUp key={f.title} delay={i * 100}>
-              <div className="group relative bg-card border border-border rounded-sm p-6 transition-all duration-300 cursor-pointer overflow-hidden hover:border-safety-orange/30">
+              <div className="group relative bg-card border border-border rounded-sm p-6 transition-all duration-300 overflow-hidden hover:border-safety-orange/30">
                 {/* Snappy Border Glow */}
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(circle_at_var(--x,50%)_var(--y,50%),rgba(253,118,26,0.05)_0%,transparent_100%)]"></div>
 

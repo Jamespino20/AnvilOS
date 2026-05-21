@@ -11,6 +11,7 @@ import {
   Pencil,
   Trash2,
   FolderPlus,
+  ChevronDown,
 } from "lucide-react";
 import {
   createProduct,
@@ -214,8 +215,8 @@ export function InventoryClient({
         subtitle="Manage your product catalog — add, edit, and remove stock items. Track quantities and thresholds for each product."
       />
 
-      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-wrap gap-4 items-center">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
+        <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input
             type="text"
@@ -225,52 +226,62 @@ export function InventoryClient({
             className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
         </div>
-        <select
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
-          className="min-w-[160px] px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-        >
-          <option value="">All Categories</option>
-          {renderCategoryOptions(categories)}
-        </select>
-        <select
-          value={filterSupplier}
-          onChange={(e) => setFilterSupplier(e.target.value)}
-          className="min-w-[160px] px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-        >
-          <option value="">All Suppliers</option>
-          {suppliers.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.supplierName}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="min-w-[140px] px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-        >
-          <option value="">All Status</option>
-          <option value="low">Low Stock</option>
-          <option value="out">Out of Stock</option>
-        </select>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
-        >
-          <Plus className="h-4 w-4" /> Add Product
-        </button>
-        <button
-          onClick={() => setShowCategoryModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 border border-[#e2e8f0] text-sm font-medium rounded-lg text-[#64748b] hover:bg-white hover:shadow-sm transition-all"
-        >
-          <FolderPlus className="h-4 w-4" /> Category
-        </button>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full lg:w-auto">
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+          >
+            <option value="">All Categories</option>
+            {renderCategoryOptions(categories)}
+          </select>
+          <select
+            value={filterSupplier}
+            onChange={(e) => setFilterSupplier(e.target.value)}
+            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+          >
+            <option value="">All Suppliers</option>
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.supplierName}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="col-span-2 sm:col-span-1 px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+          >
+            <option value="">All Status</option>
+            <option value="low">Low Stock</option>
+            <option value="out">Out of Stock</option>
+          </select>
+        </div>
+        <div className="flex gap-2 w-full lg:w-auto">
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all duration-200 active:scale-[0.98]"
+          >
+            <Plus className="h-4 w-4" /> <span className="sm:inline">Add Product</span>
+          </button>
+          <button
+            onClick={() => setShowCategoryModal(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#e2e8f0] text-sm font-medium rounded-lg text-[#64748b] hover:bg-white hover:shadow-sm transition-all"
+          >
+            <FolderPlus className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden relative group">
+        <div className="absolute top-1/2 right-4 -translate-y-1/2 px-2 py-4 bg-white/80 border border-[#e2e8f0] rounded-l-lg shadow-sm z-10 lg:hidden pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-[10px] font-bold text-[#64748b] uppercase vertical-text">Scroll</span>
+            <ChevronDown className="h-3 w-3 text-[#fd761a] -rotate-90" />
+          </div>
+        </div>
+        <div className="overflow-x-auto scrollbar-hide">
+          <table className="w-full text-sm min-w-[1000px] lg:min-w-0">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
                 <th className="p-4 w-12"></th>

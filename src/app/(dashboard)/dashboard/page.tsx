@@ -5,9 +5,10 @@ URL: https://github.com/Jamespino20
 Last Update Date: May 21, 2026 
 */
 
-import { getDashboardKpis, getRevenueTrend, getTransactions } from "@/actions";
+import { getDashboardKpis, getRevenueTrend, getTransactions, getDashboardCharts } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { DashboardExport } from "@/components/dashboard-export";
+import { RevenueChart, TxnTypeChart, StockChart } from "@/components/charts";
 import {
   TrendingUp,
   Receipt,
@@ -18,17 +19,16 @@ import {
 } from "lucide-react";
 
 export default async function DashboardPage() {
-  const [kpis, revenueTrend, recentTransactions] = await Promise.all([
+  const [kpis, revenueTrend, recentTransactions, charts] = await Promise.all([
     getDashboardKpis(),
     getRevenueTrend(7),
     getTransactions({ status: "Completed" }),
+    getDashboardCharts(),
   ]);
-
-  const maxRevenue = Math.max(...revenueTrend.map((d) => Number(d.total)), 1);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeader
           title="Dashboard"
           subtitle="Real-time operational overview"
@@ -52,7 +52,7 @@ export default async function DashboardPage() {
             icon: TrendingUp,
             label: "Gross Sales (Today)",
             value: `₱${kpis.dailySales.toLocaleString()}`,
-            sub: `▲ Daily transactions: ${kpis.transactionCount}`,
+            sub: `▲ Daily txn: ${kpis.transactionCount}`,
             color: "from-emerald-500 to-teal-600",
             bg: "bg-emerald-50",
           },
@@ -76,14 +76,14 @@ export default async function DashboardPage() {
             icon: AlertTriangle,
             label: "Low Stock Alerts",
             value: kpis.lowStockCount.toLocaleString(),
-            sub: "Below minimum threshold",
+            sub: "Below threshold",
             color: "from-rose-500 to-pink-600",
             bg: "bg-rose-50",
           },
         ].map((card, i) => (
           <div
             key={i}
-            className="col-span-12 md:col-span-3 bg-white/90 backdrop-blur-sm rounded-xl border border-[#e2e8f0] p-5 hover:shadow-lg hover:shadow-black/5 hover:bg-white transition-all duration-300 hover:-translate-y-0.5 group"
+            className="col-span-12 sm:col-span-6 md:col-span-3 bg-white/90 backdrop-blur-sm rounded-xl border border-[#e2e8f0] p-5 hover:shadow-lg hover:shadow-black/5 hover:bg-white transition-all duration-300 hover:-translate-y-0.5 group"
           >
             <div className="flex justify-between items-start mb-4">
               <span className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider group-hover:text-[#fd761a] transition-colors">
@@ -106,7 +106,7 @@ export default async function DashboardPage() {
 
         {/* Revenue Chart */}
         <div className="col-span-12 lg:col-span-8 bg-white rounded-xl border border-[#e2e8f0] p-6 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-[#0e212c]">
               Revenue Trend (7 Days)
             </h3>
@@ -115,32 +115,8 @@ export default async function DashboardPage() {
               last week
             </span>
           </div>
-          <div className="flex items-end justify-between h-52 px-2">
-            {revenueTrend.map((day, i) => {
-              const height = Math.max(
-                (Number(day.total) / maxRevenue) * 100,
-                4,
-              );
-              return (
-                <div
-                  key={i}
-                  className="flex flex-col items-center gap-2 flex-1 group"
-                >
-                  <div className="relative">
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#0e212c] text-white text-[11px] font-medium px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
-                      ₱{Number(day.total).toLocaleString()}
-                    </div>
-                    <div
-                      className="w-8 rounded-t-lg bg-gradient-to-t from-[#fd761a]/80 to-[#fd761a]/30 hover:from-[#fd761a] hover:to-[#fd761a]/50 transition-all duration-300 cursor-pointer"
-                      style={{ height: `${height}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-[#94a3b8] font-medium">
-                    {day.date}
-                  </span>
-                </div>
-              );
-            })}
+          <div className="h-60">
+            <RevenueChart data={revenueTrend} />
           </div>
         </div>
 
@@ -185,6 +161,42 @@ export default async function DashboardPage() {
                 No recent transactions
               </p>
             )}
+          </div>
+        </div>
+
+        {/* Transaction Types Doughnut */}
+        <div className="col-span-12 sm:col-span-6 lg:col-span-4 bg-white rounded-xl border border-[#e2e8f0] p-6 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
+          <h3 className="text-sm font-bold text-[#0e212c] mb-4">Transaction Types</h3>
+          <div className="h-56 flex items-center justify-center">
+            <TxnTypeChart data={charts.transactionTypes} />
+          </div>
+        </div>
+
+        {/* Stock Status Doughnut */}
+        <div className="col-span-12 sm:col-span-6 lg:col-span-4 bg-white rounded-xl border border-[#e2e8f0] p-6 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
+          <h3 className="text-sm font-bold text-[#0e212c] mb-4">Stock Status</h3>
+          <div className="h-56 flex items-center justify-center">
+            <StockChart data={charts.stockStatus} />
+          </div>
+        </div>
+
+        {/* KPI Mini Summary */}
+        <div className="col-span-12 lg:col-span-4 bg-white rounded-xl border border-[#e2e8f0] p-6 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
+          <h3 className="text-sm font-bold text-[#0e212c] mb-4">Quick Summary</h3>
+          <div className="space-y-4">
+            {[
+              { label: "Today's Sales", value: `₱${kpis.dailySales.toLocaleString()}`, color: "bg-emerald-500" },
+              { label: "Active Products", value: kpis.totalProducts.toLocaleString(), color: "bg-blue-500" },
+              { label: "Low Stock Items", value: kpis.lowStockCount.toLocaleString(), color: "bg-amber-500" },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center justify-between">
+                <span className="text-sm text-[#64748b]">{item.label}</span>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${item.color}`} />
+                  <span className="text-sm font-bold text-[#0e212c]">{item.value}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
