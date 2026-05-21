@@ -1,10 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 import { auditLogs } from "./seed-data/audit-logs";
 
+const pool = new Pool({ connectionString: process.env.ANVILOS_DATABASE_URL! });
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.ANVILOS_DATABASE_URL! }),
+  adapter: new PrismaPg(pool),
 });
 
 async function main() {
@@ -282,11 +284,15 @@ async function main() {
 
   // Reset PostgreSQL sequences to avoid unique constraint conflicts
   console.log("Resetting sequences...");
-  const tables = ["users", "suppliers", "products", "categories", "transactions", "notifications", "audit_logs", "transaction_items"];
-  for (const table of tables) {
-    const col = table === "users" ? "USER_ID" : table === "suppliers" ? "SUPPLIER_ID" : table === "products" ? "PRODUCT_ID" : table === "categories" ? "CATEGORY_ID" : table === "transactions" ? "TRANSACTION_ID" : table === "notifications" ? "NOTIFICATION_ID" : table === "audit_logs" ? "AUDIT_LOG_ID" : "ITEM_ID";
+  const tableCols: [string, string][] = [
+    ["users", "SELLER_ID"], ["suppliers", "SUPPLIER_ID"], ["products", "PRODUCT_ID"],
+    ["categories", "CATEGORY_ID"], ["transactions", "TRANSACTION_ID"],
+    ["notifications", "NOTIFICATION_ID"], ["audit_log", "LOG_ID"], ["transaction_items", "ITEM_ID"],
+  ];
+  for (const [table, col] of tableCols) {
     await prisma.$executeRawUnsafe(
-      `SELECT setval(pg_get_serial_sequence('${table}', '${col}'), COALESCE((SELECT MAX("${col}") FROM "${table}"), 1))`
+      `SELECT setval(pg_get_serial_sequence($1, $2), COALESCE((SELECT MAX("${col}") FROM "${table}"), 1))`,
+      table, col
     );
   }
 

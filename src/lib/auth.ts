@@ -69,6 +69,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.name = user.name;
           token.email = user.email;
           token.username = (user as any).username;
+          token.sellerId = Number(user.id);
         }
         return token;
       } catch (error) {
@@ -81,6 +82,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (session.user && token) {
           session.user.id = token.sub as string;
           (session.user as any).username = token.username as string;
+          (session.user as any).sellerId = token.sellerId as number;
         }
         return session;
       } catch (error) {

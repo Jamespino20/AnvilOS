@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ShoppingCart, Package, Receipt, Truck, Shield, Bell, LifeBuoy, LogOut } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Receipt, Truck, Shield, Bell, LifeBuoy, Settings, LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 const navItems = [
@@ -13,6 +13,8 @@ const navItems = [
   { href: "/suppliers", label: "Suppliers", icon: Truck },
   { href: "/audit-log", label: "Audit Logs", icon: Shield },
   { href: "/notifications", label: "Notifications", icon: Bell },
+  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/support", label: "Support", icon: LifeBuoy },
 ];
 
 export function DashboardSidebar() {
@@ -46,10 +48,6 @@ export function DashboardSidebar() {
         })}
       </div>
       <div className="border-t border-white/10 py-4 space-y-0.5">
-        <Link href="#" className="flex items-center gap-3 mx-3 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-sm transition-all">
-          <LifeBuoy className="h-5 w-5" />
-          Support
-        </Link>
         <button onClick={() => signOut({ callbackUrl: "/login" })} className="w-[calc(100%-24px)] mx-3 flex items-center gap-3 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-sm transition-all">
           <LogOut className="h-5 w-5" />
           Sign Out
