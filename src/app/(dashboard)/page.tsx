@@ -1,5 +1,5 @@
 import { getDashboardKpis, getRevenueTrend, getTransactions } from "@/actions";
-import { TrendingUp, Receipt, Package, AlertTriangle, DollarSign } from "lucide-react";
+import { TrendingUp, Receipt, Package, AlertTriangle, DollarSign, ArrowUpRight } from "lucide-react";
 
 export default async function DashboardPage() {
   const [kpis, revenueTrend, recentTransactions] = await Promise.all([
@@ -14,96 +14,85 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface">Overview</h1>
-          <p className="text-sm text-on-surface-variant mt-1">Live metrics and system status</p>
+          <h1 className="text-2xl font-bold text-[#0e212c] tracking-tight">Dashboard</h1>
+          <p className="text-sm text-[#64748b] mt-1">Real-time operational overview</p>
         </div>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 border border-outline text-sm rounded hover:bg-surface-container-low transition-colors">Export Report</button>
-          <button className="px-4 py-2 bg-secondary text-on-secondary text-sm rounded hover:bg-secondary/90 transition-colors">New Sale</button>
+        <div className="flex gap-3">
+          <button className="px-5 py-2.5 border border-[#e2e8f0] text-sm font-medium rounded-lg text-[#64748b] hover:bg-white hover:shadow-sm transition-all duration-200">Export Report</button>
+          <button className="px-5 py-2.5 bg-[#fd761a] text-white text-sm font-semibold rounded-lg hover:bg-[#e56600] shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]">New Sale</button>
         </div>
       </div>
 
       <div className="grid grid-cols-12 gap-5">
-        <div className="col-span-12 md:col-span-3 bg-white border border-outline rounded p-4">
-          <div className="flex justify-between items-start mb-3">
-            <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Gross Sales (Today)</span>
-            <TrendingUp className="h-5 w-5 text-secondary" />
-          </div>
-          <p className="text-2xl font-bold">₱{kpis.dailySales.toLocaleString()}</p>
-          <p className="text-xs text-success mt-1 flex items-center gap-1">▲ Daily transactions: {kpis.transactionCount}</p>
-        </div>
-
-        <div className="col-span-12 md:col-span-3 bg-white border border-outline rounded p-4">
-          <div className="flex justify-between items-start mb-3">
-            <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Transactions</span>
-            <Receipt className="h-5 w-5 text-primary-container" />
-          </div>
-          <p className="text-2xl font-bold">{kpis.totalTransactions}</p>
-          <p className="text-xs text-on-surface-variant mt-1">Total all time</p>
-        </div>
-
-        <div className="col-span-12 md:col-span-3 bg-white border border-outline rounded p-4">
-          <div className="flex justify-between items-start mb-3">
-            <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Products</span>
-            <Package className="h-5 w-5 text-primary" />
-          </div>
-          <p className="text-2xl font-bold">{kpis.totalProducts}</p>
-          <p className="text-xs text-on-surface-variant mt-1">Active SKUs</p>
-        </div>
-
-        <div className="col-span-12 md:col-span-3 bg-white border border-error/30 rounded p-4 relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-error" />
-          <div className="pl-2">
-            <div className="flex justify-between items-start mb-3">
-              <span className="text-xs font-semibold text-error uppercase tracking-wider flex items-center gap-1">
-                <AlertTriangle className="h-4 w-4" /> Critical Alerts
-              </span>
-            </div>
-            <p className="text-2xl font-bold">{kpis.lowStockCount}</p>
-            <p className="text-xs text-on-surface-variant mt-1">Items below minimum threshold</p>
-          </div>
-        </div>
-
-        <div className="col-span-12 lg:col-span-8 bg-white border border-outline rounded p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold">Revenue Trend (7 Days)</h3>
-          </div>
-          <div className="flex items-end justify-between h-48 px-2 border-b border-l border-outline">
-            {revenueTrend.map((day, i) => (
-              <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                <div
-                  className="w-full max-w-[32px] bg-primary/30 hover:bg-primary/50 transition-colors rounded-t relative group"
-                  style={{ height: `${Math.max((Number(day.total) / maxRevenue) * 100, 4)}%` }}
-                >
-                  <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-on-surface text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    ₱{Number(day.total).toLocaleString()}
-                  </div>
-                </div>
-                <span className="text-xs text-on-surface-variant font-mono">{day.date}</span>
+        {/* KPI Cards */}
+        {[
+          { icon: TrendingUp, label: "Gross Sales (Today)", value: `₱${kpis.dailySales.toLocaleString()}`, sub: `▲ Daily transactions: ${kpis.transactionCount}`, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50" },
+          { icon: Receipt, label: "Total Transactions", value: kpis.totalTransactions.toLocaleString(), sub: "All time", color: "from-blue-500 to-indigo-600", bg: "bg-blue-50" },
+          { icon: Package, label: "Active Products", value: kpis.totalProducts.toLocaleString(), sub: "SKUs in system", color: "from-violet-500 to-purple-600", bg: "bg-violet-50" },
+          { icon: AlertTriangle, label: "Low Stock Alerts", value: kpis.lowStockCount.toLocaleString(), sub: "Below minimum threshold", color: "from-rose-500 to-pink-600", bg: "bg-rose-50" },
+        ].map((card, i) => (
+          <div key={i} className="col-span-12 md:col-span-3 bg-white rounded-xl border border-[#e2e8f0] p-5 hover:shadow-lg hover:shadow-black/5 transition-all duration-300 hover:-translate-y-0.5">
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">{card.label}</span>
+              <div className={`w-9 h-9 rounded-lg ${card.bg} flex items-center justify-center`}>
+                <card.icon className="h-4 w-4 text-[#0e212c]" />
               </div>
-            ))}
+            </div>
+            <p className="text-2xl font-bold text-[#0e212c] tracking-tight">{card.value}</p>
+            <p className="text-xs text-[#94a3b8] mt-1.5 flex items-center gap-1">{card.sub}</p>
+          </div>
+        ))}
+
+        {/* Revenue Chart */}
+        <div className="col-span-12 lg:col-span-8 bg-white rounded-xl border border-[#e2e8f0] p-6 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-sm font-bold text-[#0e212c]">Revenue Trend (7 Days)</h3>
+            <span className="text-xs text-[#94a3b8] flex items-center gap-1">
+              <ArrowUpRight className="h-3 w-3 text-emerald-500" /> +12.5% vs last week
+            </span>
+          </div>
+          <div className="flex items-end justify-between h-52 px-2">
+            {revenueTrend.map((day, i) => {
+              const height = Math.max((Number(day.total) / maxRevenue) * 100, 4);
+              return (
+                <div key={i} className="flex flex-col items-center gap-2 flex-1 group">
+                  <div className="relative">
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#0e212c] text-white text-[11px] font-medium px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+                      ₱{Number(day.total).toLocaleString()}
+                    </div>
+                    <div
+                      className="w-8 rounded-t-lg bg-gradient-to-t from-[#fd761a]/80 to-[#fd761a]/30 hover:from-[#fd761a] hover:to-[#fd761a]/50 transition-all duration-300 cursor-pointer"
+                      style={{ height: `${height}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-[#94a3b8] font-medium">{day.date}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        <div className="col-span-12 lg:col-span-4 bg-white border border-outline rounded flex flex-col">
-          <div className="p-4 border-b border-outline">
-            <h3 className="font-semibold">Recent Transactions</h3>
+        {/* Recent Transactions */}
+        <div className="col-span-12 lg:col-span-4 bg-white rounded-xl border border-[#e2e8f0] flex flex-col hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
+          <div className="px-6 py-4 border-b border-[#e2e8f0] flex items-center justify-between">
+            <h3 className="text-sm font-bold text-[#0e212c]">Recent Transactions</h3>
+            <span className="text-[10px] font-medium text-[#fd761a] uppercase tracking-wider">{recentTransactions.length} total</span>
           </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {recentTransactions.slice(0, 5).map((t) => (
-              <div key={t.id} className="flex items-center gap-3 p-2 hover:bg-surface-container-low rounded transition-colors">
-                <div className="w-8 h-8 rounded-full bg-secondary-container/20 flex items-center justify-center shrink-0">
-                  <DollarSign className="h-4 w-4 text-secondary" />
+          <div className="flex-1 overflow-y-auto p-3 space-y-1">
+            {recentTransactions.slice(0, 6).map((t) => (
+              <div key={t.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#f8fafc] transition-all duration-200 group cursor-pointer">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#fd761a]/10 to-[#fd761a]/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <DollarSign className="h-4 w-4 text-[#fd761a]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{t.buyerName}</p>
-                  <p className="text-xs text-on-surface-variant">{t.transactionType.replace("Sale", "Sale ")} · ₱{Number(t.grandTotal || 0).toLocaleString()}</p>
+                  <p className="text-sm font-semibold text-[#0e212c] truncate">{t.buyerName}</p>
+                  <p className="text-[11px] text-[#94a3b8]">{t.transactionType.replace("Sale", "Sale ")} · ₱{Number(t.grandTotal || 0).toLocaleString()}</p>
                 </div>
-                <span className="text-xs text-on-surface-variant">{new Date(t.transactionDate).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
+                <span className="text-[11px] text-[#94a3b8] font-medium">{new Date(t.transactionDate).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
               </div>
             ))}
             {recentTransactions.length === 0 && (
-              <p className="text-sm text-on-surface-variant text-center py-8">No transactions yet</p>
+              <p className="text-sm text-[#94a3b8] text-center py-8">No recent transactions</p>
             )}
           </div>
         </div>

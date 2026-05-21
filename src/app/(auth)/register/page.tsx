@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 import bcrypt from "bcryptjs";
 
@@ -55,7 +56,19 @@ export default function RegisterPage() {
       return;
     }
 
-    router.push("/login");
+    // Auto login after register
+    const result = await signIn("credentials", {
+      username: form.username,
+      password: form.password,
+      redirect: false,
+    });
+
+    if (result?.ok) {
+      router.push("/inventory");
+      router.refresh();
+    } else {
+      router.push("/login");
+    }
   }
 
   function update(field: string, value: string) {

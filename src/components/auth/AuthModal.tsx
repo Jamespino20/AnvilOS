@@ -12,8 +12,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogClose,
-  DialogPortal,
-  DialogOverlay,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -121,9 +119,7 @@ export function AuthModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogPortal>
-        <DialogOverlay className="fixed inset-0 z-50 bg-background/40 backdrop-blur-md transition-all duration-500" />
-        <DialogContent className="fixed left-[50%] top-[50%] z-50 w-full max-w-[440px] translate-x-[-50%] translate-y-[-50%] p-0 shadow-2xl border border-white/10 overflow-hidden rounded-sm bg-background industrial-grain animate-snappy">
+      <DialogContent className="p-0 max-w-[440px] overflow-hidden border-white/10 shadow-2xl industrial-grain animate-snappy">
           
           <div className="flex flex-col relative">
             {/* Premium Header */}
@@ -311,7 +307,6 @@ export function AuthModal({
             </div>
           </div>
         </DialogContent>
-      </DialogPortal>
-    </Dialog>
+      </Dialog>
   );
 }

@@ -105,6 +105,34 @@ export async function getTransactions(opts?: { status?: string; type?: string; s
   });
 }
 
+export async function createTransaction(data: {
+  buyerName: string; buyerAddress?: string; buyerContact?: string;
+  transactionType: "SaleWalkIn" | "SalePO" | "Restock" | "Adjustment" | "Return" | "Damage";
+  transactionStatus: "Ongoing" | "Completed" | "Cancelled";
+  grandTotal: number;
+  items: { productId: number; quantity: number; unitPrice: number; totalPrice: number }[];
+}) {
+  const lastReceipt = await prisma.transaction.findFirst({ orderBy: { receiptNumber: "desc" }, select: { receiptNumber: true } });
+  const receiptNumber = (lastReceipt?.receiptNumber ?? 1000) + 1;
+  const transaction = await prisma.transaction.create({
+    data: {
+      receiptNumber,
+      buyerName: data.buyerName,
+      buyerAddress: data.buyerAddress || "",
+      buyerContact: data.buyerContact || "",
+      transactionType: data.transactionType,
+      deliveryMethod: "WalkIn",
+      transactionStatus: data.transactionStatus,
+      transactionDate: new Date(),
+      grandTotal: data.grandTotal,
+      items: { create: data.items.map((item) => ({ ...item })) },
+    },
+  });
+  revalidatePath("/transactions");
+  revalidatePath("/pos");
+  return transaction;
+}
+
 export async function getTransaction(id: number) {
   return prisma.transaction.findUnique({ where: { id }, include: { items: { include: { product: true } }, seller: { select: { sellerName: true } } } });
 }
