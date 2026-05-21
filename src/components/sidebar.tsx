@@ -6,7 +6,7 @@ import { LayoutDashboard, ShoppingCart, Package, Receipt, Truck, Shield, Bell, L
 import { signOut } from "next-auth/react";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/pos", label: "POS Terminal", icon: ShoppingCart },
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/transactions", label: "Transactions", icon: Receipt },
@@ -28,7 +28,7 @@ export function DashboardSidebar() {
       </div>
       <div className="flex-1 overflow-y-auto py-4 space-y-0.5">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || (item.href === "/dashboard" && pathname === "/dashboard");
           return (
             <Link
               key={item.href}

@@ -59,7 +59,7 @@ export function AuthModal({
           description: "Establishing secure connection to dashboard...",
         });
         onClose();
-        router.push("/inventory");
+        router.push("/dashboard");
       }
     } catch (error) {
       toast.error("System Error", {
@@ -105,7 +105,7 @@ export function AuthModal({
 
         if (result?.ok) {
           onClose();
-          router.push("/inventory");
+          router.push("/dashboard");
         }
       }
     } catch (error) {

@@ -64,7 +64,7 @@ export default function RegisterPage() {
     });
 
     if (result?.ok) {
-      router.push("/inventory");
+      router.push("/dashboard");
       router.refresh();
     } else {
       router.push("/login");

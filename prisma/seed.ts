@@ -280,6 +280,16 @@ async function main() {
   }
   console.log("");
 
+  // Reset PostgreSQL sequences to avoid unique constraint conflicts
+  console.log("Resetting sequences...");
+  const tables = ["users", "suppliers", "products", "categories", "transactions", "notifications", "audit_logs", "transaction_items"];
+  for (const table of tables) {
+    const col = table === "users" ? "USER_ID" : table === "suppliers" ? "SUPPLIER_ID" : table === "products" ? "PRODUCT_ID" : table === "categories" ? "CATEGORY_ID" : table === "transactions" ? "TRANSACTION_ID" : table === "notifications" ? "NOTIFICATION_ID" : table === "audit_logs" ? "AUDIT_LOG_ID" : "ITEM_ID";
+    await prisma.$executeRawUnsafe(
+      `SELECT setval(pg_get_serial_sequence('${table}', '${col}'), COALESCE((SELECT MAX("${col}") FROM "${table}"), 1))`
+    );
+  }
+
   console.log("Seed complete!");
 }
 

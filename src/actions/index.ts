@@ -29,9 +29,19 @@ export async function createProduct(data: {
   productName: string; categoryId?: number; category: string; supplierId?: number; supplierName: string;
   unitPrice: number; quantity: number; minThreshold: number;
 }) {
-  const product = await prisma.product.create({ data: { ...data, isAvailable: true } });
-  revalidatePath("/inventory");
-  return product;
+  try {
+    const product = await prisma.product.create({ data: { ...data, isAvailable: true } });
+    revalidatePath("/inventory");
+    return product;
+  } catch (e: any) {
+    if (e?.code === "P2002") {
+      await prisma.$executeRawUnsafe(`SELECT setval(pg_get_serial_sequence('products', 'PRODUCT_ID'), COALESCE((SELECT MAX("PRODUCT_ID") FROM "products"), 1))`);
+      const product = await prisma.product.create({ data: { ...data, isAvailable: true } });
+      revalidatePath("/inventory");
+      return product;
+    }
+    throw e;
+  }
 }
 
 export async function updateProduct(id: number, data: Partial<{
@@ -71,9 +81,19 @@ export async function getSupplier(id: number) {
 }
 
 export async function createSupplier(data: { supplierName: string; contactName?: string; contactNumber?: string; email?: string; address?: string }) {
-  const supplier = await prisma.supplier.create({ data: { ...data, isAvailable: true } });
-  revalidatePath("/suppliers");
-  return supplier;
+  try {
+    const supplier = await prisma.supplier.create({ data: { ...data, isAvailable: true } });
+    revalidatePath("/suppliers");
+    return supplier;
+  } catch (e: any) {
+    if (e?.code === "P2002") {
+      await prisma.$executeRawUnsafe(`SELECT setval(pg_get_serial_sequence('suppliers', 'SUPPLIER_ID'), COALESCE((SELECT MAX("SUPPLIER_ID") FROM "suppliers"), 1))`);
+      const supplier = await prisma.supplier.create({ data: { ...data, isAvailable: true } });
+      revalidatePath("/suppliers");
+      return supplier;
+    }
+    throw e;
+  }
 }
 
 export async function updateSupplier(id: number, data: Partial<{ supplierName: string; contactName: string; contactNumber: string; email: string; address: string; isAvailable: boolean }>) {
