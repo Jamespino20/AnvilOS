@@ -2,7 +2,7 @@
 App Name: AnvilOS
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: 
+Last Update Date: May 21, 2026 
 */
 
 import { prisma } from "@/lib/prisma";
@@ -11,23 +11,48 @@ import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
   try {
-    const { sellerName, username, email, password, passwordHash: clientHash, securityQ1, securityA1, securityQ2, securityA2, securityQ3, securityA3 } = await req.json();
+    const {
+      sellerName,
+      username,
+      email,
+      password,
+      passwordHash: clientHash,
+      securityQ1,
+      securityA1,
+      securityQ2,
+      securityA2,
+      securityQ3,
+      securityA3,
+    } = await req.json();
 
     if (!password) {
-      return NextResponse.json({ error: "Password is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Password is required" },
+        { status: 400 },
+      );
     }
 
-    const existingByUsername = await prisma.user.findUnique({ where: { username } });
+    const existingByUsername = await prisma.user.findUnique({
+      where: { username },
+    });
     if (existingByUsername) {
-      return NextResponse.json({ error: "Username already exists" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Username already exists" },
+        { status: 400 },
+      );
     }
 
-    const existingByEmail = email ? await prisma.user.findFirst({ where: { email } }) : null;
+    const existingByEmail = email
+      ? await prisma.user.findFirst({ where: { email } })
+      : null;
     if (existingByEmail) {
-      return NextResponse.json({ error: "Email already registered" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Email already registered" },
+        { status: 400 },
+      );
     }
 
-    const passwordHash = clientHash || await bcrypt.hash(password, 10);
+    const passwordHash = clientHash || (await bcrypt.hash(password, 10));
 
     await prisma.user.create({
       data: {

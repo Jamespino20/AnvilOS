@@ -2,7 +2,7 @@
 App Name: AnvilOS
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: 
+Last Update Date: May 21, 2026 
 */
 
 import { Navbar } from "@/components/Navbar";

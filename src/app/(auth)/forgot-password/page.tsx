@@ -2,7 +2,7 @@
 App Name: AnvilOS
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: 
+Last Update Date: May 21, 2026 
 */
 
 "use client";
@@ -120,15 +120,29 @@ export default function ForgotPasswordPage() {
           {step === "reset-password" && "Choose a new password"}
         </p>
 
-        {error && <p className="text-sm text-error bg-error-container/30 rounded-md px-3 py-2 mb-4">{error}</p>}
+        {error && (
+          <p className="text-sm text-error bg-error-container/30 rounded-md px-3 py-2 mb-4">
+            {error}
+          </p>
+        )}
 
         {step === "verify-user" && (
           <form onSubmit={handleVerifyUser} className="space-y-4">
             <div className="space-y-1">
               <label className="text-sm font-medium">Username</label>
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full rounded-lg border border-outline px-3 py-2 text-sm" required />
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full rounded-lg border border-outline px-3 py-2 text-sm"
+                required
+              />
             </div>
-            <button type="submit" disabled={loading} className="w-full py-2.5 bg-secondary text-on-secondary rounded-lg font-semibold disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 bg-secondary text-on-secondary rounded-lg font-semibold disabled:opacity-50"
+            >
               {loading ? "Checking..." : "Continue"}
             </button>
           </form>
@@ -139,10 +153,24 @@ export default function ForgotPasswordPage() {
             {questions.map((q, i) => (
               <div key={i} className="space-y-1">
                 <label className="text-sm font-medium">{q}</label>
-                <input type="text" value={answers[i]} onChange={(e) => { const a = [...answers]; a[i] = e.target.value; setAnswers(a); }} className="w-full rounded-lg border border-outline px-3 py-2 text-sm" required />
+                <input
+                  type="text"
+                  value={answers[i]}
+                  onChange={(e) => {
+                    const a = [...answers];
+                    a[i] = e.target.value;
+                    setAnswers(a);
+                  }}
+                  className="w-full rounded-lg border border-outline px-3 py-2 text-sm"
+                  required
+                />
               </div>
             ))}
-            <button type="submit" disabled={loading} className="w-full py-2.5 bg-secondary text-on-secondary rounded-lg font-semibold disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 bg-secondary text-on-secondary rounded-lg font-semibold disabled:opacity-50"
+            >
               {loading ? "Verifying..." : "Verify"}
             </button>
           </form>
@@ -152,20 +180,38 @@ export default function ForgotPasswordPage() {
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="space-y-1">
               <label className="text-sm font-medium">New Password</label>
-              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full rounded-lg border border-outline px-3 py-2 text-sm" required />
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full rounded-lg border border-outline px-3 py-2 text-sm"
+                required
+              />
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Confirm Password</label>
-              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full rounded-lg border border-outline px-3 py-2 text-sm" required />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full rounded-lg border border-outline px-3 py-2 text-sm"
+                required
+              />
             </div>
-            <button type="submit" disabled={loading} className="w-full py-2.5 bg-secondary text-on-secondary rounded-lg font-semibold disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 bg-secondary text-on-secondary rounded-lg font-semibold disabled:opacity-50"
+            >
               {loading ? "Resetting..." : "Reset Password"}
             </button>
           </form>
         )}
 
         <p className="text-sm text-center text-on-surface-variant mt-4">
-          <Link href="/login" className="text-primary hover:underline">Back to sign in</Link>
+          <Link href="/login" className="text-primary hover:underline">
+            Back to sign in
+          </Link>
         </p>
       </div>
     </div>

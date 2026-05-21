@@ -2,7 +2,7 @@
 App Name: AnvilOS
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: 
+Last Update Date: May 21, 2026 
 */
 
 import { PrismaClient } from "@prisma/client";
@@ -14,28 +14,32 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 const createPrismaClient = () => {
-  const connectionString = process.env.ANVILOS_DATABASE_URL || process.env.DATABASE_URL;
-  
+  const connectionString =
+    process.env.ANVILOS_DATABASE_URL || process.env.DATABASE_URL;
+
   if (connectionString) {
     try {
-      const pool = new Pool({ 
+      const pool = new Pool({
         connectionString,
         max: 10,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000,
       });
-      
+
       const adapter = new PrismaPg(pool);
-      return new PrismaClient({ 
+      return new PrismaClient({
         adapter,
-        log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+        log:
+          process.env.NODE_ENV === "development"
+            ? ["query", "error", "warn"]
+            : ["error"],
       });
     } catch (error) {
       console.error("Failed to initialize Prisma with adapter:", error);
       return new PrismaClient();
     }
   }
-  
+
   return new PrismaClient();
 };
 

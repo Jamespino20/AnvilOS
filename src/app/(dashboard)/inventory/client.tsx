@@ -111,16 +111,20 @@ export function InventoryClient({
   function renderCategoryOptions(
     cats: typeof categories,
     depth = 0,
+    fromChildren = false,
   ): ReactNode[] {
-    return cats.flatMap((c) => [
-      <option key={c.id} value={c.id}>
-        {depth > 0 ? `${"—".repeat(depth)} ` : ""}
-        {c.name}
-      </option>,
-      ...(c.childCategories?.length
-        ? renderCategoryOptions(c.childCategories as any, depth + 1)
-        : []),
-    ]);
+    const list = fromChildren ? cats : cats.filter((c) => c.parentCategoryId === null);
+    return list.flatMap((c) => {
+      const hasChildren = c.childCategories?.length > 0;
+      return [
+        <option key={c.id} value={c.id} disabled={hasChildren}>
+          {depth > 0 ? `${"—".repeat(depth)} ` : ""}{c.name} {hasChildren ? "(parent)" : ""}
+        </option>,
+        ...(hasChildren
+          ? renderCategoryOptions(c.childCategories as any, depth + 1, true)
+          : []),
+      ];
+    });
   }
 
   async function handleAddProduct(e: React.FormEvent) {
@@ -508,17 +512,32 @@ export function InventoryClient({
               </div>
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                  Image URL
+                  Product Photo
                 </label>
-                <input
-                  type="url"
-                  value={form.imageUrl}
-                  onChange={(e) =>
-                    setForm({ ...form, imageUrl: e.target.value })
-                  }
-                  placeholder="https://example.com/photo.jpg"
-                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
-                />
+                <div className="flex items-center gap-3">
+                  {form.imageUrl ? (
+                    <img src={form.imageUrl} alt="Preview" className="w-14 h-14 rounded-lg object-cover border border-[#e2e8f0] shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center shrink-0">
+                      <Package className="h-5 w-5 text-[#94a3b8]" />
+                    </div>
+                  )}
+                  <label className="flex-1 cursor-pointer">
+                    <input type="file" accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => setForm({ ...form, imageUrl: ev.target?.result as string });
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden" />
+                    <div className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#64748b] bg-white hover:bg-[#f8fafc] transition-colors text-center">
+                      {form.imageUrl ? "Change Photo" : "Choose File"}
+                    </div>
+                  </label>
+                </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button
@@ -678,17 +697,32 @@ export function InventoryClient({
               </div>
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                  Image URL
+                  Product Photo
                 </label>
-                <input
-                  type="url"
-                  value={form.imageUrl}
-                  onChange={(e) =>
-                    setForm({ ...form, imageUrl: e.target.value })
-                  }
-                  placeholder="https://example.com/photo.jpg"
-                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
-                />
+                <div className="flex items-center gap-3">
+                  {form.imageUrl ? (
+                    <img src={form.imageUrl} alt="Preview" className="w-14 h-14 rounded-lg object-cover border border-[#e2e8f0] shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center shrink-0">
+                      <Package className="h-5 w-5 text-[#94a3b8]" />
+                    </div>
+                  )}
+                  <label className="flex-1 cursor-pointer">
+                    <input type="file" accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => setForm({ ...form, imageUrl: ev.target?.result as string });
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden" />
+                    <div className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#64748b] bg-white hover:bg-[#f8fafc] transition-colors text-center">
+                      {form.imageUrl ? "Change Photo" : "Choose File"}
+                    </div>
+                  </label>
+                </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button

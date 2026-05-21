@@ -2,7 +2,7 @@
 App Name: AnvilOS
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: 
+Last Update Date: May 21, 2026 
 */
 
 import NextAuth from "next-auth";
@@ -23,7 +23,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         console.log("Auth attempt for:", credentials?.username);
-        
+
         if (!credentials?.username || !credentials?.password) {
           console.log("Missing credentials");
           return null;
@@ -52,7 +52,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             console.log("Invalid password for:", identifier);
             return null;
           }
-          
+
           if (!user.isActive) {
             console.log("User inactive:", identifier);
             return null;

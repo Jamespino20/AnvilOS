@@ -2,7 +2,7 @@
 App Name: AnvilOS
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: 
+Last Update Date: May 21, 2026 
 */
 
 import { prisma } from "@/lib/prisma";
@@ -11,14 +11,23 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { username } = await req.json();
-    const user = await prisma.user.findUnique({ where: { sellerName: username } });
+    const user = await prisma.user.findUnique({
+      where: { sellerName: username },
+    });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     return NextResponse.json({
-      questions: [user.securityQuestion1, user.securityQuestion2, user.securityQuestion3],
+      questions: [
+        user.securityQuestion1,
+        user.securityQuestion2,
+        user.securityQuestion3,
+      ],
     });
   } catch {
-    return NextResponse.json({ error: "Failed to fetch questions" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch questions" },
+      { status: 500 },
+    );
   }
 }

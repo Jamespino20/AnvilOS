@@ -2,7 +2,7 @@
 App Name: AnvilOS
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: 
+Last Update Date: May 21, 2026 
 */
 
 "use client";
@@ -47,8 +47,17 @@ export default function LoginPage() {
       <div className="absolute inset-0 bg-[url('/images/warehouse-bg.jpg')] bg-cover bg-center opacity-10" />
       <div className="relative w-full max-w-md mx-4">
         <div className="text-center mb-8">
-          <img src="/images/anvilos_landscapelogo.png" alt="AnvilOS" className="h-10 w-auto mx-auto brightness-0" style={{ filter: "brightness(0) sepia(1) hue-rotate(190deg) saturate(3)" }} />
-          <p className="text-on-surface-variant mt-2 text-sm">Hardware & Supply</p>
+          <img
+            src="/images/anvilos_landscapelogo.png"
+            alt="AnvilOS"
+            className="h-10 w-auto mx-auto brightness-0"
+            style={{
+              filter: "brightness(0) sepia(1) hue-rotate(190deg) saturate(3)",
+            }}
+          />
+          <p className="text-on-surface-variant mt-2 text-sm">
+            Hardware & Supply
+          </p>
         </div>
         <form
           onSubmit={handleSubmit}
@@ -86,9 +95,16 @@ export default function LoginPage() {
                 placeholder="Enter password"
                 required
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] transition-colors">
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] transition-colors"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             </div>
           </div>

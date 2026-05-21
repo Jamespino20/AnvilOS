@@ -2,14 +2,30 @@
 App Name: AnvilOS
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: 
+Last Update Date: May 21, 2026 
 */
 
 "use client";
 
 import { useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
-import { Search, Plus, Minus, Trash2, ShoppingCart, User, MapPin, Phone, Loader2, CheckCircle, Package, RotateCcw, AlertTriangle, CreditCard, Truck } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Minus,
+  Trash2,
+  ShoppingCart,
+  User,
+  MapPin,
+  Phone,
+  Loader2,
+  CheckCircle,
+  Package,
+  RotateCcw,
+  AlertTriangle,
+  CreditCard,
+  Truck,
+} from "lucide-react";
 import { createTransaction } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { downloadReceipt } from "@/lib/receipt";
@@ -51,24 +67,34 @@ export function POSClient({ products, buyers }: Props) {
   const [buyerAddress, setBuyerAddress] = useState("");
   const [buyerContact, setBuyerContact] = useState("");
   const [showBuyerDropdown, setShowBuyerDropdown] = useState(false);
-  const [txnType, setTxnType] = useState<typeof TXN_TYPES[number]["value"]>("SaleWalkIn");
+  const [txnType, setTxnType] =
+    useState<(typeof TXN_TYPES)[number]["value"]>("SaleWalkIn");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [deliveryMethod, setDeliveryMethod] = useState("WalkIn");
   const [returnReceipt, setReturnReceipt] = useState("");
   const [checkingOut, setCheckingOut] = useState(false);
-  const [done, setDone] = useState<{ receipt: number; items: any[] } | null>(null);
+  const [done, setDone] = useState<{ receipt: number; items: any[] } | null>(
+    null,
+  );
   const [error, setError] = useState("");
 
   const buyerSuggestions = useMemo(
-    () => buyers.filter((b) => b.buyerName.toLowerCase().includes(buyerName.toLowerCase())),
-    [buyerName, buyers]
+    () =>
+      buyers.filter((b) =>
+        b.buyerName.toLowerCase().includes(buyerName.toLowerCase()),
+      ),
+    [buyerName, buyers],
   );
 
-  const categories = useMemo(() => [...new Set(products.map((p) => p.category))], [products]);
+  const categories = useMemo(
+    () => [...new Set(products.map((p) => p.category))],
+    [products],
+  );
 
   const filtered = products.filter((p) => {
     if (p.quantity <= 0) return false;
-    if (search && !p.productName.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !p.productName.toLowerCase().includes(search.toLowerCase()))
+      return false;
     if (category && p.category !== category) return false;
     return true;
   });
@@ -76,15 +102,23 @@ export function POSClient({ products, buyers }: Props) {
   function addToCart(product: Product) {
     setCart((prev) => {
       const existing = prev.find((c) => c.product.id === product.id);
-      if (existing) return prev.map((c) => (c.product.id === product.id ? { ...c, quantity: c.quantity + 1 } : c));
+      if (existing)
+        return prev.map((c) =>
+          c.product.id === product.id ? { ...c, quantity: c.quantity + 1 } : c,
+        );
       return [...prev, { product, quantity: 1 }];
     });
   }
 
   function updateQuantity(productId: number, delta: number) {
     setCart((prev) =>
-      prev.map((c) => (c.product.id === productId ? { ...c, quantity: Math.max(1, c.quantity + delta) } : c))
-        .filter((c) => c.quantity > 0)
+      prev
+        .map((c) =>
+          c.product.id === productId
+            ? { ...c, quantity: Math.max(1, c.quantity + delta) }
+            : c,
+        )
+        .filter((c) => c.quantity > 0),
     );
   }
 
@@ -93,8 +127,12 @@ export function POSClient({ products, buyers }: Props) {
   }
 
   const grandTotal = useMemo(
-    () => cart.reduce((sum, c) => sum + Number(c.product.unitPrice) * c.quantity, 0),
-    [cart]
+    () =>
+      cart.reduce(
+        (sum, c) => sum + Number(c.product.unitPrice) * c.quantity,
+        0,
+      ),
+    [cart],
   );
 
   async function handleCheckout() {
@@ -109,7 +147,12 @@ export function POSClient({ products, buyers }: Props) {
         paymentMethod,
         deliveryMethod: deliveryMethod as any,
         transactionType: txnType,
-        transactionStatus: txnType === "SaleWalkIn" || txnType === "Return" || txnType === "Adjustment" ? "Completed" : "Ongoing",
+        transactionStatus:
+          txnType === "SaleWalkIn" ||
+          txnType === "Return" ||
+          txnType === "Adjustment"
+            ? "Completed"
+            : "Ongoing",
         grandTotal,
         items: cart.map((c) => ({
           productId: c.product.id,
@@ -117,9 +160,18 @@ export function POSClient({ products, buyers }: Props) {
           unitPrice: Number(c.product.unitPrice),
           totalPrice: Number(c.product.unitPrice) * c.quantity,
         })),
-        returnForReceiptNumber: txnType === "Return" ? Number(returnReceipt) || undefined : undefined,
+        returnForReceiptNumber:
+          txnType === "Return" ? Number(returnReceipt) || undefined : undefined,
       });
-      setDone({ receipt: result.receiptNumber, items: cart.map((c) => ({ productName: c.product.productName, quantity: c.quantity, unitPrice: Number(c.product.unitPrice), totalPrice: Number(c.product.unitPrice) * c.quantity })) });
+      setDone({
+        receipt: result.receiptNumber,
+        items: cart.map((c) => ({
+          productName: c.product.productName,
+          quantity: c.quantity,
+          unitPrice: Number(c.product.unitPrice),
+          totalPrice: Number(c.product.unitPrice) * c.quantity,
+        })),
+      });
       setCart([]);
       setBuyerName("");
       setBuyerAddress("");
@@ -135,7 +187,7 @@ export function POSClient({ products, buyers }: Props) {
     }
   }
 
-  function getTxnTypeColor(type: typeof TXN_TYPES[number]["value"]) {
+  function getTxnTypeColor(type: (typeof TXN_TYPES)[number]["value"]) {
     const colors: Record<string, string> = {
       SaleWalkIn: "text-emerald-600",
       SalePO: "text-blue-600",
@@ -148,188 +200,344 @@ export function POSClient({ products, buyers }: Props) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="POS Terminal" subtitle="Process sales, returns, adjustments, and damages. Scan or search products to add them to the cart." />
+      <PageHeader
+        title="POS Terminal"
+        subtitle="Process sales, returns, adjustments, and damages. Scan or search products to add them to the cart."
+      />
       <div className="flex gap-5 h-[calc(100vh-12rem)]">
         <div className="flex-[2] flex flex-col gap-4">
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products..." className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search products..."
+                className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
+              />
+            </div>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="min-w-[160px] px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+            >
+              <option value="">All Categories</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
           </div>
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="min-w-[160px] px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]">
-            <option value="">All Categories</option>
-            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
 
-        <div className="flex-1 overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-3 content-start">
-          {filtered.map((product) => (
-            <button key={product.id} onClick={() => addToCart(product)}
-              className={`bg-white border border-[#e2e8f0] rounded-xl p-4 text-left hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 group ${product.quantity <= 0 ? "opacity-60" : ""}`}>
-              {(product as any).imageUrl ? (
-                <img src={(product as any).imageUrl} alt="" className="w-full h-24 object-cover rounded-lg mb-3 border border-[#e2e8f0]" />
-              ) : (
-                <div className="w-full h-24 rounded-lg mb-3 bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center">
-                  <Package className="h-8 w-8 text-[#94a3b8]" />
-                </div>
-              )}
-              <p className="font-semibold text-sm text-[#0e212c] truncate group-hover:text-[#fd761a] transition-colors">{product.productName}</p>
-              <p className="text-lg font-bold text-[#fd761a] mt-1">₱{Number(product.unitPrice).toLocaleString()}</p>
-              <p className={`text-xs mt-1 ${product.quantity <= product.minThreshold && product.quantity > 0 ? "text-rose-500 font-semibold" : "text-[#94a3b8]"}`}>
-                {`Stock: ${product.quantity} ${product.quantity <= product.minThreshold && product.quantity > 0 ? "(Low)" : product.quantity <= 0 ? "(Out)" : ""}`}
-              </p>
-            </button>
-          ))}
-          {filtered.length === 0 && (
-            <div className="col-span-full text-center py-12 text-[#94a3b8]">No available products match your search</div>
-          )}
+          <div className="flex-1 overflow-y-auto grid grid-cols-2 lg:grid-cols-3 gap-3 content-start">
+            {filtered.map((product) => (
+              <button
+                key={product.id}
+                onClick={() => addToCart(product)}
+                className={`bg-white border border-[#e2e8f0] rounded-xl p-4 text-left hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 group ${product.quantity <= 0 ? "opacity-60" : ""}`}
+              >
+                {(product as any).imageUrl ? (
+                  <img
+                    src={(product as any).imageUrl}
+                    alt=""
+                    className="w-full h-24 object-cover rounded-lg mb-3 border border-[#e2e8f0]"
+                  />
+                ) : (
+                  <div className="w-full h-24 rounded-lg mb-3 bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center">
+                    <Package className="h-8 w-8 text-[#94a3b8]" />
+                  </div>
+                )}
+                <p className="font-semibold text-sm text-[#0e212c] truncate group-hover:text-[#fd761a] transition-colors">
+                  {product.productName}
+                </p>
+                <p className="text-lg font-bold text-[#fd761a] mt-1">
+                  ₱{Number(product.unitPrice).toLocaleString()}
+                </p>
+                <p
+                  className={`text-xs mt-1 ${product.quantity <= product.minThreshold && product.quantity > 0 ? "text-rose-500 font-semibold" : "text-[#94a3b8]"}`}
+                >
+                  {`Stock: ${product.quantity} ${product.quantity <= product.minThreshold && product.quantity > 0 ? "(Low)" : product.quantity <= 0 ? "(Out)" : ""}`}
+                </p>
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <div className="col-span-full text-center py-12 text-[#94a3b8]">
+                No available products match your search
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
         <div className="flex-1 bg-white border border-[#e2e8f0] rounded-xl flex flex-col shadow-sm">
-        <div className="p-5 border-b border-[#e2e8f0] space-y-3">
-          <h2 className="font-semibold text-[#0e212c] flex items-center gap-2 text-sm">
-            <ShoppingCart className="h-4 w-4 text-[#fd761a]" /> Cart
-            {cart.length > 0 && <span className="ml-auto text-[#fd761a]">{cart.length} item{cart.length > 1 ? "s" : ""}</span>}
-          </h2>
+          <div className="p-5 border-b border-[#e2e8f0] space-y-3">
+            <h2 className="font-semibold text-[#0e212c] flex items-center gap-2 text-sm">
+              <ShoppingCart className="h-4 w-4 text-[#fd761a]" /> Cart
+              {cart.length > 0 && (
+                <span className="ml-auto text-[#fd761a]">
+                  {cart.length} item{cart.length > 1 ? "s" : ""}
+                </span>
+              )}
+            </h2>
 
-          <div className="space-y-2.5 text-sm">
-            <div className="flex items-center gap-2.5">
-              <ShoppingCart className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
-              <select value={txnType} onChange={(e) => { setTxnType(e.target.value as any); setCart([]); setError(""); setReturnReceipt(""); }}
-                className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors">
-                {TXN_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {txnType === "Return" && (
-              <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
-                <RotateCcw className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                <input type="number" value={returnReceipt} onChange={(e) => setReturnReceipt(e.target.value)}
-                  placeholder="Original receipt number" className="flex-1 bg-transparent text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none" />
+            <div className="space-y-2.5 text-sm">
+              <div className="flex items-center gap-2.5">
+                <ShoppingCart className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+                <select
+                  value={txnType}
+                  onChange={(e) => {
+                    setTxnType(e.target.value as any);
+                    setCart([]);
+                    setError("");
+                    setReturnReceipt("");
+                  }}
+                  className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors"
+                >
+                  {TXN_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
               </div>
-            )}
 
-            {txnType !== "Return" && (
-              <>
-                <div className="flex items-center gap-2.5 relative">
-                  <User className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
-                  <input type="text" value={buyerName} onChange={(e) => { setBuyerName(e.target.value); setShowBuyerDropdown(true); }}
-                    onFocus={() => setShowBuyerDropdown(true)} onBlur={() => setTimeout(() => setShowBuyerDropdown(false), 200)}
-                    placeholder="Buyer name *"
-                    className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
-                  {showBuyerDropdown && buyerSuggestions.length > 0 && (
-                    <div className="absolute left-5 top-full mt-1 w-full bg-white border border-[#e2e8f0] rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
-                      {buyerSuggestions.map((b) => (
-                        <button key={b.buyerName} type="button" onMouseDown={(e) => { e.preventDefault(); setBuyerName(b.buyerName); setBuyerAddress(b.buyerAddress || ""); setBuyerContact(b.buyerContact || ""); setShowBuyerDropdown(false); }}
-                          className="w-full text-left px-3.5 py-2.5 text-sm text-[#0e212c] hover:bg-[#fff5ed] hover:text-[#fd761a] transition-colors border-b border-[#e2e8f0] last:border-b-0">
-                          <span className="font-medium">{b.buyerName}</span>
-                          {(b.buyerAddress || b.buyerContact) && (
-                            <span className="text-[#94a3b8] ml-2 text-xs">{b.buyerAddress || b.buyerContact}</span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+              {txnType === "Return" && (
+                <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                  <RotateCcw className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                  <input
+                    type="number"
+                    value={returnReceipt}
+                    onChange={(e) => setReturnReceipt(e.target.value)}
+                    placeholder="Original receipt number"
+                    className="flex-1 bg-transparent text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
+                  />
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <MapPin className="h-3.5 w-3.5 text-[#94a3b8]" />
-                  <input type="text" value={buyerAddress} onChange={(e) => setBuyerAddress(e.target.value)}
-                    placeholder="Address (optional)"
-                    className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Phone className="h-3.5 w-3.5 text-[#94a3b8]" />
-                  <input type="text" value={buyerContact} onChange={(e) => setBuyerContact(e.target.value)}
-                    placeholder="Contact (optional)"
-                    className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors" />
-                </div>
-              </>
-            )}
+              )}
 
-            <div className="flex items-center gap-2.5">
-              <CreditCard className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
-              <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}
-                className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors">
-                {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </div>
+              {txnType !== "Return" && (
+                <>
+                  <div className="flex items-center gap-2.5 relative">
+                    <User className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+                    <input
+                      type="text"
+                      value={buyerName}
+                      onChange={(e) => {
+                        setBuyerName(e.target.value);
+                        setShowBuyerDropdown(true);
+                      }}
+                      onFocus={() => setShowBuyerDropdown(true)}
+                      onBlur={() =>
+                        setTimeout(() => setShowBuyerDropdown(false), 200)
+                      }
+                      placeholder="Buyer name *"
+                      className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
+                    />
+                    {showBuyerDropdown && buyerSuggestions.length > 0 && (
+                      <div className="absolute left-5 top-full mt-1 w-full bg-white border border-[#e2e8f0] rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
+                        {buyerSuggestions.map((b) => (
+                          <button
+                            key={b.buyerName}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setBuyerName(b.buyerName);
+                              setBuyerAddress(b.buyerAddress || "");
+                              setBuyerContact(b.buyerContact || "");
+                              setShowBuyerDropdown(false);
+                            }}
+                            className="w-full text-left px-3.5 py-2.5 text-sm text-[#0e212c] hover:bg-[#fff5ed] hover:text-[#fd761a] transition-colors border-b border-[#e2e8f0] last:border-b-0"
+                          >
+                            <span className="font-medium">{b.buyerName}</span>
+                            {(b.buyerAddress || b.buyerContact) && (
+                              <span className="text-[#94a3b8] ml-2 text-xs">
+                                {b.buyerAddress || b.buyerContact}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <MapPin className="h-3.5 w-3.5 text-[#94a3b8]" />
+                    <input
+                      type="text"
+                      value={buyerAddress}
+                      onChange={(e) => setBuyerAddress(e.target.value)}
+                      placeholder="Address (optional)"
+                      className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Phone className="h-3.5 w-3.5 text-[#94a3b8]" />
+                    <input
+                      type="text"
+                      value={buyerContact}
+                      onChange={(e) => setBuyerContact(e.target.value)}
+                      placeholder="Contact (optional)"
+                      className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
+                    />
+                  </div>
+                </>
+              )}
 
-            <div className="flex items-center gap-2.5">
-              <Truck className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
-              <select value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)}
-                className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors">
-                {DELIVERY_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
+              <div className="flex items-center gap-2.5">
+                <CreditCard className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors"
+                >
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <Truck className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+                <select
+                  value={deliveryMethod}
+                  onChange={(e) => setDeliveryMethod(e.target.value)}
+                  className="flex-1 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors"
+                >
+                  {DELIVERY_METHODS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
-          {cart.map((item) => (
-            <div key={item.product.id} className="flex items-center gap-3 bg-[#f8fafc] rounded-lg p-3 group hover:bg-[#f1f5f9] transition-colors">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#0e212c] truncate">{item.product.productName}</p>
-                <p className="text-xs text-[#94a3b8]">₱{Number(item.product.unitPrice).toLocaleString()} ea</p>
+          <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+            {cart.map((item) => (
+              <div
+                key={item.product.id}
+                className="flex items-center gap-3 bg-[#f8fafc] rounded-lg p-3 group hover:bg-[#f1f5f9] transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-[#0e212c] truncate">
+                    {item.product.productName}
+                  </p>
+                  <p className="text-xs text-[#94a3b8]">
+                    ₱{Number(item.product.unitPrice).toLocaleString()} each
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => updateQuantity(item.product.id, -1)}
+                    className="p-1.5 rounded-md hover:bg-white text-[#64748b] hover:text-[#0e212c] transition-all"
+                  >
+                    <Minus className="h-3.5 w-3.5" />
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    value={item.quantity}
+                    onChange={(e) => {
+                      const q = Math.max(1, Number(e.target.value) || 1);
+                      setCart((prev) =>
+                        prev.map((c) =>
+                          c.product.id === item.product.id
+                            ? { ...c, quantity: q }
+                            : c,
+                        ),
+                      );
+                    }}
+                    className="w-12 text-center text-sm font-semibold text-[#0e212c] bg-transparent border border-[#e2e8f0] rounded-md py-1 focus:outline-none focus:border-[#fd761a] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
+                  <button
+                    onClick={() => updateQuantity(item.product.id, 1)}
+                    className="p-1.5 rounded-md hover:bg-white text-[#64748b] hover:text-[#0e212c] transition-all"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <p className="text-sm font-semibold text-[#0e212c] w-20 text-right font-mono">
+                  ₱
+                  {(
+                    Number(item.product.unitPrice) * item.quantity
+                  ).toLocaleString()}
+                </p>
+                <button
+                  onClick={() => removeFromCart(item.product.id)}
+                  className="p-1.5 rounded-md text-[#e2e8f0] hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
-              <div className="flex items-center gap-1">
-                <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1.5 rounded-md hover:bg-white text-[#64748b] hover:text-[#0e212c] transition-all"><Minus className="h-3.5 w-3.5" /></button>
-                <input type="number" min={1} value={item.quantity}
-                  onChange={(e) => {
-                    const q = Math.max(1, Number(e.target.value) || 1);
-                    setCart((prev) => prev.map((c) => c.product.id === item.product.id ? { ...c, quantity: q } : c));
-                  }}
-                  className="w-12 text-center text-sm font-semibold text-[#0e212c] bg-transparent border border-[#e2e8f0] rounded-md py-1 focus:outline-none focus:border-[#fd761a] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-                <button onClick={() => updateQuantity(item.product.id, 1)} className="p-1.5 rounded-md hover:bg-white text-[#64748b] hover:text-[#0e212c] transition-all"><Plus className="h-3.5 w-3.5" /></button>
-              </div>
-              <p className="text-sm font-semibold text-[#0e212c] w-20 text-right font-mono">₱{(Number(item.product.unitPrice) * item.quantity).toLocaleString()}</p>
-              <button onClick={() => removeFromCart(item.product.id)} className="p-1.5 rounded-md text-[#e2e8f0] hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"><Trash2 className="h-3.5 w-3.5" /></button>
+            ))}
+            {cart.length === 0 && (
+              <p className="text-sm text-[#94a3b8] text-center py-8">
+                Cart is empty
+              </p>
+            )}
+          </div>
+
+          {error && (
+            <div className="px-5 py-3 bg-rose-50 border-t border-rose-200 text-sm text-rose-700 font-medium">
+              {error}
             </div>
-          ))}
-          {cart.length === 0 && (
-            <p className="text-sm text-[#94a3b8] text-center py-8">Cart is empty</p>
           )}
-        </div>
-
-        {error && (
-          <div className="px-5 py-3 bg-rose-50 border-t border-rose-200 text-sm text-rose-700 font-medium">{error}</div>
-        )}
 
           <div className="p-5 border-t border-[#e2e8f0] space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-semibold text-[#0e212c]">Grand Total</span>
-              <span className="text-xl font-bold text-[#fd761a]">₱{grandTotal.toLocaleString()}</span>
+              <span className="text-sm font-semibold text-[#0e212c]">
+                Grand Total
+              </span>
+              <span className="text-xl font-bold text-[#fd761a]">
+                ₱{grandTotal.toLocaleString()}
+              </span>
             </div>
-          {done ? (
-            <div className="flex flex-col gap-2">
-              <div className="w-full py-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm font-semibold text-center flex items-center justify-center gap-2">
-                <CheckCircle className="h-4 w-4" /> Completed — Receipt #{done.receipt}
+            {done ? (
+              <div className="flex flex-col gap-2">
+                <div className="w-full py-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm font-semibold text-center flex items-center justify-center gap-2">
+                  <CheckCircle className="h-4 w-4" /> Completed — Receipt #
+                  {done.receipt}
+                </div>
+                <button
+                  onClick={() =>
+                    downloadReceipt({
+                      receiptNumber: done.receipt,
+                      date: new Date(),
+                      sellerName: session?.user?.name || "Unknown",
+                      buyerName: buyerName || "CWL Hardware (Company Restock)",
+                      buyerAddress: buyerAddress || undefined,
+                      buyerContact: buyerContact || undefined,
+                      items: done.items,
+                      grandTotal: grandTotal,
+                      paymentMethod,
+                      transactionType: txnType,
+                    })
+                  }
+                  className="w-full py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#0e212c] rounded-lg hover:bg-[#f8fafc] transition-all flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="h-4 w-4 text-[#fd761a]" /> Download
+                  Receipt
+                </button>
               </div>
-              <button onClick={() => downloadReceipt({
-                receiptNumber: done.receipt,
-                date: new Date(),
-                sellerName: session?.user?.name || "Unknown",
-                buyerName: buyerName || "CWL Hardware (Company Restock)",
-                buyerAddress: buyerAddress || undefined,
-                buyerContact: buyerContact || undefined,
-                items: done.items,
-                grandTotal: grandTotal,
-                paymentMethod,
-                transactionType: txnType,
-              })} className="w-full py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#0e212c] rounded-lg hover:bg-[#f8fafc] transition-all flex items-center justify-center gap-2">
-                <CheckCircle className="h-4 w-4 text-[#fd761a]" /> Download Receipt
+            ) : (
+              <button
+                onClick={handleCheckout}
+                disabled={cart.length === 0 || !buyerName || checkingOut}
+                className="w-full py-3 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white rounded-lg font-semibold text-sm hover:from-[#e56600] hover:to-[#d45d00] shadow-lg shadow-[#fd761a]/20 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {checkingOut ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Processing...
+                  </>
+                ) : (
+                  `Process ${TXN_TYPES.find((t) => t.value === txnType)?.label || "Transaction"}`
+                )}
               </button>
-            </div>
-          ) : (
-            <button onClick={handleCheckout} disabled={cart.length === 0 || !buyerName || checkingOut}
-              className="w-full py-3 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white rounded-lg font-semibold text-sm hover:from-[#e56600] hover:to-[#d45d00] shadow-lg shadow-[#fd761a]/20 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-              {checkingOut ? <><Loader2 className="h-4 w-4 animate-spin" /> Processing...</> : `Process ${TXN_TYPES.find((t) => t.value === txnType)?.label || "Transaction"}`}
-            </button>
-          )}
+            )}
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 App Name: AnvilOS
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: 
+Last Update Date: May 21, 2026 
 */
 
 "use client";
@@ -14,16 +14,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       {children}
-      <Toaster 
-        position="top-right" 
-        richColors 
+      <Toaster
+        position="top-right"
+        richColors
         theme="light"
         toastOptions={{
           style: {
-            borderRadius: '0px',
-            border: '1px solid rgba(0,0,0,0.1)',
-            fontFamily: 'var(--font-inter)',
-          }
+            borderRadius: "0px",
+            border: "1px solid rgba(0,0,0,0.1)",
+            fontFamily: "var(--font-inter)",
+          },
         }}
       />
     </SessionProvider>
