@@ -9,7 +9,7 @@ import { RevealUp } from "./RevealUp";
 
 export function BottomCTA() {
   return (
-    <section className="py-24 bg-primary border-y border-accent" id="cta">
+    <section className="py-16 bg-[#0a151b] relative overflow-hidden" id="cta">
       <div className="max-w-4xl mx-auto px-6 text-center">
         <RevealUp>
           <h2 className="text-4xl md:text-5xl font-black text-primary-foreground mb-6 tracking-tight">

@@ -81,6 +81,8 @@ export function POSClient({ products, buyers }: Props) {
     null,
   );
   const [error, setError] = useState("");
+  const [editingQty, setEditingQty] = useState<number | null>(null);
+  const [qtyInput, setQtyInput] = useState("");
 
   const buyerSuggestions = useMemo(
     () =>
@@ -128,6 +130,26 @@ export function POSClient({ products, buyers }: Props) {
 
   function removeFromCart(productId: number) {
     setCart((prev) => prev.filter((c) => c.product.id !== productId));
+  }
+
+  function setCartQty(productId: number, qty: number) {
+    setCart((prev) =>
+      prev.map((c) =>
+        c.product.id === productId ? { ...c, quantity: Math.max(1, qty) } : c,
+      ),
+    );
+  }
+
+  function startQtyEdit(productId: number, currentQty: number) {
+    setEditingQty(productId);
+    setQtyInput(String(currentQty));
+  }
+
+  function commitQtyEdit(productId: number) {
+    const val = parseInt(qtyInput, 10);
+    if (!isNaN(val) && val > 0) setCartQty(productId, val);
+    setEditingQty(null);
+    setQtyInput("");
   }
 
   const grandTotal = useMemo(
@@ -196,24 +218,41 @@ export function POSClient({ products, buyers }: Props) {
   const [showCartMobile, setShowCartMobile] = useState(false);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-24 lg:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeader
           title="POS Terminal"
           subtitle="Process sales, returns, adjustments, and damages."
         />
-        {cart.length > 0 && (
-          <button
-            onClick={() => setShowCartMobile(true)}
-            className="lg:hidden flex items-center justify-center gap-2 px-6 py-3 bg-[#fd761a] text-white rounded-lg font-bold shadow-lg shadow-[#fd761a]/20 active:scale-95 transition-all"
-          >
-            <ShoppingCart className="h-5 w-5" />
-            View Cart ({cart.length})
-          </button>
-        )}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-5 h-auto lg:h-[calc(100vh-12rem)] relative">
+        {/* Mobile Cart FAB — fixed bottom bar in thumb zone */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-2 bg-gradient-to-t from-white via-white to-transparent pointer-events-none">
+          <div className="pointer-events-auto">
+            {cart.length > 0 ? (
+              <button
+                onClick={() => setShowCartMobile(true)}
+                className="w-full flex items-center justify-between px-5 py-4 bg-[#fd761a] text-white rounded-2xl shadow-2xl shadow-[#fd761a]/30 active:scale-[0.97] transition-all font-bold text-sm"
+              >
+                <span className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5" />
+                  <span>{cart.length} item{cart.length > 1 ? "s" : ""}</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="text-lg font-black">₱{grandTotal.toLocaleString()}</span>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
+              </button>
+            ) : (
+              <div className="w-full px-5 py-4 bg-white/80 backdrop-blur-sm border border-[#e2e8f0] rounded-2xl text-center text-xs text-[#94a3b8] font-medium">
+                Tap a product to add it to the cart
+              </div>
+            )}
+          </div>
+        </div>
         {/* Product Selection Area */}
         <div className="flex-[2] flex flex-col gap-4 min-w-0">
           <div className="flex flex-col sm:flex-row gap-3">
@@ -241,7 +280,7 @@ export function POSClient({ products, buyers }: Props) {
             </select>
           </div>
 
-          <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 content-start pb-20 lg:pb-0">
+          <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 content-start">
             {filtered.map((product) => (
               <button
                 key={product.id}
@@ -463,23 +502,36 @@ export function POSClient({ products, buyers }: Props) {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => updateQuantity(item.product.id, -1)}
-                    className="p-1 px-1.5 bg-white border border-[#e2e8f0] rounded-md text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors"
+                    className="w-9 h-9 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors"
+                    aria-label="Decrease quantity"
                   >
-                    <Minus className="h-3 w-3" />
+                    <Minus className="h-3.5 w-3.5" />
                   </button>
-                  <span className="w-8 text-center text-xs font-bold text-[#0e212c]">
-                    {item.quantity}
-                  </span>
+                  {editingQty === item.product.id ? (
+                    <input type="number" min={1} value={qtyInput} autoFocus
+                      onChange={(e) => setQtyInput(e.target.value)}
+                      onBlur={() => commitQtyEdit(item.product.id)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur(); } if (e.key === "Escape") { setEditingQty(null); } }}
+                      className="w-16 h-9 text-center text-xs font-bold text-[#0e212c] border border-[#fd761a] rounded-lg focus:outline-none" />
+                  ) : (
+                    <button type="button" onClick={() => startQtyEdit(item.product.id, item.quantity)}
+                      className="min-w-[40px] h-9 text-center text-xs font-bold text-[#0e212c] px-2 hover:bg-white rounded-lg transition-colors"
+                      aria-label="Edit quantity">
+                      {item.quantity}
+                    </button>
+                  )}
                   <button
                     onClick={() => updateQuantity(item.product.id, 1)}
-                    className="p-1 px-1.5 bg-white border border-[#e2e8f0] rounded-md text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors"
+                    className="w-9 h-9 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors"
+                    aria-label="Increase quantity"
                   >
-                    <Plus className="h-3 w-3" />
+                    <Plus className="h-3.5 w-3.5" />
                   </button>
                 </div>
                 <button
                   onClick={() => removeFromCart(item.product.id)}
-                  className="p-1.5 text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"
+                  className="w-9 h-9 flex items-center justify-center text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"
+                  aria-label="Remove item"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

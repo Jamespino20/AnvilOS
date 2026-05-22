@@ -92,7 +92,7 @@ const features = [
 
 export function FeaturesGrid() {
   return (
-    <section className="py-24 bg-background" id="features">
+    <section className="py-16 bg-background" id="features">
       <div className="max-w-7xl mx-auto px-6">
         <RevealUp className="text-center mb-16 max-w-3xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-black text-primary mb-4 tracking-tight">
@@ -117,7 +117,7 @@ export function FeaturesGrid() {
                   <h3 className="text-lg font-bold text-primary mb-3">
                     {f.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                  <p className="text-sm text-primary/70 mb-4 leading-relaxed">
                     {f.description}
                   </p>
                   <span className="text-xs font-bold text-safety-orange flex items-center gap-1 group-hover:translate-x-1 transition-transform duration-300 uppercase tracking-widest">

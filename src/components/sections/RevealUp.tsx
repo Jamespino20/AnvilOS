@@ -2,12 +2,13 @@
 App Name: AnvilOS
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 22, 2026 
 */
 
 "use client";
 
-import { motion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import { motion, useAnimation, useInView } from "framer-motion";
 
 export function RevealUp({
   children,
@@ -18,12 +19,22 @@ export function RevealUp({
   delay?: number;
   className?: string;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const controls = useAnimation();
+  const isInView = useInView(ref, { once: true, margin: "0px 0px -60px 0px" });
+
+  useEffect(() => {
+    if (isInView) {
+      controls.start({ opacity: 1, y: 0 });
+    }
+  }, [isInView, controls]);
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay }}
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={controls}
+      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: delay / 1000 }}
       className={className}
     >
       {children}

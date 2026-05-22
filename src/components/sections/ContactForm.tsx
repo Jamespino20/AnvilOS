@@ -11,7 +11,7 @@ import { RevealUp } from "./RevealUp";
 
 export function ContactForm() {
   return (
-    <section className="py-24 bg-background" id="contact">
+    <section className="py-16 bg-muted/30" id="contact">
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-5xl mx-auto flex flex-col lg:flex-row gap-12 lg:gap-24">
           <RevealUp className="flex-1">

@@ -38,7 +38,7 @@ export function FAQ() {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   return (
-    <section className="py-24 bg-card border-y border-border" id="faq">
+    <section className="py-16 bg-background" id="faq">
       <div className="max-w-3xl mx-auto px-6">
         <RevealUp className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-black text-primary mb-4 tracking-tight">

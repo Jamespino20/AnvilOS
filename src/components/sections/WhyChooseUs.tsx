@@ -76,7 +76,7 @@ const benefits = [
 export function WhyChooseUs() {
   return (
     <section
-      className="py-24 bg-card border-y border-border overflow-hidden"
+      className="py-16 bg-card border-y border-border overflow-hidden"
       id="why-choose-us"
     >
       <div className="max-w-7xl mx-auto px-6">
@@ -86,7 +86,7 @@ export function WhyChooseUs() {
               <h2 className="text-4xl md:text-5xl font-black text-primary mb-6 tracking-tight">
                 Built for the Toughest Retail Environments.
               </h2>
-              <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
+              <p className="text-lg text-primary/70 mb-8 leading-relaxed">
                 We didn&apos;t just build a POS; we built a fortress for your
                 data. AnvilOS is designed to withstand network drops, massive
                 inventory catalogs, and the rigorous demands of a busy hardware
@@ -108,7 +108,7 @@ export function WhyChooseUs() {
                       <h4 className="text-lg font-bold text-primary mb-1">
                         {b.title}
                       </h4>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-primary/70">
                         {b.description}
                       </p>
                     </div>
@@ -142,7 +142,7 @@ export function WhyChooseUs() {
                 <div className="text-white/20 font-black text-6xl tracking-tighter italic opacity-50 select-none">
                   ANVIL<span className="text-safety-orange/40">OS</span>
                 </div>
-                <div className="text-safety-orange/30 text-xs font-bold tracking-[0.4em] mt-4 uppercase">
+                <div className="text-[10px] font-bold text-primary/60 uppercase tracking-[0.2em] mt-4">
                   System Architecture v1.0
                 </div>
               </div>

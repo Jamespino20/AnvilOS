@@ -33,10 +33,7 @@ const testimonials = [
 
 export function Testimonials() {
   return (
-    <section
-      className="py-24 bg-muted/30 border-y border-border"
-      id="testimonials"
-    >
+    <section className="py-16 bg-background relative overflow-hidden" id="testimonials">
       <div className="max-w-7xl mx-auto px-6">
         <RevealUp className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-black text-primary mb-4 tracking-tight">
@@ -67,7 +64,7 @@ export function Testimonials() {
                     </div>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground italic relative z-10 leading-relaxed">
+                <p className="text-sm text-primary/80 italic relative z-10 leading-relaxed">
                   &ldquo;{t.quote}&rdquo;
                 </p>
               </div>
