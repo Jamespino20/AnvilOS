@@ -234,9 +234,9 @@ export default function RestocksPage() {
               </h2>
               <button onClick={() => { setShowNew(false); setCart([]); setRestockSearch(""); }} className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"><X className="h-5 w-5" /></button>
             </div>
-            <div className="flex gap-0 flex-1 overflow-hidden">
+            <div className="flex flex-col lg:flex-row gap-0 flex-1 overflow-hidden">
               {/* Product selection area */}
-              <div className="flex-[2] p-6 overflow-y-auto border-r border-[#e2e8f0] space-y-3">
+              <div className="lg:flex-[2] p-6 overflow-y-auto border-b lg:border-b-0 lg:border-r border-[#e2e8f0] space-y-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
                   <input type="text" value={restockSearch} onChange={(e) => setRestockSearch(e.target.value)}
@@ -284,19 +284,19 @@ export default function RestocksPage() {
                         <p className="text-xs font-medium text-[#0e212c] truncate">{item.productName}</p>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button type="button" onClick={() => updateCartQty(item.productId, -1)} className="p-1 rounded hover:bg-white text-[#64748b] transition-colors"><Minus className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => updateCartQty(item.productId, -1)} className="w-9 h-9 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors" aria-label="Decrease quantity"><Minus className="h-3.5 w-3.5" /></button>
                         {editingQty === item.productId ? (
                           <input type="number" min={1} value={qtyInput} autoFocus
                             onChange={(e) => setQtyInput(e.target.value)}
                             onBlur={() => commitQtyEdit(item.productId)}
                             onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur(); } if (e.key === "Escape") { setEditingQty(null); } }}
-                            className="w-14 text-center text-xs font-semibold text-[#0e212c] border border-[#fd761a] rounded-md px-1 py-0.5 focus:outline-none" />
+                            className="w-14 h-9 text-center text-xs font-semibold text-[#0e212c] border border-[#fd761a] rounded-lg px-1 focus:outline-none" />
                         ) : (
-                          <button type="button" onClick={() => startQtyEdit(item.productId, item.quantity)} className="min-w-[32px] text-center text-xs font-semibold text-[#0e212c] px-1 py-0.5 hover:bg-white rounded transition-colors">{item.quantity}</button>
+                          <button type="button" onClick={() => startQtyEdit(item.productId, item.quantity)} className="min-w-[40px] h-9 text-center text-xs font-semibold text-[#0e212c] px-2 hover:bg-white rounded-lg transition-colors" aria-label="Edit quantity">{item.quantity}</button>
                         )}
-                        <button type="button" onClick={() => updateCartQty(item.productId, 1)} className="p-1 rounded hover:bg-white text-[#64748b] transition-colors"><Plus className="h-3 w-3" /></button>
+                        <button type="button" onClick={() => updateCartQty(item.productId, 1)} className="w-9 h-9 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors" aria-label="Increase quantity"><Plus className="h-3.5 w-3.5" /></button>
                       </div>
-                      <button type="button" onClick={() => removeFromCart(item.productId)} className="p-1 rounded text-[#e2e8f0] hover:text-rose-500 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"><X className="h-3 w-3" /></button>
+                      <button type="button" onClick={() => removeFromCart(item.productId)} className="w-9 h-9 flex items-center justify-center text-rose-500 rounded-lg hover:bg-rose-50 transition-colors" aria-label="Remove item"><X className="h-3.5 w-3.5" /></button>
                     </div>
                   ))}
                   {cart.length === 0 && (

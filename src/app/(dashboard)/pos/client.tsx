@@ -326,7 +326,7 @@ export function POSClient({ products, buyers }: Props) {
 
         {/* Cart Sidebar (Desktop) / Drawer (Mobile) */}
         <div className={cn(
-          "lg:flex flex-col w-full lg:w-[380px] bg-white border border-[#e2e8f0] rounded-xl shadow-sm lg:relative",
+          "lg:flex flex-col w-full lg:w-[380px] bg-white border border-[#e2e8f0] rounded-xl shadow-sm lg:relative overflow-x-hidden",
           "fixed inset-x-0 bottom-0 z-[100] lg:z-auto h-[90vh] lg:h-auto transform transition-transform duration-300 ease-in-out lg:translate-y-0 translate-y-full",
           showCartMobile && "translate-y-0"
         )}>
@@ -354,8 +354,8 @@ export function POSClient({ products, buyers }: Props) {
           </div>
 
           <div className="p-5 border-b border-[#e2e8f0] space-y-3">
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2.5">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 text-sm">
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
                 <ShoppingCart className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
                 <select
                   value={txnType}
@@ -365,7 +365,7 @@ export function POSClient({ products, buyers }: Props) {
                     setError("");
                     setReturnReceipt("");
                   }}
-                  className="flex-1 border-b border-[#e2e8f0] py-1.5 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors"
+                  className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors"
                 >
                   {TXN_TYPES.map((t) => (
                     <option key={t.value} value={t.value}>
@@ -376,14 +376,14 @@ export function POSClient({ products, buyers }: Props) {
               </div>
 
               {txnType === "Return" && (
-                <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-2 flex-1">
+                <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-2 flex-1 min-w-0">
                   <RotateCcw className="h-3.5 w-3.5 text-amber-600 shrink-0" />
                   <input
                     type="number"
                     value={returnReceipt}
                     onChange={(e) => setReturnReceipt(e.target.value)}
                     placeholder="Receipt #"
-                    className="w-full bg-transparent text-xs text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
+                    className="w-full min-w-0 bg-transparent text-xs text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                   />
                 </div>
               )}
@@ -391,7 +391,7 @@ export function POSClient({ products, buyers }: Props) {
 
             {txnType !== "Return" && (
               <div className="space-y-2 text-xs">
-                <div className="flex items-center gap-2.5 relative">
+                <div className="flex items-center gap-2.5 relative min-w-0">
                   <User className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
                   <input
                     type="text"
@@ -405,7 +405,7 @@ export function POSClient({ products, buyers }: Props) {
                       setTimeout(() => setShowBuyerDropdown(false), 200)
                     }
                     placeholder="Buyer name *"
-                    className="flex-1 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
+                    className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
                   />
                   {showBuyerDropdown && buyerSuggestions.length > 0 && (
                     <div className="absolute left-5 top-full mt-1 w-full bg-white border border-[#e2e8f0] rounded-lg shadow-xl z-[110] max-h-48 overflow-y-auto">
@@ -428,38 +428,38 @@ export function POSClient({ products, buyers }: Props) {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-4">
-                  <div className="flex items-center gap-2.5 flex-1">
-                    <MapPin className="h-3.5 w-3.5 text-[#94a3b8]" />
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <MapPin className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
                     <input
                       type="text"
                       value={buyerAddress}
                       onChange={(e) => setBuyerAddress(e.target.value)}
                       placeholder="Address (opt)"
-                      className="flex-1 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
+                      className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                     />
                   </div>
-                  <div className="flex items-center gap-2.5 flex-1">
-                    <Phone className="h-3.5 w-3.5 text-[#94a3b8]" />
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <Phone className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
                     <input
                       type="text"
                       value={buyerContact}
                       onChange={(e) => setBuyerContact(e.target.value)}
                       placeholder="Contact (opt)"
-                      className="flex-1 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
+                      className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                     />
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-2.5">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
                 <CreditCard className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="flex-1 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none"
+                  className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none"
                 >
                   {PAYMENT_METHODS.map((m) => (
                     <option key={m} value={m}>
@@ -468,12 +468,12 @@ export function POSClient({ products, buyers }: Props) {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
                 <Truck className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
                 <select
                   value={deliveryMethod}
                   onChange={(e) => setDeliveryMethod(e.target.value)}
-                  className="flex-1 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none"
+                  className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none"
                 >
                   {DELIVERY_METHODS.map((m) => (
                     <option key={m} value={m}>
