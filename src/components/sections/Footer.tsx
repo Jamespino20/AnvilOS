@@ -41,8 +41,8 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           <div className="col-span-2 md:col-span-1">
             <img
-              src="/images/anvilos_landscapelogo.png"
-              alt="AnvilOS"
+              src="/images/CWLHardware_Logo.png"
+              alt="CWL Hardware"
               className="h-8 w-auto opacity-80 dark:brightness-0 dark:invert"
             />
             <p className="mt-4 text-xs text-muted-foreground leading-relaxed">

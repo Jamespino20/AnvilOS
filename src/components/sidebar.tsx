@@ -25,7 +25,10 @@ import { useState } from "react";
 const groups = [
   {
     label: "Overview",
-    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }, { href: "/finance", label: "Finance", icon: Wallet }],
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/finance", label: "Finance", icon: Wallet },
+    ],
   },
   {
     label: "Commerce",
@@ -69,15 +72,15 @@ export function DashboardSidebar({ collapsed, onToggle }: Props) {
     <nav
       className={cn(
         "h-full bg-[#0e212c] flex flex-col transition-all duration-300 relative z-50 shadow-2xl",
-        collapsed ? "w-0 overflow-hidden" : "w-[260px]"
+        collapsed ? "w-0 overflow-hidden" : "w-[260px]",
       )}
     >
       <div className="px-6 py-6 border-b border-white/10 flex items-center justify-between">
         {!collapsed && (
           <div className="flex items-center gap-3">
             <img
-              src="/images/anvilos_landscapelogo.png"
-              alt="AnvilOS"
+              src="/images/CWLHardware_Logo.png"
+              alt="CWL Hardware"
               className="h-8 w-auto brightness-0 invert"
             />
           </div>
@@ -124,7 +127,7 @@ export function DashboardSidebar({ collapsed, onToggle }: Props) {
                           "flex items-center gap-3 mx-3 px-4 py-2.5 text-sm font-medium rounded-sm transition-all duration-200",
                           isActive
                             ? "bg-[#fd761a]/15 text-[#fd761a] border-l-[3px] border-[#fd761a]"
-                            : "text-white/60 hover:text-white hover:bg-white/5"
+                            : "text-white/60 hover:text-white hover:bg-white/5",
                         )}
                       >
                         <item.icon className="h-5 w-5 shrink-0" />
@@ -143,7 +146,7 @@ export function DashboardSidebar({ collapsed, onToggle }: Props) {
           onClick={() => signOut({ callbackUrl: "/login" })}
           className={cn(
             "w-[calc(100%-24px)] mx-3 flex items-center gap-3 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-sm transition-all",
-            collapsed && "px-2"
+            collapsed && "px-2",
           )}
         >
           <LogOut className="h-5 w-5" />
@@ -185,4 +188,3 @@ export function DashboardSidebar({ collapsed, onToggle }: Props) {
     </>
   );
 }
-

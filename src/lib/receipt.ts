@@ -5,7 +5,12 @@ export function generateReceiptHtml(data: {
   buyerName: string;
   buyerAddress?: string;
   buyerContact?: string;
-  items: { productName: string; quantity: number; unitPrice: number; totalPrice: number }[];
+  items: {
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }[];
   grandTotal: number;
   paymentMethod?: string;
   transactionType: string;
@@ -18,7 +23,7 @@ export function generateReceiptHtml(data: {
         <td style="padding:6px 0;border-bottom:1px dashed #e2e8f0;font-size:12px;text-align:center">${item.quantity}</td>
         <td style="padding:6px 0;border-bottom:1px dashed #e2e8f0;font-size:12px;text-align:right">₱${item.unitPrice.toLocaleString()}</td>
         <td style="padding:6px 0;border-bottom:1px dashed #e2e8f0;font-size:12px;text-align:right">₱${item.totalPrice.toLocaleString()}</td>
-      </tr>`
+      </tr>`,
     )
     .join("");
 
@@ -61,7 +66,7 @@ export function generateReceiptHtml(data: {
 <body>
   <div class="receipt" id="receipt">
     <div class="header">
-      <h1>ANVILOS</h1>
+      <h1>CWL Hardware</h1>
       <div class="sub">Hardware &amp; Supply</div>
       <div class="details">Receipt #${data.receiptNumber}<br>${data.date.toLocaleString("en-PH")}<br>Seller: ${data.sellerName}</div>
     </div>
@@ -97,7 +102,7 @@ export function generateReceiptHtml(data: {
 
     <div class="footer">
       Thank you for your purchase!<br>
-      &copy; ${new Date().getFullYear()} AnvilOS &middot; Hardware &amp; Supply
+      &copy; ${new Date().getFullYear()} AnvilOS &middot; CWL Hardware
     </div>
   </div>
   <script>
@@ -114,7 +119,12 @@ export function downloadReceipt(data: {
   buyerName: string;
   buyerAddress?: string;
   buyerContact?: string;
-  items: { productName: string; quantity: number; unitPrice: number; totalPrice: number }[];
+  items: {
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }[];
   grandTotal: number;
   paymentMethod?: string;
   transactionType: string;

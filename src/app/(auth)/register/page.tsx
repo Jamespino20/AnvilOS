@@ -97,8 +97,8 @@ export default function RegisterPage() {
       <div className="w-full max-w-lg">
         <div className="text-center mb-6">
           <img
-            src="/images/anvilos_landscapelogo.png"
-            alt="AnvilOS"
+            src="/images/CWLHardware_Logo.png"
+            alt="CWL Hardware"
             className="h-10 w-auto mx-auto brightness-0"
             style={{
               filter: "brightness(0) sepia(1) hue-rotate(190deg) saturate(3)",

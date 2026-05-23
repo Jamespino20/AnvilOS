@@ -67,8 +67,8 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-2 group">
             <div className="relative h-9 min-w-[140px] overflow-hidden">
               <img
-                src="/images/anvilos_landscapelogo.png"
-                alt="AnvilOS"
+                src="/images/CWLHardware_Logo.png"
+                alt="CWL Hardware"
                 className={cn(
                   "h-full w-auto object-contain transition-all duration-500",
                   !isScrolled && !isMobileMenuOpen && "brightness-0 invert",
@@ -121,10 +121,14 @@ export function Navbar() {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className={cn(
               "md:hidden p-2 rounded-lg transition-colors",
-              isScrolled || isMobileMenuOpen ? "text-foreground" : "text-white"
+              isScrolled || isMobileMenuOpen ? "text-foreground" : "text-white",
             )}
           >
-            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMobileMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
           </button>
         </div>
       </nav>
@@ -149,8 +153,8 @@ export function Navbar() {
             >
               <div className="flex items-center justify-between mb-12">
                 <img
-                  src="/images/anvilos_landscapelogo.png"
-                  alt="AnvilOS"
+                  src="/images/CWLHardware_Logo.png"
+                  alt="CWL Hardware"
                   className="h-8 w-auto"
                 />
                 <button
