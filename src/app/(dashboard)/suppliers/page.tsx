@@ -27,6 +27,9 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
+import { ExportButton } from "@/components/export-button";
+import { CSVImportButton } from "@/components/csv-import";
+import { exportCSV } from "@/lib/csv";
 import type { Supplier } from "@prisma/client";
 
 export default function SuppliersPage() {
@@ -128,12 +131,25 @@ export default function SuppliersPage() {
           title="Supplier Management"
           subtitle="Manage your supply chain partners — add, edit, and toggle supplier availability."
         />
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
-        >
-          <Plus className="h-4 w-4" /> Add Supplier
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
+          >
+            <Plus className="h-4 w-4" /> Add Supplier
+          </button>
+          <ExportButton
+            filename={`anvilos-suppliers-${new Date().toISOString().slice(0, 10)}.csv`}
+            headers={["Supplier Name", "Contact Person", "Contact Number", "Email", "Address", "Status"]}
+            rows={suppliers.map((s) => [
+              s.supplierName, s.contactName || "", s.contactNumber || "",
+              s.email || "", s.address || "",
+              s.isAvailable ? "Active" : "Inactive",
+            ])}
+            label="Export CSV"
+          />
+          <CSVImportButton table="suppliers" onImported={() => window.location.reload()} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

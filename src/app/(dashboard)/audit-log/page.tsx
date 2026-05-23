@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, Fragment } from "react";
-import { getAuditLogs } from "@/actions";
+import { getPaginatedAuditLogs, getAuditLogCount } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
-import { Shield, ChevronDown, ChevronUp, Search, Loader2 } from "lucide-react";
+import { CSVImportButton } from "@/components/csv-import";
+import { ExportDialog } from "@/components/export-dialog";
+import { Shield, ChevronDown, ChevronUp, Search, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface AuditEntry {
   id: number;
@@ -28,6 +30,17 @@ function parseDetails(details: string | null): { text: string; deltas: { before:
   return { text, deltas };
 }
 
+const PER_PAGE_OPTIONS = [10, 25, 50, 100, 200];
+
+const EXPORT_COLUMNS = [
+  { key: "logTime", label: "Time" },
+  { key: "seller", label: "User" },
+  { key: "panel", label: "Panel" },
+  { key: "action", label: "Action" },
+  { key: "details", label: "Details" },
+  { key: "successStatus", label: "Status" },
+];
+
 export default function AuditLogPage() {
   const [logs, setLogs] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,31 +49,65 @@ export default function AuditLogPage() {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getAuditLogs({ search: search || undefined, panel: panel || undefined, startDate: start || undefined, endDate: end || undefined });
-      setLogs(data as unknown as AuditEntry[]);
+      const result = await getPaginatedAuditLogs(page, perPage, { search: search || undefined, panel: panel || undefined, startDate: start || undefined, endDate: end || undefined });
+      setLogs(result.logs as unknown as AuditEntry[]);
+      setTotal(result.total);
+      setTotalPages(result.totalPages);
     } finally {
       setLoading(false);
     }
-  }, [search, panel, start, end]);
+  }, [page, perPage, search, panel, start, end]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
+  function handleSearchChange(val: string) { setSearch(val); setPage(1); }
+  function handlePanelChange(val: string) { setPanel(val); setPage(1); }
+  function handleStartChange(val: string) { setStart(val); setPage(1); }
+  function handleEndChange(val: string) { setEnd(val); setPage(1); }
+
+  async function fetchExportRows(selectedColumns: string[]) {
+    const expanded = await getPaginatedAuditLogs(1, 10000, { search: search || undefined, panel: panel || undefined, startDate: start || undefined, endDate: end || undefined });
+    return expanded.logs.map((log: any) =>
+      selectedColumns.map((key) => {
+        if (key === "logTime") return new Date(log.logTime).toLocaleString("en-PH");
+        if (key === "seller") return log.seller?.sellerName || "System";
+        if (key === "successStatus") return log.successStatus ? "Success" : "Failed";
+        return String(log[key] ?? "");
+      })
+    );
+  }
+
   return (
     <div className="space-y-5">
-      <PageHeader title="Audit Logs" subtitle="Track all system activities, user actions, and changes across modules for security and compliance." />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeader title="Audit Logs" subtitle="Track all system activities, user actions, and changes across modules." />
+        <div className="flex items-center gap-2">
+          <ExportDialog
+            filename={`anvilos-audit-logs-${new Date().toISOString().slice(0, 10)}.csv`}
+            allColumns={EXPORT_COLUMNS}
+            fetchRows={fetchExportRows}
+            label="Export"
+          />
+          <CSVImportButton table="audit-logs" onImported={() => {}} />
+        </div>
+      </div>
 
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+          <input type="text" value={search} onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search actions, details..."
             className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
         </div>
-        <select value={panel} onChange={(e) => setPanel(e.target.value)}
+        <select value={panel} onChange={(e) => handlePanelChange(e.target.value)}
           className="min-w-[140px] px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]">
           <option value="">All Panels</option>
           <option value="POSPanel">POS Panel</option>
@@ -72,9 +119,9 @@ export default function AuditLogPage() {
           <option value="Settings">Settings</option>
           <option value="Buyers">Buyers</option>
         </select>
-        <input type="date" value={start} onChange={(e) => setStart(e.target.value)}
+        <input type="date" value={start} onChange={(e) => handleStartChange(e.target.value)}
           className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
-        <input type="date" value={end} onChange={(e) => setEnd(e.target.value)}
+        <input type="date" value={end} onChange={(e) => handleEndChange(e.target.value)}
           className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
       </div>
 
@@ -158,6 +205,42 @@ export default function AuditLogPage() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 0 && (
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-[#64748b]">{total} total logs</span>
+            <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+              className="ml-2 px-2 py-1 border border-[#e2e8f0] rounded-lg text-xs focus:outline-none focus:border-[#fd761a] bg-white">
+              {PER_PAGE_OPTIONS.map((n) => <option key={n} value={n}>{n} / page</option>)}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}
+              className="p-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+              let p: number;
+              if (totalPages <= 7) p = i + 1;
+              else if (page <= 4) p = i + 1;
+              else if (page >= totalPages - 3) p = totalPages - 6 + i;
+              else p = page - 3 + i;
+              return (
+                <button key={p} onClick={() => setPage(p)}
+                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${p === page ? "bg-[#fd761a] text-white" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
+                  {p}
+                </button>
+              );
+            })}
+            <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}
+              className="p-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

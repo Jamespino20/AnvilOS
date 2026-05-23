@@ -31,6 +31,9 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
+import { ExportButton } from "@/components/export-button";
+import { CSVImportButton } from "@/components/csv-import";
+import { exportCSV } from "@/lib/csv";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
@@ -425,6 +428,22 @@ export default function BuyersPage() {
             placeholder="0"
             className="w-16 px-2 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
           />
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <ExportButton
+            filename={`anvilos-buyers-${new Date().toISOString().slice(0, 10)}.csv`}
+            headers={["Buyer Name", "Total Orders", "Total Spent", "Address", "Contact", "Last Order"]}
+            rows={filtered.map((b) => [
+              b.buyerName,
+              String(b.totalOrders),
+              `₱${b.totalSpent.toLocaleString()}`,
+              b.buyerAddress || "",
+              b.buyerContact || "",
+              b.lastOrder ? new Date(b.lastOrder).toLocaleDateString("en-PH") : "",
+            ])}
+            label="Export CSV"
+          />
+          <CSVImportButton table="buyers" onImported={() => window.location.reload()} />
         </div>
       </div>
 

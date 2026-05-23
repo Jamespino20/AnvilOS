@@ -21,6 +21,9 @@ import {
 } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { ExportButton } from "@/components/export-button";
+import { CSVImportButton } from "@/components/csv-import";
+import { exportCSV } from "@/lib/csv";
 import type { Product, Category, Supplier } from "@prisma/client";
 
 interface Props {
@@ -270,6 +273,18 @@ export function InventoryClient({
           >
             <FolderPlus className="h-4 w-4" />
           </button>
+          <ExportButton
+            filename={`anvilos-inventory-${new Date().toISOString().slice(0, 10)}.csv`}
+            headers={["Product Name", "Category", "Supplier", "Unit Price", "Quantity", "Min Threshold", "Status"]}
+            rows={filtered.map((p) => [
+              p.productName, p.category, p.supplierName,
+              `₱${Number(p.unitPrice).toLocaleString()}`,
+              String(p.quantity), String(p.minThreshold),
+              p.quantity === 0 ? "Out of Stock" : p.quantity <= p.minThreshold ? "Low Stock" : "In Stock",
+            ])}
+            label="Export"
+          />
+          <CSVImportButton table="inventory" onImported={() => window.location.reload()} />
         </div>
       </div>
 

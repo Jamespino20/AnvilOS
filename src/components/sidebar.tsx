@@ -17,6 +17,7 @@ import {
   ArrowDownUp,
   PanelLeftClose,
   PanelLeft,
+  Wallet,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
@@ -24,7 +25,7 @@ import { useState } from "react";
 const groups = [
   {
     label: "Overview",
-    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }, { href: "/finance", label: "Finance", icon: Wallet }],
   },
   {
     label: "Commerce",

@@ -17,6 +17,7 @@ type AuditPanel =
   | "Settings"
   | "Buyers"
   | "Restocks"
+  | "Data Import"
   | "System";
 type AuditAction = string;
 

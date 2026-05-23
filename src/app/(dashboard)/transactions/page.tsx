@@ -25,6 +25,9 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
+import { ExportButton } from "@/components/export-button";
+import { CSVImportButton } from "@/components/csv-import";
+import { exportCSV } from "@/lib/csv";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
@@ -106,6 +109,22 @@ export default function TransactionsPage() {
           title="Transactions"
           subtitle="View and manage all sales, returns, restocks, and adjustments."
         />
+        <div className="flex items-center gap-2">
+          <ExportButton
+            filename={`anvilos-transactions-${new Date().toISOString().slice(0, 10)}.csv`}
+            headers={["Receipt #", "Buyer", "Type", "Date", "Payment", "Total", "Status"]}
+            rows={transactions.map((t) => [
+              String(t.receiptNumber), t.buyerName,
+              t.transactionType.replace(/([A-Z])/g, " $1").trim(),
+              new Date(t.transactionDate).toLocaleDateString("en-PH"),
+              t.paymentMethod || "—",
+              `₱${Number(t.grandTotal || 0).toLocaleString()}`,
+              t.transactionStatus,
+            ])}
+            label="Export CSV"
+          />
+          <CSVImportButton table="transactions" onImported={() => window.location.reload()} />
+        </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
           <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
