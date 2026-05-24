@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   ShoppingCart,
   Package,
+  FolderTree,
   Receipt,
   Truck,
   Shield,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
+import { useSidebarBadges } from "@/components/sidebar-badges";
 
 const groups = [
   {
@@ -43,6 +45,7 @@ const groups = [
     label: "Stock",
     items: [
       { href: "/inventory", label: "Inventory", icon: Package },
+      { href: "/categories", label: "Categories", icon: FolderTree },
       { href: "/suppliers", label: "Suppliers", icon: Truck },
       { href: "/restocks", label: "Restocks", icon: ArrowDownUp },
     ],
@@ -63,6 +66,7 @@ interface Props {
 export function DashboardSidebar({ collapsed, onToggle }: Props) {
   const pathname = usePathname();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const { lowStockCount, pendingRestockCount } = useSidebarBadges();
 
   function toggleGroup(label: string) {
     setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -131,7 +135,17 @@ export function DashboardSidebar({ collapsed, onToggle }: Props) {
                         )}
                       >
                         <item.icon className="h-5 w-5 shrink-0" />
-                        {item.label}
+                        <span className="flex-1">{item.label}</span>
+                        {item.href === "/inventory" && lowStockCount > 0 && (
+                          <span className="bg-[#fd761a] text-white text-[10px] font-bold min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center leading-none">
+                            {lowStockCount}
+                          </span>
+                        )}
+                        {item.href === "/restocks" && pendingRestockCount > 0 && (
+                          <span className="bg-[#fd761a] text-white text-[10px] font-bold min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center leading-none">
+                            {pendingRestockCount}
+                          </span>
+                        )}
                       </Link>
                     );
                   })}
@@ -144,6 +158,7 @@ export function DashboardSidebar({ collapsed, onToggle }: Props) {
       <div className="border-t border-white/10 py-4 space-y-0.5">
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
+          title="Sign out of your account"
           className={cn(
             "w-[calc(100%-24px)] mx-3 flex items-center gap-3 px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-sm transition-all",
             collapsed && "px-2",

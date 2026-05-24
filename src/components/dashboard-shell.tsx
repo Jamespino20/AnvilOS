@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 interface Props {
   children: React.ReactNode;
-  user: { name?: string | null; email?: string | null };
+  user: { name?: string | null; email?: string | null; imageUrl?: string | null };
   unreadCount: number;
 }
 

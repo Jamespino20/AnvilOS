@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 import { RevealUp } from "./RevealUp";
@@ -16,8 +17,8 @@ export function BottomCTA() {
             Ready to Upgrade Your Floor?
           </h2>
           <p className="text-lg text-primary-foreground/70 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Join hundreds of stores already running on AnvilOS. Start your free
-            trial today and experience the difference of purpose-built
+            Join hundreds of stores already running on CWL Hardware. Start your
+            free trial today and experience the difference of purpose-built
             industrial software.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

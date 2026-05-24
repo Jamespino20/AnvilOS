@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 "use client";
@@ -28,6 +29,7 @@ import {
   Pencil,
   X,
   Save,
+  Download,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -88,6 +90,41 @@ export default function BuyersPage() {
     }
   }
 
+  function exportBuyerReport() {
+    if (!selectedBuyer) return;
+    const totalSpent = history.reduce(
+      (s, t) => s + Number(t.grandTotal || 0),
+      0,
+    );
+    const rows: string[][] = [];
+    rows.push(["Buyer Report", selectedBuyer]);
+    rows.push(["Address", history[0]?.buyerAddress || "—"]);
+    rows.push(["Contact", history[0]?.buyerContact || "—"]);
+    rows.push([]);
+    rows.push(["Receipt #", "Type", "Date", "Total", "Status"]);
+    for (const t of history) {
+      rows.push([
+        `#${t.receiptNumber}`,
+        t.transactionType.replace(/([A-Z])/g, " $1").trim(),
+        new Date(t.transactionDate).toLocaleDateString("en-PH"),
+        `₱${Number(t.grandTotal || 0).toLocaleString()}`,
+        t.transactionStatus,
+      ]);
+    }
+    rows.push([]);
+    rows.push(["Summary"]);
+    rows.push(["Total Orders", String(history.length)]);
+    rows.push(["Total Spent", `₱${totalSpent.toLocaleString()}`]);
+
+    const csv =
+      "data:text/csv;charset=utf-8," +
+      rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = encodeURI(csv);
+    a.download = `buyer-report-${selectedBuyer.replace(/\s+/g, "-")}.csv`;
+    a.click();
+  }
+
   const filtered = buyers.filter((b) => {
     if (search && !b.buyerName.toLowerCase().includes(search.toLowerCase()))
       return false;
@@ -145,9 +182,17 @@ export default function BuyersPage() {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => setShowEditBuyer(true)}
+                title="Edit buyer information"
                 className="p-2 text-[#64748b] hover:bg-[#f1f5f9] rounded-lg transition-all text-sm flex items-center gap-1.5"
               >
                 <Pencil className="h-4 w-4" /> Edit Info
+              </button>
+              <button
+                onClick={exportBuyerReport}
+                title="Export buyer transaction report"
+                className="p-2 text-[#64748b] hover:bg-[#f1f5f9] rounded-lg transition-all text-sm flex items-center gap-1.5"
+              >
+                <Download className="h-4 w-4" /> Export Report
               </button>
               <div className="text-right">
                 <p className="text-xs text-[#94a3b8] uppercase tracking-wider font-semibold">
@@ -431,84 +476,130 @@ export default function BuyersPage() {
         </div>
         <div className="flex items-center gap-2 ml-auto">
           <ExportButton
-            filename={`anvilos-buyers-${new Date().toISOString().slice(0, 10)}.csv`}
-            headers={["Buyer Name", "Total Orders", "Total Spent", "Address", "Contact", "Last Order"]}
+            filename={`cwl-hardware-buyers-${new Date().toISOString().slice(0, 10)}.csv`}
+            headers={[
+              "Buyer Name",
+              "Total Orders",
+              "Total Spent",
+              "Address",
+              "Contact",
+              "Last Order",
+            ]}
             rows={filtered.map((b) => [
               b.buyerName,
               String(b.totalOrders),
               `₱${b.totalSpent.toLocaleString()}`,
               b.buyerAddress || "",
               b.buyerContact || "",
-              b.lastOrder ? new Date(b.lastOrder).toLocaleDateString("en-PH") : "",
+              b.lastOrder
+                ? new Date(b.lastOrder).toLocaleDateString("en-PH")
+                : "",
             ])}
             label="Export CSV"
+            title="Export buyers list"
           />
-          <CSVImportButton table="buyers" onImported={() => window.location.reload()} />
+          <CSVImportButton
+            table="buyers"
+            onImported={() => window.location.reload()}
+            title="Import buyers from CSV"
+          />
         </div>
       </div>
 
-      <div className="grid gap-3">
-        {paged.map((buyer) => (
-          <button
-            key={buyer.buyerName}
-            onClick={() => selectBuyer(buyer.buyerName)}
-            className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex items-center gap-4 text-left hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 group"
-          >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0e212c] to-[#1a3a4a] text-white flex items-center justify-center text-lg font-bold shadow-sm shrink-0">
-              {buyer.buyerName.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0 grid grid-cols-4 gap-4">
-              <div>
-                <p className="font-semibold text-[#0e212c] group-hover:text-[#fd761a] transition-colors truncate">
-                  {buyer.buyerName}
-                </p>
-                {buyer.buyerAddress && (
-                  <p className="text-xs text-[#94a3b8] mt-0.5 truncate">
-                    {buyer.buyerAddress}
-                  </p>
-                )}
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                  Orders
-                </p>
-                <p className="text-sm font-semibold text-[#0e212c] mt-0.5">
-                  {buyer.totalOrders}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+      <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Contact
+                </th>
+                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Address
+                </th>
+                <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Total Orders
+                </th>
+                <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Total Spent
-                </p>
-                <p className="text-sm font-mono font-semibold text-[#fd761a] mt-0.5">
-                  ₱{buyer.totalSpent.toLocaleString()}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                </th>
+                <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Last Order
-                </p>
-                <p className="text-sm text-[#64748b] mt-0.5">
-                  {buyer.lastOrder
-                    ? new Date(buyer.lastOrder).toLocaleDateString("en-PH", {
-                        month: "short",
-                        day: "numeric",
-                      })
-                    : "—"}
-                </p>
-              </div>
-            </div>
-          </button>
-        ))}
-        {filtered.length === 0 && (
-          <div className="text-center py-16 text-[#94a3b8]">
-            <Users className="h-8 w-8 mx-auto mb-3 opacity-50" />
-            <p className="font-medium">No buyers found</p>
-            <p className="text-xs mt-1">
-              Buyers appear after their first transaction
-            </p>
-          </div>
-        )}
+                </th>
+                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#e2e8f0]">
+              {paged.map((buyer, i) => (
+                <tr
+                  key={buyer.buyerName}
+                  className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} hover:bg-[#f1f5f9] transition-colors cursor-pointer`}
+                  onClick={() => selectBuyer(buyer.buyerName)}
+                >
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#0e212c] to-[#1a3a4a] text-white flex items-center justify-center text-sm font-bold shrink-0">
+                        {buyer.buyerName.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-medium text-[#0e212c]">
+                        {buyer.buyerName}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-4 text-[#64748b]">
+                    {buyer.buyerContact || "—"}
+                  </td>
+                  <td className="p-4 text-[#64748b] max-w-[200px] truncate">
+                    {buyer.buyerAddress || "—"}
+                  </td>
+                  <td className="p-4 text-right font-medium text-[#0e212c]">
+                    {buyer.totalOrders}
+                  </td>
+                  <td className="p-4 text-right font-mono font-semibold text-[#fd761a]">
+                    ₱{buyer.totalSpent.toLocaleString()}
+                  </td>
+                  <td className="p-4 text-right text-[#64748b]">
+                    {buyer.lastOrder
+                      ? new Date(buyer.lastOrder).toLocaleDateString("en-PH", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "—"}
+                  </td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectBuyer(buyer.buyerName);
+                      }}
+                      title="View buyer details and history"
+                      className="px-3 py-1.5 text-xs font-medium text-[#fd761a] hover:bg-[#fff5ed] rounded-lg transition-all"
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-[#94a3b8]">
+                    <Users className="h-8 w-8 mx-auto mb-3 opacity-50" />
+                    <p className="font-medium">No buyers found</p>
+                    <p className="text-xs mt-1">
+                      Buyers appear after their first transaction
+                    </p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {totalPages > 1 && (

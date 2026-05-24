@@ -1,14 +1,16 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell, Shield, User, Palette, Save } from "lucide-react";
+import { getNotifPrefs, updateNotifPrefs } from "@/actions/email";
 
 const sections = [
   { id: "profile", label: "Profile", icon: User },
@@ -20,8 +22,28 @@ const sections = [
 export default function SettingsPage() {
   const [active, setActive] = useState("profile");
   const [saved, setSaved] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState({
+    notifLowStock: true,
+    notifDailySales: true,
+    notifTransaction: true,
+  });
+  const [loading, setLoading] = useState(true);
 
-  function handleSave() {
+  useEffect(() => {
+    getNotifPrefs().then((data) => {
+      if (data) {
+        setNotifPrefs({
+          notifLowStock: data.notifLowStock,
+          notifDailySales: data.notifDailySales,
+          notifTransaction: data.notifTransaction,
+        });
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  async function handleSave() {
+    await updateNotifPrefs(notifPrefs);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
@@ -86,39 +108,35 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold text-[#0e212c]">
                 Notification Preferences
               </h2>
-              <div className="space-y-3">
-                {[
-                  {
-                    label: "Low Stock Alerts",
-                    desc: "Get notified when stock is below threshold",
-                  },
-                  {
-                    label: "Daily Sales Report",
-                    desc: "Receive a daily summary of sales activity",
-                  },
-                  {
-                    label: "Transaction Updates",
-                    desc: "Notifications for completed or failed transactions",
-                  },
-                ].map((f) => (
-                  <label
-                    key={f.label}
-                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-[#f8fafc] transition-colors cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      defaultChecked
-                      className="mt-0.5 h-4 w-4 accent-[#fd761a]"
-                    />
-                    <div>
-                      <p className="text-sm font-medium text-[#0e212c]">
-                        {f.label}
-                      </p>
-                      <p className="text-xs text-[#94a3b8]">{f.desc}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
+              {loading ? (
+                <p className="text-sm text-[#94a3b8]">Loading preferences...</p>
+              ) : (
+                <div className="space-y-3">
+                  {[
+                    { key: "notifLowStock" as const, label: "Low Stock Alerts", desc: "Get email notified when stock is below threshold" },
+                    { key: "notifDailySales" as const, label: "Daily Sales Report", desc: "Receive a daily summary of sales activity via email" },
+                    { key: "notifTransaction" as const, label: "Transaction Updates", desc: "Email notifications for completed or failed transactions" },
+                  ].map((f) => (
+                    <label
+                      key={f.key}
+                      className="flex items-start gap-3 p-3 rounded-lg hover:bg-[#f8fafc] transition-colors cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={notifPrefs[f.key]}
+                        onChange={(e) => setNotifPrefs((prev) => ({ ...prev, [f.key]: e.target.checked }))}
+                        className="mt-0.5 h-4 w-4 accent-[#fd761a]"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-[#0e212c]">
+                          {f.label}
+                        </p>
+                        <p className="text-xs text-[#94a3b8]">{f.desc}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
             </>
           )}
           {active === "security" && (

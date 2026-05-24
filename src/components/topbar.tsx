@@ -7,7 +7,7 @@ import { SettingsModal } from "@/components/settings-modal";
 import { SupportModal } from "@/components/support-modal";
 
 interface TopbarProps {
-  user: { name?: string | null; email?: string | null };
+  user: { name?: string | null; email?: string | null; imageUrl?: string | null };
   unreadCount?: number;
   onToggleSidebar?: () => void;
 }
@@ -60,9 +60,13 @@ export function DashboardTopbar({
             <HelpCircle className="h-5 w-5" />
           </button>
           <div className="ml-3 pl-4 border-l border-[#e2e8f0] flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fd761a] to-[#e56600] text-white flex items-center justify-center text-xs font-bold shadow-sm">
-              {user.name?.charAt(0)?.toUpperCase() || "U"}
-            </div>
+            {user.imageUrl ? (
+              <img src={user.imageUrl} alt="Profile" className="w-8 h-8 rounded-lg object-cover shadow-sm" />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fd761a] to-[#e56600] text-white dark:bg-white/10 dark:text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                {user.name?.charAt(0)?.toUpperCase() || "U"}
+              </div>
+            )}
             <div className="hidden sm:block">
               <p className="text-sm font-semibold text-[#0e212c] leading-tight">
                 {user.name || "User"}

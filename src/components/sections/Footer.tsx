@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 import Link from "next/link";
@@ -72,7 +73,7 @@ export function Footer() {
         </div>
         <div className="mt-16 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-            &copy; {new Date().getFullYear()} AnvilOS. All rights reserved.
+            &copy; {new Date().getFullYear()} CWL Hardware. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             {["Twitter", "GitHub", "LinkedIn"].map((s) => (

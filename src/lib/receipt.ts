@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Receipt generation utilities – HTML print view and PDF download using jsPDF
+ */
+
+import { jsPDF } from "jspdf";
+
 export function generateReceiptHtml(data: {
   receiptNumber: number;
   date: Date;
@@ -102,7 +108,7 @@ export function generateReceiptHtml(data: {
 
     <div class="footer">
       Thank you for your purchase!<br>
-      &copy; ${new Date().getFullYear()} AnvilOS &middot; CWL Hardware
+      &copy; ${new Date().getFullYear()} CWL Hardware
     </div>
   </div>
   <script>
@@ -143,4 +149,159 @@ export function downloadReceipt(data: {
     a.click();
   }
   setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+export function downloadReceiptPdf(data: {
+  receiptNumber: number;
+  date: Date;
+  sellerName: string;
+  buyerName: string;
+  buyerAddress?: string;
+  buyerContact?: string;
+  items: {
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }[];
+  grandTotal: number;
+  paymentMethod?: string;
+  transactionType: string;
+}) {
+  const doc = new jsPDF({ unit: "mm", format: [80, 400] });
+
+  const pageWidth = 80;
+  const left = 5;
+  const right = pageWidth - 5;
+  const center = pageWidth / 2;
+
+  let y = 10;
+
+  // --- Header ---
+  doc.setFont("courier", "bold");
+  doc.setFontSize(16);
+  doc.text("CWL HARDWARE", center, y, { align: "center" });
+  y += 6;
+
+  doc.setFont("courier", "normal");
+  doc.setFontSize(8);
+  doc.text("Hardware & Supply", center, y, { align: "center" });
+  y += 4;
+
+  doc.setFontSize(7);
+  doc.text("123 Hardware Street, Manila", center, y, { align: "center" });
+  y += 3.5;
+  doc.text("Tel: (02) 8123-4567", center, y, { align: "center" });
+  y += 5;
+
+  // Separator
+  doc.setDrawColor(0, 0, 0);
+  doc.line(left, y, right, y);
+  y += 4;
+
+  // --- Receipt info ---
+  doc.setFont("courier", "bold");
+  doc.setFontSize(8);
+  doc.text(`Receipt #${data.receiptNumber}`, left, y);
+  y += 4;
+  doc.setFont("courier", "normal");
+  doc.text(data.date.toLocaleString("en-PH"), left, y);
+  y += 4;
+  doc.text(`Seller: ${data.sellerName}`, left, y);
+  y += 6;
+
+  // --- Buyer ---
+  doc.setFont("courier", "bold");
+  doc.text("BUYER", left, y);
+  y += 4;
+  doc.setFont("courier", "normal");
+  doc.setFontSize(8);
+  doc.text(data.buyerName, left, y);
+  y += 4;
+  if (data.buyerAddress) {
+    doc.text(data.buyerAddress, left, y);
+    y += 4;
+  }
+  if (data.buyerContact) {
+    doc.text(data.buyerContact, left, y);
+    y += 4;
+  }
+  y += 3;
+
+  // --- Transaction ---
+  const txnLabel: Record<string, string> = {
+    SaleWalkIn: "Sale (Walk-In)",
+    SalePO: "Sale (P.O.)",
+    Return: "Return",
+    Restock: "Restock",
+    Adjustment: "Adjustment",
+    Damage: "Damage",
+  };
+
+  doc.setFont("courier", "bold");
+  doc.text("TRANSACTION", left, y);
+  y += 4;
+  doc.setFont("courier", "normal");
+  doc.text(`Type: ${txnLabel[data.transactionType] || data.transactionType}`, left, y);
+  y += 4;
+  if (data.paymentMethod) {
+    doc.text(`Payment: ${data.paymentMethod}`, left, y);
+    y += 4;
+  }
+  y += 3;
+
+  // --- Items ---
+  doc.setFont("courier", "bold");
+  doc.text("ITEMS", left, y);
+  y += 2;
+  doc.line(left, y, right, y);
+  y += 1;
+
+  // Column headers
+  doc.setFontSize(7);
+  doc.setFont("courier", "bold");
+  doc.text("Item", left, y);
+  doc.text("Qty", 45, y, { align: "center" });
+  doc.text("Price", 58, y, { align: "right" });
+  doc.text("Total", right, y, { align: "right" });
+  y += 1;
+  doc.line(left, y, right, y);
+  y += 3;
+
+  // Items
+  doc.setFont("courier", "normal");
+  doc.setFontSize(7);
+  for (const item of data.items) {
+    const name =
+      item.productName.length > 18
+        ? item.productName.substring(0, 17) + "&"
+        : item.productName;
+    doc.text(name, left, y);
+    doc.text(String(item.quantity), 45, y, { align: "center" });
+    doc.text(`PHP${item.unitPrice.toLocaleString()}`, 58, y, { align: "right" });
+    doc.text(`PHP${item.totalPrice.toLocaleString()}`, right, y, { align: "right" });
+    y += 4;
+  }
+
+  // Grand total
+  y += 2;
+  doc.setDrawColor(0, 0, 0);
+  doc.line(left, y, right, y);
+  y += 2;
+  doc.setFont("courier", "bold");
+  doc.setFontSize(10);
+  doc.text("GRAND TOTAL", left, y);
+  doc.text(`PHP${data.grandTotal.toLocaleString()}`, right, y, { align: "right" });
+  y += 7;
+
+  // --- Footer ---
+  doc.line(left, y, right, y);
+  y += 4;
+  doc.setFont("courier", "normal");
+  doc.setFontSize(8);
+  doc.text("Thank you for your purchase!", center, y, { align: "center" });
+  y += 4;
+  doc.text(`(c) ${new Date().getFullYear()} CWL Hardware`, center, y, { align: "center" });
+
+  doc.save(`receipt-${data.receiptNumber}.pdf`);
 }

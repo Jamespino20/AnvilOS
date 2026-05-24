@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 "use client";
@@ -88,9 +89,9 @@ export function WhyChooseUs() {
               </h2>
               <p className="text-lg text-primary/70 mb-8 leading-relaxed">
                 We didn&apos;t just build a POS; we built a fortress for your
-                data. AnvilOS is designed to withstand network drops, massive
-                inventory catalogs, and the rigorous demands of a busy hardware
-                store.
+                data. CWL Hardware is designed to withstand network drops,
+                massive inventory catalogs, and the rigorous demands of a busy
+                hardware store.
               </p>
             </RevealUp>
             <div className="space-y-6">
@@ -108,9 +109,7 @@ export function WhyChooseUs() {
                       <h4 className="text-lg font-bold text-primary mb-1">
                         {b.title}
                       </h4>
-                      <p className="text-sm text-primary/70">
-                        {b.description}
-                      </p>
+                      <p className="text-sm text-primary/70">{b.description}</p>
                     </div>
                   </motion.div>
                 </RevealUp>
@@ -140,7 +139,7 @@ export function WhyChooseUs() {
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(253,118,26,0.03)_0%,transparent_70%)]" />
               <div className="w-full h-full flex flex-col items-center justify-center relative z-10">
                 <div className="text-white/20 font-black text-6xl tracking-tighter italic opacity-50 select-none">
-                  ANVIL<span className="text-safety-orange/40">OS</span>
+                  CWL<span className="text-safety-orange/40">HARDWARE</span>
                 </div>
                 <div className="text-[10px] font-bold text-primary/60 uppercase tracking-[0.2em] mt-4">
                   System Architecture v1.0

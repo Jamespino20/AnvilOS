@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 import { RevealUp } from "./RevealUp";
@@ -13,7 +14,7 @@ const testimonials = [
     name: "John Davis",
     role: "Owner, BuildRite Hardware",
     quote:
-      "Switching to AnvilOS was the best decision we made. The speed at the checkout has halved our queue times during the morning rush.",
+      "Switching to CWL Hardware was the best decision we made. The speed at the checkout has halved our queue times during the morning rush.",
   },
   {
     initials: "SC",
@@ -27,21 +28,24 @@ const testimonials = [
     name: "Michael Ross",
     role: "Director of Ops, TimberTech",
     quote:
-      "Managing over 50,000 SKUs used to be a nightmare. AnvilOS handles it effortlessly, and the reporting tools give us insights we never had.",
+      "Managing over 50,000 SKUs used to be a nightmare. CWL Hardware handles it effortlessly, and the reporting tools give us insights we never had.",
   },
 ];
 
 export function Testimonials() {
   return (
-    <section className="py-16 bg-background relative overflow-hidden" id="testimonials">
+    <section
+      className="py-16 bg-background relative overflow-hidden"
+      id="testimonials"
+    >
       <div className="max-w-7xl mx-auto px-6">
         <RevealUp className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-black text-primary mb-4 tracking-tight">
             Trusted by Store Owners Worldwide
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Hear from the people who rely on AnvilOS every single day to run
-            their businesses.
+            Hear from the people who rely on CWL Hardware every single day to
+            run their businesses.
           </p>
         </RevealUp>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

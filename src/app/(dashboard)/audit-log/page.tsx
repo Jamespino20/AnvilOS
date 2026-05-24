@@ -91,12 +91,13 @@ export default function AuditLogPage() {
         <PageHeader title="Audit Logs" subtitle="Track all system activities, user actions, and changes across modules." />
         <div className="flex items-center gap-2">
           <ExportDialog
-            filename={`anvilos-audit-logs-${new Date().toISOString().slice(0, 10)}.csv`}
+            filename={`cwl-hardware-audit-logs-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={EXPORT_COLUMNS}
             fetchRows={fetchExportRows}
             label="Export"
+            title="Export audit logs as CSV, XLSX, or PDF"
           />
-          <CSVImportButton table="audit-logs" onImported={() => {}} />
+          <CSVImportButton table="audit-logs" onImported={() => {}} title="Import audit logs from CSV" />
         </div>
       </div>
 
@@ -168,6 +169,7 @@ export default function AuditLogPage() {
                     <td className="p-4 text-center">
                       {(deltas.length > 0 || log.details) && (
                         <button onClick={() => setExpandedId(isExpanded ? null : log.id)}
+                          title="View details"
                           className="p-1 text-[#94a3b8] hover:text-[#0e212c] transition-colors">
                           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </button>
@@ -218,6 +220,7 @@ export default function AuditLogPage() {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}
+              title="Previous page"
               className="p-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all">
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -235,6 +238,7 @@ export default function AuditLogPage() {
               );
             })}
             <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}
+              title="Next page"
               className="p-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all">
               <ChevronRight className="h-4 w-4" />
             </button>

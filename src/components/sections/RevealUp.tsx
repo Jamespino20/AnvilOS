@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 22, 2026 
+Last Update Date: May 24, 2026
 */
 
 "use client";
@@ -34,7 +35,11 @@ export function RevealUp({
       ref={ref}
       initial={{ opacity: 0, y: 20 }}
       animate={controls}
-      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: delay / 1000 }}
+      transition={{
+        duration: 0.55,
+        ease: [0.16, 1, 0.3, 1],
+        delay: delay / 1000,
+      }}
       className={className}
     >
       {children}

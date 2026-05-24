@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 "use client";
@@ -13,7 +14,7 @@ import { RevealUp } from "./RevealUp";
 
 const faqs = [
   {
-    q: "Does AnvilOS work without an internet connection?",
+    q: "Does CWL Hardware work without an internet connection?",
     a: "Yes. The POS terminal operates fully offline. Transactions queue locally and sync when the connection is restored. Inventory counts are updated accordingly.",
   },
   {
@@ -21,7 +22,7 @@ const faqs = [
     a: "Data is encrypted at rest and during sync. We maintain redundant cloud backups with point-in-time recovery, plus the option for local database exports on your server.",
   },
   {
-    q: "Can I integrate AnvilOS with my existing accounting software?",
+    q: "Can I integrate CWL Hardware with my existing accounting software?",
     a: "Our Enterprise tier includes custom API integrations. The Pro and Starter tiers support CSV/Excel exports that can be imported into QuickBooks, Xero, and other tools.",
   },
   {
@@ -30,7 +31,7 @@ const faqs = [
   },
   {
     q: "What hardware do I need for the POS?",
-    a: "AnvilOS runs on any modern web browser. For the best experience, we recommend a tablet or laptop with a barcode scanner and receipt printer.",
+    a: "CWL Hardware runs on any modern web browser. For the best experience, we recommend a tablet or laptop with a barcode scanner and receipt printer.",
   },
 ];
 
@@ -45,7 +46,8 @@ export function FAQ() {
             Frequently Asked Questions
           </h2>
           <p className="text-muted-foreground text-lg">
-            Quick answers to common questions about deploying and using AnvilOS.
+            Quick answers to common questions about deploying and using CWL
+            Hardware.
           </p>
         </RevealUp>
         <div className="space-y-3">

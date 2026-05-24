@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 import { RevealUp } from "./RevealUp";
@@ -56,7 +57,10 @@ export function Pricing() {
   ];
 
   return (
-    <section className="py-16 bg-background border-y border-border overflow-hidden" id="pricing">
+    <section
+      className="py-16 bg-background border-y border-border overflow-hidden"
+      id="pricing"
+    >
       <div className="max-w-7xl mx-auto px-6">
         <RevealUp className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-black text-primary mb-4 tracking-tight">

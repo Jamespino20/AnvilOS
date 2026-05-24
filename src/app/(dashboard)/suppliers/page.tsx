@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 "use client";
@@ -24,6 +25,7 @@ import {
   Loader2,
   Edit3,
   Save,
+  Search,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -42,6 +44,9 @@ export default function SuppliersPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const perPage = 10;
   const [form, setForm] = useState({
     supplierName: "",
     contactName: "",
@@ -116,6 +121,19 @@ export default function SuppliersPage() {
     }
   }
 
+  const filtered = suppliers.filter((s) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      s.supplierName.toLowerCase().includes(q) ||
+      (s.contactName || "").toLowerCase().includes(q) ||
+      (s.email || "").toLowerCase().includes(q)
+    );
+  });
+
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const paged = filtered.slice((page - 1) * perPage, page * perPage);
+
   if (loading)
     return (
       <div className="space-y-5">
@@ -139,104 +157,163 @@ export default function SuppliersPage() {
             <Plus className="h-4 w-4" /> Add Supplier
           </button>
           <ExportButton
-            filename={`anvilos-suppliers-${new Date().toISOString().slice(0, 10)}.csv`}
-            headers={["Supplier Name", "Contact Person", "Contact Number", "Email", "Address", "Status"]}
+            filename={`cwl-hardware-suppliers-${new Date().toISOString().slice(0, 10)}.csv`}
+            headers={[
+              "Supplier Name",
+              "Contact Person",
+              "Contact Number",
+              "Email",
+              "Address",
+              "Status",
+            ]}
             rows={suppliers.map((s) => [
-              s.supplierName, s.contactName || "", s.contactNumber || "",
-              s.email || "", s.address || "",
+              s.supplierName,
+              s.contactName || "",
+              s.contactNumber || "",
+              s.email || "",
+              s.address || "",
               s.isAvailable ? "Active" : "Inactive",
             ])}
             label="Export CSV"
+            title="Export suppliers"
           />
-          <CSVImportButton table="suppliers" onImported={() => window.location.reload()} />
+          <CSVImportButton
+            table="suppliers"
+            onImported={() => window.location.reload()}
+            title="Import suppliers from CSV"
+          />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {suppliers.map((s) => (
-          <div
-            key={s.id}
-            className="bg-white border border-[#e2e8f0] rounded-xl p-5 space-y-3 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#fd761a]/10 to-[#fd761a]/5 flex items-center justify-center">
-                <Truck className="h-5 w-5 text-[#fd761a]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-[#0e212c] text-sm truncate">
-                  {s.supplierName}
-                </h3>
-                <span
-                  className={`inline-block mt-0.5 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${s.isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}
-                >
-                  {s.isAvailable ? "Active" : "Inactive"}
-                </span>
-              </div>
-              <button
-                onClick={() => openEdit(s)}
-                className="p-2 text-[#94a3b8] hover:text-[#fd761a] hover:bg-[#fff5ed] rounded-lg transition-all"
-                title="Edit Supplier"
-              >
-                <Edit3 className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="space-y-1.5 text-sm text-[#64748b]">
-              {s.contactName && (
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-[#0e212c] shrink-0">
-                    Contact:
-                  </span>{" "}
-                  {s.contactName}
-                </div>
-              )}
-              {!s.contactName && (
-                <div className="flex items-center gap-2 text-[#cbd5e1] italic">
-                  <span className="font-medium shrink-0">Contact:</span> No
-                  contact person
-                </div>
-              )}
-              {s.contactNumber ? (
-                <div className="flex items-center gap-2">
-                  <Phone className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />{" "}
-                  {s.contactNumber}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-[#cbd5e1] italic">
-                  <Phone className="h-3.5 w-3.5 shrink-0" /> No contact number
-                </div>
-              )}
-              {s.email ? (
-                <div className="flex items-center gap-2">
-                  <Mail className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />{" "}
-                  {s.email}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-[#cbd5e1] italic">
-                  <Mail className="h-3.5 w-3.5 shrink-0" /> No email
-                </div>
-              )}
-              {s.address ? (
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />{" "}
-                  {s.address}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-[#cbd5e1] italic">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" /> No address
-                </div>
-              )}
-            </div>
-            <div className="pt-2 border-t border-[#e2e8f0] text-xs text-[#94a3b8]">
-              {s._count.products} product(s) linked
-            </div>
-          </div>
-        ))}
-        {suppliers.length === 0 && (
-          <div className="col-span-full text-center py-12 text-[#94a3b8]">
-            No suppliers registered yet
-          </div>
-        )}
+      <div className="relative max-w-xs">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          placeholder="Search suppliers..."
+          className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+        />
       </div>
+
+      <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Supplier Name
+                </th>
+                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Contact Person
+                </th>
+                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Phone
+                </th>
+                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Address
+                </th>
+                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Products
+                </th>
+                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#e2e8f0]">
+              {paged.map((s, i) => (
+                <tr
+                  key={s.id}
+                  className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} hover:bg-[#f1f5f9] transition-colors`}
+                >
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#fd761a]/10 to-[#fd761a]/5 flex items-center justify-center">
+                        <Truck className="h-4 w-4 text-[#fd761a]" />
+                      </div>
+                      <span className="font-medium text-[#0e212c]">
+                        {s.supplierName}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-4 text-[#64748b]">{s.contactName || "—"}</td>
+                  <td className="p-4 text-[#64748b]">
+                    {s.contactNumber || "—"}
+                  </td>
+                  <td className="p-4 text-[#64748b]">{s.email || "—"}</td>
+                  <td className="p-4 text-[#64748b] max-w-[200px] truncate">
+                    {s.address || "—"}
+                  </td>
+                  <td className="p-4 text-center">
+                    <span
+                      className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${s.isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}
+                    >
+                      {s.isAvailable ? "Active" : "Inactive"}
+                    </span>
+                  </td>
+                  <td className="p-4 text-center text-[#64748b]">
+                    {s._count.products}
+                  </td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => openEdit(s)}
+                      className="p-2 text-[#94a3b8] hover:text-[#fd761a] hover:bg-[#fff5ed] rounded-lg transition-all"
+                      title="Edit supplier details"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-[#94a3b8]">
+                    No suppliers registered yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 text-sm">
+          <button
+            onClick={() => setPage(Math.max(1, page - 1))}
+            disabled={page === 1}
+            className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all"
+          >
+            Prev
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPage(p)}
+              className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${p === page ? "bg-[#fd761a] text-white" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}
+            >
+              {p}
+            </button>
+          ))}
+          <button
+            onClick={() => setPage(Math.min(totalPages, page + 1))}
+            disabled={page === totalPages}
+            className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all"
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {/* Edit Supplier Modal */}
       {editId && (

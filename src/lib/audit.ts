@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 import { prisma } from "./prisma";
@@ -11,6 +12,7 @@ import { auth } from "./auth";
 type AuditPanel =
   | "POSPanel"
   | "InventoryPanel"
+  | "Inventory"
   | "SupplierPanel"
   | "ProductDialog"
   | "EditTransactionDialog"
@@ -18,6 +20,7 @@ type AuditPanel =
   | "Buyers"
   | "Restocks"
   | "Data Import"
+  | "Dashboard"
   | "System";
 type AuditAction = string;
 

@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 import NextAuth from "next-auth";
@@ -68,6 +69,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             name: user.sellerName,
             email: user.email,
             username: user.username,
+            imageUrl: user.imageUrl,
           };
         } catch (error) {
           console.error("Database error during authorize:", error);
@@ -84,7 +86,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.name = user.name;
           token.email = user.email;
           token.username = (user as any).username;
+          token.imageUrl = (user as any).imageUrl;
           token.sellerId = Number(user.id);
+        }
+        if (trigger === "update" && session) {
+          if ((session as any).imageUrl !== undefined)
+            token.imageUrl = (session as any).imageUrl;
+          if (session.name) token.name = session.name;
         }
         return token;
       } catch (error) {
@@ -98,6 +106,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           session.user.id = token.sub as string;
           (session.user as any).username = token.username as string;
           (session.user as any).sellerId = token.sellerId as number;
+          (session.user as any).imageUrl = token.imageUrl as string;
         }
         return session;
       } catch (error) {

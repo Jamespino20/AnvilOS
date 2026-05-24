@@ -1,19 +1,47 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { getTransactions, getProducts, processRestock, createTransaction } from "@/actions";
-import { Search, ArrowDownUp, Loader2, ChevronDown, ChevronUp, CheckCircle, Plus, ShoppingCart, Minus, Package, X, Truck } from "lucide-react";
+import { getTransactions, getTransactionsCount, getProducts, processRestock, createTransaction } from "@/actions";
+import { Search, ArrowDownUp, Loader2, ChevronDown, ChevronUp, CheckCircle, Plus, ShoppingCart, Minus, Package, X, Truck, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
 
+const DATE_SCOPES = [
+  { label: "All", value: "all" },
+  { label: "Today", value: "today" },
+  { label: "This Week", value: "week" },
+  { label: "This Month", value: "month" },
+  { label: "This Year", value: "year" },
+];
+
+function getDateScopeStart(scope: string): string | undefined {
+  const now = new Date();
+  switch (scope) {
+    case "today": return now.toISOString().split("T")[0];
+    case "week": {
+      const d = new Date(now);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      d.setDate(diff);
+      return d.toISOString().split("T")[0];
+    }
+    case "month": return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+    case "year": return new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0];
+    default: return undefined;
+  }
+}
+
 export default function RestocksPage() {
   const [restocks, setRestocks] = useState<TxnWithItems[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [dateScope, setDateScope] = useState("all");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [showNew, setShowNew] = useState(false);
@@ -23,30 +51,32 @@ export default function RestocksPage() {
   const [restockSearch, setRestockSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  function load() {
+  const perPage = 10;
+  const totalPages = Math.ceil(total / perPage);
+
+  function refresh(p?: number) {
+    setLoading(true);
+    const pNum = p ?? page;
+    const startDate = getDateScopeStart(dateScope);
     Promise.all([
-      getTransactions({ type: "Restock" }),
+      getTransactions({ type: "Restock", search: search || undefined, startDate, page: pNum, perPage }),
+      getTransactionsCount({ type: "Restock", search: search || undefined, startDate }),
       getProducts({}),
-    ]).then(([data, prods]) => {
+    ]).then(([data, count, prods]) => {
       setRestocks(data as TxnWithItems[]);
+      setTotal(count);
       setProducts(prods as Product[]);
       setLoading(false);
     });
   }
 
-  useEffect(load, []);
-
-  const filtered = restocks.filter(
-    (r) =>
-      r.buyerName.toLowerCase().includes(search.toLowerCase()) ||
-      String(r.receiptNumber).includes(search)
-  );
+  useEffect(() => { refresh(); }, [search, page, dateScope]);
 
   async function handleProcess(id: number) {
     setProcessingId(id);
     try {
       await processRestock(id);
-      load();
+      refresh();
     } catch (e) {
       console.error("Failed to process restock", e);
     } finally {
@@ -121,7 +151,8 @@ export default function RestocksPage() {
       setShowNew(false);
       setCart([]);
       setRestockSearch("");
-      load();
+      setPage(1);
+      refresh(1);
     } catch (e) {
       console.error("Failed to create restock", e);
     } finally {
@@ -136,12 +167,20 @@ export default function RestocksPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <PageHeader title="Restocks" subtitle={`${restocks.length} restock record${restocks.length !== 1 ? "s" : ""} — track and process inventory replenishment.`} />
+        <PageHeader title="Restocks" subtitle={`${total} restock record${total !== 1 ? "s" : ""} — track and process inventory replenishment.`} />
         <div className="flex items-center gap-3">
           <button onClick={() => setShowNew(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all active:scale-[0.98]">
             <Plus className="h-4 w-4" /> New Restock
           </button>
+          <div className="flex items-center gap-2 bg-white border border-[#e2e8f0] rounded-lg p-1">
+            {DATE_SCOPES.map((s) => (
+              <button key={s.value} onClick={() => { setDateScope(s.value); setPage(1); }}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${dateScope === s.value ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:text-[#0e212c]"}`}>
+                {s.label}
+              </button>
+            ))}
+          </div>
           <div className="relative w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search restocks..." className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
@@ -150,7 +189,7 @@ export default function RestocksPage() {
       </div>
 
       <div className="space-y-2">
-        {filtered.map((r) => {
+        {restocks.map((r) => {
           const isExpanded = expandedId === r.id;
           const isProcessed = r.transactionStatus === "Completed";
           return (
@@ -215,7 +254,7 @@ export default function RestocksPage() {
             </div>
           );
         })}
-        {filtered.length === 0 && (
+        {restocks.length === 0 && (
           <div className="text-center py-16 text-[#94a3b8]">
             <ArrowDownUp className="h-8 w-8 mx-auto mb-3 opacity-50" />
             <p className="font-medium">No restocks recorded</p>
@@ -223,6 +262,30 @@ export default function RestocksPage() {
           </div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 text-sm">
+          <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}
+            className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all flex items-center gap-1">
+            <ChevronLeft className="h-3.5 w-3.5" /> Prev
+          </button>
+          {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
+            const startPage = Math.max(1, page - 4);
+            const p = startPage + i;
+            if (p > totalPages) return null;
+            return (
+              <button key={p} onClick={() => setPage(p)}
+                className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${p === page ? "bg-[#fd761a] text-white" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
+                {p}
+              </button>
+            );
+          })}
+          <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}
+            className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all flex items-center gap-1">
+            Next <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* New Restock Modal - POS Cart Layout */}
       {showNew && (

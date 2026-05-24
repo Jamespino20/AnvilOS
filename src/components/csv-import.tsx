@@ -8,9 +8,10 @@ import { getImportConfig } from "@/lib/import-configs";
 interface Props {
   table: string;
   onImported: () => void;
+  title?: string;
 }
 
-export function CSVImportButton({ table, onImported }: Props) {
+export function CSVImportButton({ table, onImported, title }: Props) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<Record<string, string>[]>([]);
@@ -73,6 +74,7 @@ export function CSVImportButton({ table, onImported }: Props) {
   return (
     <>
       <button onClick={handleOpen}
+        title={title}
         className="flex items-center gap-2 px-4 py-2.5 border border-[#e2e8f0] text-sm font-medium rounded-lg text-[#64748b] hover:bg-white hover:shadow-sm transition-all duration-200">
         <Upload className="h-4 w-4" /> Import CSV
       </button>
@@ -102,7 +104,7 @@ export function CSVImportButton({ table, onImported }: Props) {
                       <div className="space-y-3 cursor-pointer" onClick={() => inputRef.current?.click()}>
                         <Upload className="h-8 w-8 mx-auto text-[#94a3b8]" />
                         <p className="font-medium text-[#0e212c]">Drop a CSV file here or click to browse</p>
-                        <p className="text-xs text-[#94a3b8]">Expected columns: {config?.columns?.map((c: any) => c.label).join(", ")}</p>
+                        <p className="text-xs text-[#94a3b8] truncate max-w-full" title={config?.columns?.map((c: any) => c.label).join(", ") || ""}>Expected columns: {config?.columns?.map((c: any) => c.label).join(", ")}</p>
                       </div>
                     )}
                   </div>
@@ -115,7 +117,7 @@ export function CSVImportButton({ table, onImported }: Props) {
                           <div key={col.key} className="flex items-center gap-2 text-xs">
                             <span className={`w-1.5 h-1.5 rounded-full ${col.required ? "bg-rose-500" : "bg-[#94a3b8]"}`} />
                             <span className="font-medium text-[#0e212c]">{col.label}</span>
-                            <span className="text-[#94a3b8]">({col.type}{col.enum ? `: ${col.enum.join("|")}` : ""}){col.required ? " *" : ""}</span>
+                            <span className="text-[#94a3b8] truncate" title={`(${col.type}${col.enum ? `: ${col.enum.join("|")}` : ""})${col.required ? " *" : ""}`}>({col.type}{col.enum ? `: ${col.enum.join("|")}` : ""}){col.required ? " *" : ""}</span>
                           </div>
                         ))}
                       </div>

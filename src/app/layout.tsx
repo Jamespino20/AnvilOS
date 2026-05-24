@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 import type { Metadata } from "next";
@@ -33,9 +34,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AnvilOS — Hardware Management Platform",
+  title: "CWL Hardware — POS & Inventory System",
   description:
-    "Point-of-sale, inventory, and supplier management for hardware businesses.",
+    "Complete point-of-sale, inventory, and supplier management system by CWL Hardware.",
   icons: {
     icon: "/favicon.ico",
   },

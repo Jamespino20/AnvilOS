@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 "use client";
@@ -10,6 +11,7 @@ Last Update Date: May 21, 2026
 import { useState, useEffect } from "react";
 import {
   getTransactions,
+  getTransactionsCount,
   updateTransactionStatus,
   getProducts,
 } from "@/actions";
@@ -31,6 +33,37 @@ import { exportCSV } from "@/lib/csv";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
+
+const DATE_SCOPES = [
+  { label: "All", value: "all" },
+  { label: "Today", value: "today" },
+  { label: "This Week", value: "week" },
+  { label: "This Month", value: "month" },
+  { label: "This Year", value: "year" },
+];
+
+function getDateScopeStart(scope: string): string | undefined {
+  const now = new Date();
+  switch (scope) {
+    case "today":
+      return now.toISOString().split("T")[0];
+    case "week": {
+      const d = new Date(now);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      d.setDate(diff);
+      return d.toISOString().split("T")[0];
+    }
+    case "month":
+      return new Date(now.getFullYear(), now.getMonth(), 1)
+        .toISOString()
+        .split("T")[0];
+    case "year":
+      return new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0];
+    default:
+      return undefined;
+  }
+}
 
 const STATUS_OPTIONS = ["", "Completed", "Ongoing", "Cancelled"];
 const TYPE_OPTIONS = [
@@ -59,40 +92,66 @@ export default function TransactionsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [dateScope, setDateScope] = useState("all");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const perPage = 15;
 
   useEffect(() => {
+    setLoading(true);
+    const startDate = getDateScopeStart(dateScope);
     Promise.all([
       getTransactions({
         status: statusFilter || undefined,
         type: typeFilter || undefined,
         search: search || undefined,
+        startDate,
+        page,
+        perPage,
+      }),
+      getTransactionsCount({
+        status: statusFilter || undefined,
+        type: typeFilter || undefined,
+        search: search || undefined,
+        startDate,
       }),
       getProducts({}),
-    ]).then(([data, prods]) => {
+    ]).then(([data, count, prods]) => {
       setTransactions(data as TxnWithItems[]);
+      setTotal(count);
       setProducts(prods as Product[]);
       setLoading(false);
     });
-  }, [statusFilter, typeFilter, search]);
+  }, [statusFilter, typeFilter, search, page, dateScope]);
 
   async function quickStatusChange(
     id: number,
     status: "Completed" | "Cancelled",
   ) {
     await updateTransactionStatus(id, status);
-    const data = await getTransactions({
-      status: statusFilter || undefined,
-      type: typeFilter || undefined,
-      search: search || undefined,
-    });
+    const startDate = getDateScopeStart(dateScope);
+    const [data, count] = await Promise.all([
+      getTransactions({
+        status: statusFilter || undefined,
+        type: typeFilter || undefined,
+        search: search || undefined,
+        startDate,
+        page,
+        perPage,
+      }),
+      getTransactionsCount({
+        status: statusFilter || undefined,
+        type: typeFilter || undefined,
+        search: search || undefined,
+        startDate,
+      }),
+    ]);
     setTransactions(data as TxnWithItems[]);
+    setTotal(count);
   }
 
-  const totalPages = Math.ceil(transactions.length / perPage);
-  const paged = transactions.slice((page - 1) * perPage, page * perPage);
+  const totalPages = Math.ceil(total / perPage);
 
   if (loading)
     return (
@@ -111,10 +170,19 @@ export default function TransactionsPage() {
         />
         <div className="flex items-center gap-2">
           <ExportButton
-            filename={`anvilos-transactions-${new Date().toISOString().slice(0, 10)}.csv`}
-            headers={["Receipt #", "Buyer", "Type", "Date", "Payment", "Total", "Status"]}
+            filename={`cwl-hardware-transactions-${new Date().toISOString().slice(0, 10)}.csv`}
+            headers={[
+              "Receipt #",
+              "Buyer",
+              "Type",
+              "Date",
+              "Payment",
+              "Total",
+              "Status",
+            ]}
             rows={transactions.map((t) => [
-              String(t.receiptNumber), t.buyerName,
+              String(t.receiptNumber),
+              t.buyerName,
               t.transactionType.replace(/([A-Z])/g, " $1").trim(),
               new Date(t.transactionDate).toLocaleDateString("en-PH"),
               t.paymentMethod || "—",
@@ -122,8 +190,27 @@ export default function TransactionsPage() {
               t.transactionStatus,
             ])}
             label="Export CSV"
+            title="Export transactions"
           />
-          <CSVImportButton table="transactions" onImported={() => window.location.reload()} />
+          <CSVImportButton
+            table="transactions"
+            onImported={() => window.location.reload()}
+            title="Import transactions from CSV"
+          />
+        </div>
+        <div className="flex items-center gap-2 bg-white border border-[#e2e8f0] rounded-lg p-1 w-full lg:w-auto">
+          {DATE_SCOPES.map((s) => (
+            <button
+              key={s.value}
+              onClick={() => {
+                setDateScope(s.value);
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${dateScope === s.value ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:text-[#0e212c]"}`}
+            >
+              {s.label}
+            </button>
+          ))}
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
           <div className="relative flex-1 sm:w-64">
@@ -177,7 +264,9 @@ export default function TransactionsPage() {
       <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden relative group">
         <div className="absolute top-1/2 right-4 -translate-y-1/2 px-2 py-4 bg-white/80 border border-[#e2e8f0] rounded-l-lg shadow-sm z-10 lg:hidden pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="flex flex-col items-center gap-1">
-            <span className="text-[10px] font-bold text-[#64748b] uppercase vertical-text">Scroll</span>
+            <span className="text-[10px] font-bold text-[#64748b] uppercase vertical-text">
+              Scroll
+            </span>
             <ChevronDown className="h-3 w-3 text-[#fd761a] -rotate-90" />
           </div>
         </div>
@@ -212,7 +301,7 @@ export default function TransactionsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
-              {paged.map((t, i) => (
+              {transactions.map((t, i) => (
                 <>
                   <tr
                     key={t.id}
@@ -260,7 +349,7 @@ export default function TransactionsPage() {
                                 quickStatusChange(t.id, "Completed");
                               }}
                               className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"
-                              title="Complete"
+                              title="Mark as completed"
                             >
                               <CheckCircle className="h-3.5 w-3.5" />
                             </button>
@@ -270,7 +359,7 @@ export default function TransactionsPage() {
                                 quickStatusChange(t.id, "Cancelled");
                               }}
                               className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-all"
-                              title="Cancel"
+                              title="Cancel transaction"
                             >
                               <XCircle className="h-3.5 w-3.5" />
                             </button>

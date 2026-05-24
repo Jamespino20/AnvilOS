@@ -1,13 +1,14 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import {
   Search,
@@ -32,7 +33,7 @@ import {
 import { cn } from "@/lib/utils";
 import { createTransaction } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
-import { downloadReceipt } from "@/lib/receipt";
+import { downloadReceiptPdf } from "@/lib/receipt";
 import type { Product } from "@prisma/client";
 
 interface BuyerInfo {
@@ -77,9 +78,12 @@ export function POSClient({ products, buyers }: Props) {
   const [deliveryMethod, setDeliveryMethod] = useState("WalkIn");
   const [returnReceipt, setReturnReceipt] = useState("");
   const [checkingOut, setCheckingOut] = useState(false);
-  const [done, setDone] = useState<{ receipt: number; items: any[]; buyerName: string; grandTotal: number } | null>(
-    null,
-  );
+  const [done, setDone] = useState<{
+    receipt: number;
+    items: any[];
+    buyerName: string;
+    grandTotal: number;
+  } | null>(null);
   const [error, setError] = useState("");
   const [editingQty, setEditingQty] = useState<number | null>(null);
   const [qtyInput, setQtyInput] = useState("");
@@ -216,6 +220,25 @@ export function POSClient({ products, buyers }: Props) {
   }
 
   const [showCartMobile, setShowCartMobile] = useState(false);
+  const [shortcutHint, setShortcutHint] = useState<"ready" | "done" | "">("");
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (cart.length > 0 && buyerName && !checkingOut) {
+          handleCheckout();
+          setShortcutHint("done");
+          setTimeout(() => setShortcutHint(""), 2000);
+        } else {
+          setShortcutHint("ready");
+          setTimeout(() => setShortcutHint(""), 1500);
+        }
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [cart.length, buyerName, checkingOut, handleCheckout]);
 
   return (
     <div className="space-y-4 pb-24 lg:pb-0">
@@ -233,16 +256,31 @@ export function POSClient({ products, buyers }: Props) {
             {cart.length > 0 ? (
               <button
                 onClick={() => setShowCartMobile(true)}
+                title="View cart summary"
                 className="w-full flex items-center justify-between px-5 py-4 bg-[#fd761a] text-white rounded-2xl shadow-2xl shadow-[#fd761a]/30 active:scale-[0.97] transition-all font-bold text-sm"
               >
                 <span className="flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5" />
-                  <span>{cart.length} item{cart.length > 1 ? "s" : ""}</span>
+                  <span>
+                    {cart.length} item{cart.length > 1 ? "s" : ""}
+                  </span>
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="text-lg font-black">₱{grandTotal.toLocaleString()}</span>
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <span className="text-lg font-black">
+                    ₱{grandTotal.toLocaleString()}
+                  </span>
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </span>
               </button>
@@ -325,11 +363,13 @@ export function POSClient({ products, buyers }: Props) {
         </div>
 
         {/* Cart Sidebar (Desktop) / Drawer (Mobile) */}
-        <div className={cn(
-          "lg:flex flex-col w-full lg:w-[380px] bg-white border border-[#e2e8f0] rounded-xl shadow-sm lg:relative overflow-x-hidden",
-          "fixed inset-x-0 bottom-0 z-[100] lg:z-auto h-[90vh] lg:h-auto transform transition-transform duration-300 ease-in-out lg:translate-y-0 translate-y-full",
-          showCartMobile && "translate-y-0"
-        )}>
+        <div
+          className={cn(
+            "lg:flex flex-col w-full lg:w-[380px] bg-white border border-[#e2e8f0] rounded-xl shadow-sm lg:relative overflow-x-hidden",
+            "fixed inset-x-0 bottom-0 z-[100] lg:z-auto h-[90vh] lg:h-auto transform transition-transform duration-300 ease-in-out lg:translate-y-0 translate-y-full",
+            showCartMobile && "translate-y-0",
+          )}
+        >
           {/* Mobile Handle / Header */}
           <div className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-[#e2e8f0]">
             <div className="w-12 h-1.5 bg-[#e2e8f0] rounded-full absolute top-2 left-1/2 -translate-x-1/2" />
@@ -359,6 +399,7 @@ export function POSClient({ products, buyers }: Props) {
                 <ShoppingCart className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
                 <select
                   value={txnType}
+                  title="Select transaction type"
                   onChange={(e) => {
                     setTxnType(e.target.value as any);
                     setCart([]);
@@ -458,6 +499,7 @@ export function POSClient({ products, buyers }: Props) {
                 <CreditCard className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
                 <select
                   value={paymentMethod}
+                  title="Select payment method"
                   onChange={(e) => setPaymentMethod(e.target.value)}
                   className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none"
                 >
@@ -472,6 +514,7 @@ export function POSClient({ products, buyers }: Props) {
                 <Truck className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
                 <select
                   value={deliveryMethod}
+                  title="Select delivery method"
                   onChange={(e) => setDeliveryMethod(e.target.value)}
                   className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none"
                 >
@@ -502,26 +545,45 @@ export function POSClient({ products, buyers }: Props) {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => updateQuantity(item.product.id, -1)}
+                    title="Decrease quantity"
                     className="w-9 h-9 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors"
                     aria-label="Decrease quantity"
                   >
                     <Minus className="h-3.5 w-3.5" />
                   </button>
                   {editingQty === item.product.id ? (
-                    <input type="number" min={1} value={qtyInput} autoFocus
+                    <input
+                      type="number"
+                      min={1}
+                      value={qtyInput}
+                      autoFocus
                       onChange={(e) => setQtyInput(e.target.value)}
                       onBlur={() => commitQtyEdit(item.product.id)}
-                      onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur(); } if (e.key === "Escape") { setEditingQty(null); } }}
-                      className="w-16 h-9 text-center text-xs font-bold text-[#0e212c] border border-[#fd761a] rounded-lg focus:outline-none" />
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          (e.target as HTMLInputElement).blur();
+                        }
+                        if (e.key === "Escape") {
+                          setEditingQty(null);
+                        }
+                      }}
+                      className="w-16 h-9 text-center text-xs font-bold text-[#0e212c] border border-[#fd761a] rounded-lg focus:outline-none"
+                    />
                   ) : (
-                    <button type="button" onClick={() => startQtyEdit(item.product.id, item.quantity)}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        startQtyEdit(item.product.id, item.quantity)
+                      }
                       className="min-w-[40px] h-9 text-center text-xs font-bold text-[#0e212c] px-2 hover:bg-white rounded-lg transition-colors"
-                      aria-label="Edit quantity">
+                      aria-label="Edit quantity"
+                    >
                       {item.quantity}
                     </button>
                   )}
                   <button
                     onClick={() => updateQuantity(item.product.id, 1)}
+                    title="Increase quantity"
                     className="w-9 h-9 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors"
                     aria-label="Increase quantity"
                   >
@@ -530,6 +592,7 @@ export function POSClient({ products, buyers }: Props) {
                 </div>
                 <button
                   onClick={() => removeFromCart(item.product.id)}
+                  title="Remove from cart"
                   className="w-9 h-9 flex items-center justify-center text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"
                   aria-label="Remove item"
                 >
@@ -551,7 +614,7 @@ export function POSClient({ products, buyers }: Props) {
                 ₱{grandTotal.toLocaleString()}
               </span>
             </div>
-            
+
             {error && (
               <p className="text-xs text-rose-600 font-bold bg-rose-50 p-2 rounded border border-rose-100">
                 {error}
@@ -561,6 +624,7 @@ export function POSClient({ products, buyers }: Props) {
             <div className="flex gap-2">
               <button
                 onClick={handleCheckout}
+                title="Process the transaction"
                 disabled={cart.length === 0 || !buyerName || checkingOut}
                 className="flex-1 py-3.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-[#fd761a]/20 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
               >
@@ -571,17 +635,20 @@ export function POSClient({ products, buyers }: Props) {
                 )}
               </button>
               {done && (
-                 <button
-                  onClick={() => downloadReceipt({
-                    receiptNumber: done.receipt,
-                    date: new Date(),
-                    sellerName: session?.user?.name || "Unknown",
-                    buyerName: done.buyerName,
-                    items: done.items,
-                    grandTotal: done.grandTotal,
-                    paymentMethod,
-                    transactionType: txnType,
-                  })}
+                <button
+                  onClick={() =>
+                    downloadReceiptPdf({
+                      receiptNumber: done.receipt,
+                      date: new Date(),
+                      sellerName: session?.user?.name || "Unknown",
+                      buyerName: done.buyerName,
+                      items: done.items,
+                      grandTotal: done.grandTotal,
+                      paymentMethod,
+                      transactionType: txnType,
+                    })
+                  }
+                  title="Download receipt as PDF"
                   className="px-4 bg-[#0e212c] text-white rounded-xl hover:bg-[#1a3a4a] transition-colors"
                 >
                   <CheckCircle className="h-5 w-5" />

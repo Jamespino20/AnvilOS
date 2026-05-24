@@ -1,11 +1,17 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
-import { getDashboardKpis, getRevenueTrend, getTransactions, getDashboardCharts } from "@/actions";
+import {
+  getDashboardKpis,
+  getRevenueTrend,
+  getTransactions,
+  getDashboardCharts,
+} from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { DashboardExport } from "@/components/dashboard-export";
 import { RevenueChart, TxnTypeChart, StockChart } from "@/components/charts";
@@ -166,7 +172,9 @@ export default async function DashboardPage() {
 
         {/* Transaction Types Doughnut */}
         <div className="col-span-12 sm:col-span-6 lg:col-span-4 bg-white rounded-xl border border-[#e2e8f0] p-6 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
-          <h3 className="text-sm font-bold text-[#0e212c] mb-4">Transaction Types</h3>
+          <h3 className="text-sm font-bold text-[#0e212c] mb-4">
+            Transaction Types
+          </h3>
           <div className="h-56 flex items-center justify-center">
             <TxnTypeChart data={charts.transactionTypes} />
           </div>
@@ -174,7 +182,9 @@ export default async function DashboardPage() {
 
         {/* Stock Status Doughnut */}
         <div className="col-span-12 sm:col-span-6 lg:col-span-4 bg-white rounded-xl border border-[#e2e8f0] p-6 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
-          <h3 className="text-sm font-bold text-[#0e212c] mb-4">Stock Status</h3>
+          <h3 className="text-sm font-bold text-[#0e212c] mb-4">
+            Stock Status
+          </h3>
           <div className="h-56 flex items-center justify-center">
             <StockChart data={charts.stockStatus} />
           </div>
@@ -182,18 +192,37 @@ export default async function DashboardPage() {
 
         {/* KPI Mini Summary */}
         <div className="col-span-12 lg:col-span-4 bg-white rounded-xl border border-[#e2e8f0] p-6 hover:shadow-lg hover:shadow-black/5 transition-all duration-300">
-          <h3 className="text-sm font-bold text-[#0e212c] mb-4">Quick Summary</h3>
+          <h3 className="text-sm font-bold text-[#0e212c] mb-4">
+            Quick Summary
+          </h3>
           <div className="space-y-4">
             {[
-              { label: "Today's Sales", value: `₱${kpis.dailySales.toLocaleString()}`, color: "bg-emerald-500" },
-              { label: "Active Products", value: kpis.totalProducts.toLocaleString(), color: "bg-blue-500" },
-              { label: "Low Stock Items", value: kpis.lowStockCount.toLocaleString(), color: "bg-amber-500" },
+              {
+                label: "Today's Sales",
+                value: `₱${kpis.dailySales.toLocaleString()}`,
+                color: "bg-emerald-500",
+              },
+              {
+                label: "Active Products",
+                value: kpis.totalProducts.toLocaleString(),
+                color: "bg-blue-500",
+              },
+              {
+                label: "Low Stock Items",
+                value: kpis.lowStockCount.toLocaleString(),
+                color: "bg-amber-500",
+              },
             ].map((item) => (
-              <div key={item.label} className="flex items-center justify-between">
+              <div
+                key={item.label}
+                className="flex items-center justify-between"
+              >
                 <span className="text-sm text-[#64748b]">{item.label}</span>
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${item.color}`} />
-                  <span className="text-sm font-bold text-[#0e212c]">{item.value}</span>
+                  <span className="text-sm font-bold text-[#0e212c]">
+                    {item.value}
+                  </span>
                 </div>
               </div>
             ))}

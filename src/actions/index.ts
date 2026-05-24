@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 "use server";
@@ -173,13 +174,61 @@ export async function getCategories() {
   });
 }
 
-export async function createCategory(name: string, parentCategoryId?: number) {
-  const cat = await prisma.category.create({
-    data: { name, parentCategoryId },
-  });
-  await logAudit("InventoryPanel", "Add Category", `${cat.name} created`);
+export async function createCategory(name: string) {
+  try {
+    const cat = await prisma.category.create({
+      data: { name },
+    });
+    await logAudit("InventoryPanel", "Add Category", `${cat.name} created`);
+    revalidatePath("/inventory");
+    revalidatePath("/categories");
+    return cat;
+  } catch (e: any) {
+    if (e?.code === "P2002") {
+      throw new Error(`A category named "${name}" already exists.`);
+    }
+    throw e;
+  }
+}
+
+export async function editCategory(id: number, name: string) {
+  try {
+    const cat = await prisma.category.update({
+      where: { id },
+      data: { name },
+    });
+    await logAudit(
+      "InventoryPanel",
+      "Edit Category",
+      `Category #${id} renamed to "${name}"`,
+    );
+    revalidatePath("/inventory");
+    revalidatePath("/categories");
+    return cat;
+  } catch (e: any) {
+    if (e?.code === "P2002") {
+      throw new Error(`A category named "${name}" already exists.`);
+    }
+    throw e;
+  }
+}
+
+export async function deleteCategory(id: number) {
+  const linked = await prisma.product.count({ where: { categoryId: id } });
+  if (linked > 0) {
+    throw new Error(
+      `Cannot delete category: ${linked} product(s) are linked to it. Remove or reassign them first.`,
+    );
+  }
+  const cat = await prisma.category.findUniqueOrThrow({ where: { id } });
+  await prisma.category.delete({ where: { id } });
+  await logAudit(
+    "InventoryPanel",
+    "Delete Category",
+    `${cat.name} (#${id}) deleted`,
+  );
   revalidatePath("/inventory");
-  return cat;
+  revalidatePath("/categories");
 }
 
 // ─────────── Suppliers ───────────
@@ -261,6 +310,8 @@ export async function getTransactions(opts?: {
   startDate?: string;
   endDate?: string;
   search?: string;
+  page?: number;
+  perPage?: number;
 }) {
   const where: any = {};
   if (opts?.status) where.transactionStatus = opts.status;
@@ -280,16 +331,47 @@ export async function getTransactions(opts?: {
     ].filter(Boolean);
   }
 
+  const take = opts?.perPage || 100;
+  const skip = ((opts?.page || 1) - 1) * take;
+
   return withTimeout(
     prisma.transaction.findMany({
       where,
       orderBy: { transactionDate: "desc" },
       include: { items: true, seller: { select: { sellerName: true } } },
-      take: 100,
+      skip,
+      take,
     }),
     DB_TIMEOUT,
     "Loading transactions",
   );
+}
+
+export async function getTransactionsCount(opts?: {
+  status?: string;
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+}) {
+  const where: any = {};
+  if (opts?.status) where.transactionStatus = opts.status;
+  if (opts?.type) where.transactionType = opts.type;
+  if (opts?.startDate)
+    where.transactionDate = { gte: new Date(opts.startDate) };
+  if (opts?.endDate) {
+    where.transactionDate = {
+      ...where.transactionDate,
+      lte: new Date(opts.endDate),
+    };
+  }
+  if (opts?.search) {
+    where.OR = [
+      { buyerName: { contains: opts.search, mode: "insensitive" } },
+      { receiptNumber: parseInt(opts.search) || undefined },
+    ].filter(Boolean);
+  }
+  return prisma.transaction.count({ where });
 }
 
 export async function getTransaction(id: number) {
@@ -450,11 +532,69 @@ export async function createTransaction(data: {
     "Processing transaction",
   );
 
+  // Upsert buyer record
+  let buyer: { id: number; email: string | null } | null = null;
+  if (data.buyerName) {
+    buyer = await prisma.buyer.findFirst({
+      where: { name: data.buyerName },
+    });
+    if (buyer) {
+      buyer = await prisma.buyer.update({
+        where: { id: buyer.id },
+        data: {
+          totalOrders: { increment: 1 },
+          totalSpent: { increment: data.grandTotal },
+          address: data.buyerAddress || undefined,
+          phone: data.buyerContact || undefined,
+          sellerId: sellerId || undefined,
+        },
+      });
+    } else {
+      buyer = await prisma.buyer.create({
+        data: {
+          name: data.buyerName,
+          address: data.buyerAddress || null,
+          phone: data.buyerContact || null,
+          totalOrders: 1,
+          totalSpent: data.grandTotal,
+          sellerId: sellerId || undefined,
+        },
+      });
+    }
+    await prisma.transaction.update({
+      where: { id: transaction.id },
+      data: { buyerId: buyer.id },
+    });
+  }
+
   await logAudit(
     "POSPanel",
     "Complete Transaction",
     `${data.transactionType} #${receiptNumber} — ${data.buyerName} — ₱${data.grandTotal.toLocaleString()}`,
   );
+
+  // Fire-and-forget email alerts (non-blocking)
+  if (data.transactionStatus === "Completed") {
+    Promise.all([
+      import("@/actions/email").then((m) => m.checkAndAlertLowStock()),
+      buyer?.email
+        ? import("@/actions/email").then((m) =>
+            m.sendTransactionReceipt(
+              receiptNumber,
+              data.buyerName,
+              buyer.email!,
+              data.items.map((i) => ({
+                productName: `Product #${i.productId}`,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                totalPrice: i.totalPrice,
+              })),
+              data.grandTotal,
+            ),
+          )
+        : Promise.resolve(),
+    ]);
+  }
 
   revalidatePath("/transactions");
   revalidatePath("/pos");
@@ -667,11 +807,17 @@ export async function getNotifications() {
 }
 
 export async function markNotificationRead(id: number) {
-  return prisma.notification.update({ where: { id }, data: { isRead: true } });
+  await prisma.notification.update({ where: { id }, data: { isRead: true } });
+  await logAudit(
+    "System",
+    "Mark Notification Read",
+    `Notification ${id} marked as read`,
+  );
 }
 
 export async function markAllNotificationsRead() {
   await prisma.notification.updateMany({ data: { isRead: true } });
+  await logAudit("System", "Mark All Read", "All notifications marked as read");
   revalidatePath("/notifications");
 }
 
@@ -682,36 +828,71 @@ export async function getUnreadNotificationCount() {
 // ─────────── Buyers ───────────
 
 export async function getBuyers() {
-  const buyers = await prisma.transaction.groupBy({
-    by: ["buyerName"],
-    _count: { id: true },
-    _sum: { grandTotal: true },
-    orderBy: { _sum: { grandTotal: "desc" } },
+  const buyerRecords = await prisma.buyer.findMany({
+    orderBy: { totalSpent: "desc" },
   });
 
-  // Fetch latest transaction per buyer for address/contact
+  // Get latest transaction date per buyer
   const latest = await prisma.transaction.groupBy({
     by: ["buyerName"],
-    _max: { transactionDate: true, buyerAddress: true, buyerContact: true },
+    _max: { transactionDate: true },
   });
-
   const latestMap = new Map(
-    latest.map((l) => [
-      l.buyerName,
-      {
-        buyerAddress: l._max.buyerAddress,
-        buyerContact: l._max.buyerContact,
-        lastOrder: l._max.transactionDate,
-      },
-    ]),
+    latest.map((l) => [l.buyerName, l._max.transactionDate]),
   );
 
-  return buyers.map((b) => ({
-    buyerName: b.buyerName,
-    totalOrders: b._count.id,
-    totalSpent: Number(b._sum.grandTotal || 0),
-    ...(latestMap.get(b.buyerName) || {}),
+  const merged = buyerRecords.map((b) => ({
+    buyerName: b.name,
+    totalOrders: b.totalOrders,
+    totalSpent: Number(b.totalSpent),
+    buyerAddress: b.address,
+    buyerContact: b.phone,
+    lastOrder: latestMap.get(b.name) || null,
   }));
+
+  // Include legacy buyers from transactions not yet in Buyer table
+  const existingNames = new Set(buyerRecords.map((b) => b.name));
+  if (existingNames.size > 0) {
+    const legacyBuyers = await prisma.transaction.groupBy({
+      by: ["buyerName"],
+      _count: { id: true },
+      _sum: { grandTotal: true },
+      where: { buyerName: { notIn: Array.from(existingNames) } },
+    });
+    const legacyLatest = await prisma.transaction.groupBy({
+      by: ["buyerName"],
+      _max: { transactionDate: true, buyerAddress: true, buyerContact: true },
+      where: { buyerName: { notIn: Array.from(existingNames) } },
+    });
+    const legacyLatestMap = new Map(
+      legacyLatest.map((l) => [
+        l.buyerName,
+        {
+          buyerAddress: l._max.buyerAddress,
+          buyerContact: l._max.buyerContact,
+          lastOrder: l._max.transactionDate,
+        },
+      ]),
+    );
+    for (const b of legacyBuyers) {
+      const info = legacyLatestMap.get(b.buyerName) || {
+        buyerAddress: null,
+        buyerContact: null,
+        lastOrder: null,
+      };
+      merged.push({
+        buyerName: b.buyerName,
+        totalOrders: b._count.id,
+        totalSpent: Number(b._sum.grandTotal || 0),
+        buyerAddress: info.buyerAddress,
+        buyerContact: info.buyerContact,
+        lastOrder: info.lastOrder || null,
+      });
+    }
+  }
+
+  merged.sort((a, b) => b.totalSpent - a.totalSpent);
+  return merged;
 }
 
 export async function getBuyerTransactions(buyerName: string) {
@@ -771,22 +952,31 @@ export async function getDashboardCharts() {
     }),
   ]);
 
-  const inStock = stockStatuses.filter((p) => p.quantity > p.minThreshold).length;
-  const lowStock = stockStatuses.filter((p) => p.quantity <= p.minThreshold && p.quantity > 0).length;
+  const inStock = stockStatuses.filter(
+    (p) => p.quantity > p.minThreshold,
+  ).length;
+  const lowStock = stockStatuses.filter(
+    (p) => p.quantity <= p.minThreshold && p.quantity > 0,
+  ).length;
   const outOfStock = stockStatuses.filter((p) => p.quantity === 0).length;
 
   return {
-    transactionTypes: txnTypes.map((t) => ({ type: t.transactionType, count: t._count })),
+    transactionTypes: txnTypes.map((t) => ({
+      type: t.transactionType,
+      count: t._count,
+    })),
     stockStatus: { inStock, lowStock, outOfStock },
   };
 }
 
-export async function updateProfile(data: { name: string }) {
+export async function updateProfile(data: { name: string; imageUrl?: string }) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
+  const updateData: any = { sellerName: data.name };
+  if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
   const user = await prisma.user.update({
     where: { id: Number(session.user.id) },
-    data: { sellerName: data.name },
+    data: updateData,
   });
   await logAudit("Settings", "Update Profile", `Name changed to ${data.name}`);
   revalidatePath("/settings");
@@ -866,6 +1056,10 @@ export async function processRestock(transactionId: number) {
     "Process Restock",
     `#${txn.receiptNumber} processed (${txn.items.length} items)`,
   );
+
+  // Fire-and-forget low stock alert after restock
+  import("@/actions/email").then((m) => m.checkAndAlertLowStock());
+
   revalidatePath("/restocks");
   revalidatePath("/inventory");
   return txn;
@@ -888,6 +1082,17 @@ export async function updateBuyerInfo(
       }),
     },
   });
+  // Also update Buyer table
+  const buyer = await prisma.buyer.findFirst({ where: { name: buyerName } });
+  if (buyer) {
+    await prisma.buyer.update({
+      where: { id: buyer.id },
+      data: {
+        ...(data.buyerAddress !== undefined && { address: data.buyerAddress }),
+        ...(data.buyerContact !== undefined && { phone: data.buyerContact }),
+      },
+    });
+  }
   await logAudit(
     "Buyers",
     "Update Buyer Info",
@@ -899,31 +1104,81 @@ export async function updateBuyerInfo(
 
 // ─────────── Financial Dashboard ───────────
 
-export async function getFinancialDashboard(period?: { start: string; end: string }) {
+export async function getFinancialDashboard(period?: {
+  start: string;
+  end: string;
+}) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   const now = new Date();
-  const start = period?.start ? new Date(period.start) : new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = period?.end ? new Date(period.end + "T23:59:59") : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-  const periodDays = Math.round((end.getTime() - start.getTime()) / 86400000) || 1;
+  const start = period?.start
+    ? new Date(period.start)
+    : new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = period?.end
+    ? new Date(period.end + "T23:59:59")
+    : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const periodDays =
+    Math.round((end.getTime() - start.getTime()) / 86400000) || 1;
   const prevStart = new Date(start);
   prevStart.setDate(prevStart.getDate() - periodDays);
   const prevEnd = new Date(start);
   prevEnd.setDate(prevEnd.getDate() - 1);
 
   async function periodStats(s: Date, e: Date) {
-    const [sales, returns, restocks, cancelled, paymentByMethod] = await Promise.all([
-      prisma.transaction.aggregate({ where: { transactionDate: { gte: s, lte: e }, transactionStatus: "Completed", transactionType: { in: ["SaleWalkIn", "SalePO"] } }, _sum: { grandTotal: true }, _count: true }),
-      prisma.transaction.aggregate({ where: { transactionDate: { gte: s, lte: e }, transactionStatus: "Completed", transactionType: "Return" }, _sum: { grandTotal: true }, _count: true }),
-      prisma.transaction.aggregate({ where: { transactionDate: { gte: s, lte: e }, transactionStatus: "Completed", transactionType: "Restock" }, _sum: { grandTotal: true }, _count: true }),
-      prisma.transaction.aggregate({ where: { transactionDate: { gte: s, lte: e }, transactionStatus: "Cancelled" }, _count: true }),
-      prisma.transaction.groupBy({ by: ["paymentMethod"], where: { transactionDate: { gte: s, lte: e }, transactionStatus: "Completed" }, _sum: { grandTotal: true }, _count: true }),
-    ]);
+    const [sales, returns, restocks, cancelled, paymentByMethod] =
+      await Promise.all([
+        prisma.transaction.aggregate({
+          where: {
+            transactionDate: { gte: s, lte: e },
+            transactionStatus: "Completed",
+            transactionType: { in: ["SaleWalkIn", "SalePO"] },
+          },
+          _sum: { grandTotal: true },
+          _count: true,
+        }),
+        prisma.transaction.aggregate({
+          where: {
+            transactionDate: { gte: s, lte: e },
+            transactionStatus: "Completed",
+            transactionType: "Return",
+          },
+          _sum: { grandTotal: true },
+          _count: true,
+        }),
+        prisma.transaction.aggregate({
+          where: {
+            transactionDate: { gte: s, lte: e },
+            transactionStatus: "Completed",
+            transactionType: "Restock",
+          },
+          _sum: { grandTotal: true },
+          _count: true,
+        }),
+        prisma.transaction.aggregate({
+          where: {
+            transactionDate: { gte: s, lte: e },
+            transactionStatus: "Cancelled",
+          },
+          _count: true,
+        }),
+        prisma.transaction.groupBy({
+          by: ["paymentMethod"],
+          where: {
+            transactionDate: { gte: s, lte: e },
+            transactionStatus: "Completed",
+          },
+          _sum: { grandTotal: true },
+          _count: true,
+        }),
+      ]);
     return { sales, returns, restocks, cancelled, paymentByMethod };
   }
 
-  const [cur, prev] = await Promise.all([periodStats(start, end), periodStats(prevStart, prevEnd)]);
+  const [cur, prev] = await Promise.all([
+    periodStats(start, end),
+    periodStats(prevStart, prevEnd),
+  ]);
 
   const gross = Number(cur.sales._sum.grandTotal || 0);
   const prevGross = Number(prev.sales._sum.grandTotal || 0);
@@ -934,42 +1189,114 @@ export async function getFinancialDashboard(period?: { start: string; end: strin
   const prevNet = prevGross - Number(prev.returns._sum.grandTotal || 0);
 
   return {
-    period: { start: start.toISOString(), end: end.toISOString(), label: `${start.toLocaleDateString("en-PH", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}` },
-    grossRevenue: gross, returnsTotal, restocksTotal, netRevenue: netRev, profitLoss: profit,
-    salesCount: cur.sales._count, returnCount: cur.returns._count, restockCount: cur.restocks._count, cancelledCount: cur.cancelled._count,
-    comparison: { grossChange: prevGross ? Number((((gross - prevGross) / prevGross) * 100).toFixed(1)) : null, netChange: prevNet ? Number((((netRev - prevNet) / prevNet) * 100).toFixed(1)) : null },
-    paymentBreakdown: cur.paymentByMethod.map((p) => ({ method: p.paymentMethod || "Unknown", total: Number(p._sum.grandTotal || 0), count: p._count })),
+    period: {
+      start: start.toISOString(),
+      end: end.toISOString(),
+      label: `${start.toLocaleDateString("en-PH", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`,
+    },
+    grossRevenue: gross,
+    returnsTotal,
+    restocksTotal,
+    netRevenue: netRev,
+    profitLoss: profit,
+    salesCount: cur.sales._count,
+    returnCount: cur.returns._count,
+    restockCount: cur.restocks._count,
+    cancelledCount: cur.cancelled._count,
+    comparison: {
+      grossChange: prevGross
+        ? Number((((gross - prevGross) / prevGross) * 100).toFixed(1))
+        : null,
+      netChange: prevNet
+        ? Number((((netRev - prevNet) / prevNet) * 100).toFixed(1))
+        : null,
+    },
+    paymentBreakdown: cur.paymentByMethod.map((p) => ({
+      method: p.paymentMethod || "Unknown",
+      total: Number(p._sum.grandTotal || 0),
+      count: p._count,
+    })),
   };
 }
 
 export async function getCashFlowTrend(days: number = 30) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  const data: { date: string; revenue: number; expenses: number; net: number }[] = [];
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  const [revenues, expenses] = await Promise.all([
+    prisma.transaction.findMany({
+      where: {
+        transactionDate: { gte: start, lte: end },
+        transactionStatus: "Completed",
+        transactionType: { in: ["SaleWalkIn", "SalePO"] },
+      },
+      select: { transactionDate: true, grandTotal: true },
+    }),
+    prisma.transaction.findMany({
+      where: {
+        transactionDate: { gte: start, lte: end },
+        transactionStatus: "Completed",
+        transactionType: { in: ["Restock"] },
+      },
+      select: { transactionDate: true, grandTotal: true },
+    }),
+  ]);
+  const revMap = new Map<string, number>();
+  for (const r of revenues) {
+    const key = r.transactionDate.toISOString().split("T")[0];
+    revMap.set(key, (revMap.get(key) || 0) + Number(r.grandTotal || 0));
+  }
+  const expMap = new Map<string, number>();
+  for (const e of expenses) {
+    const key = e.transactionDate.toISOString().split("T")[0];
+    expMap.set(key, (expMap.get(key) || 0) + Number(e.grandTotal || 0));
+  }
+  const data: {
+    date: string;
+    revenue: number;
+    expenses: number;
+    net: number;
+  }[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split("T")[0];
-    const start = new Date(dateStr);
-    const end = new Date(dateStr + "T23:59:59");
-    const [revenue, expenses] = await Promise.all([
-      prisma.transaction.aggregate({ where: { transactionDate: { gte: start, lte: end }, transactionStatus: "Completed", transactionType: { in: ["SaleWalkIn", "SalePO"] } }, _sum: { grandTotal: true } }),
-      prisma.transaction.aggregate({ where: { transactionDate: { gte: start, lte: end }, transactionStatus: "Completed", transactionType: { in: ["Restock"] } }, _sum: { grandTotal: true } }),
-    ]);
-    const rev = Number(revenue._sum.grandTotal || 0);
-    const exp = Number(expenses._sum.grandTotal || 0);
-    data.push({ date: d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }), revenue: rev, expenses: exp, net: rev - exp });
+    const rev = revMap.get(dateStr) || 0;
+    const exp = expMap.get(dateStr) || 0;
+    data.push({
+      date: d.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      }),
+      revenue: rev,
+      expenses: exp,
+      net: rev - exp,
+    });
   }
   return data;
 }
 
-export async function getTopProductsByRevenue(days: number = 30, limit: number = 10) {
+export async function getTopProductsByRevenue(
+  days: number = 30,
+  limit: number = 10,
+) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
   const start = new Date();
   start.setDate(start.getDate() - days);
   const items = await prisma.transactionItem.findMany({
-    where: { transaction: { transactionDate: { gte: start }, transactionStatus: "Completed", transactionType: { in: ["SaleWalkIn", "SalePO"] } } },
+    where: {
+      transaction: {
+        transactionDate: { gte: start },
+        transactionStatus: "Completed",
+        transactionType: { in: ["SaleWalkIn", "SalePO"] },
+      },
+    },
     select: { productName: true, quantity: true, totalPrice: true },
   });
   const map = new Map<string, { qty: number; total: number }>();
@@ -980,28 +1307,67 @@ export async function getTopProductsByRevenue(days: number = 30, limit: number =
     existing.total += Number(item.totalPrice || 0);
     map.set(name, existing);
   }
-  return Array.from(map.entries()).map(([name, stats]) => ({ name, quantity: stats.qty, revenue: stats.total })).sort((a, b) => b.revenue - a.revenue).slice(0, limit);
+  return Array.from(map.entries())
+    .map(([name, stats]) => ({
+      name,
+      quantity: stats.qty,
+      revenue: stats.total,
+    }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, limit);
 }
 
 // ─────────── Paginated Audit Logs ───────────
 
-export async function getAuditLogCount(opts?: { startDate?: string; endDate?: string; search?: string; panel?: string }) {
+export async function getAuditLogCount(opts?: {
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  panel?: string;
+}) {
   const where: any = {};
   if (opts?.startDate) where.logTime = { gte: new Date(opts.startDate) };
-  if (opts?.endDate) where.logTime = { ...where.logTime, lte: new Date(opts.endDate) };
+  if (opts?.endDate)
+    where.logTime = { ...where.logTime, lte: new Date(opts.endDate) };
   if (opts?.panel) where.panel = opts.panel;
-  if (opts?.search) where.OR = [{ action: { contains: opts.search, mode: "insensitive" } }, { details: { contains: opts.search, mode: "insensitive" } }, { panel: { contains: opts.search, mode: "insensitive" } }];
+  if (opts?.search)
+    where.OR = [
+      { action: { contains: opts.search, mode: "insensitive" } },
+      { details: { contains: opts.search, mode: "insensitive" } },
+      { panel: { contains: opts.search, mode: "insensitive" } },
+    ];
   return prisma.auditLog.count({ where });
 }
 
-export async function getPaginatedAuditLogs(page: number, perPage: number, opts?: { startDate?: string; endDate?: string; search?: string; panel?: string }) {
+export async function getPaginatedAuditLogs(
+  page: number,
+  perPage: number,
+  opts?: {
+    startDate?: string;
+    endDate?: string;
+    search?: string;
+    panel?: string;
+  },
+) {
   const where: any = {};
   if (opts?.startDate) where.logTime = { gte: new Date(opts.startDate) };
-  if (opts?.endDate) where.logTime = { ...where.logTime, lte: new Date(opts.endDate) };
+  if (opts?.endDate)
+    where.logTime = { ...where.logTime, lte: new Date(opts.endDate) };
   if (opts?.panel) where.panel = opts.panel;
-  if (opts?.search) where.OR = [{ action: { contains: opts.search, mode: "insensitive" } }, { details: { contains: opts.search, mode: "insensitive" } }, { panel: { contains: opts.search, mode: "insensitive" } }];
+  if (opts?.search)
+    where.OR = [
+      { action: { contains: opts.search, mode: "insensitive" } },
+      { details: { contains: opts.search, mode: "insensitive" } },
+      { panel: { contains: opts.search, mode: "insensitive" } },
+    ];
   const [logs, total] = await Promise.all([
-    prisma.auditLog.findMany({ where, orderBy: { logTime: "desc" }, include: { seller: { select: { sellerName: true } } }, skip: (page - 1) * perPage, take: perPage }),
+    prisma.auditLog.findMany({
+      where,
+      orderBy: { logTime: "desc" },
+      include: { seller: { select: { sellerName: true } } },
+      skip: (page - 1) * perPage,
+      take: perPage,
+    }),
     prisma.auditLog.count({ where }),
   ]);
   return { logs, total, page, perPage, totalPages: Math.ceil(total / perPage) };
@@ -1011,9 +1377,21 @@ export async function getPaginatedAuditLogs(page: number, perPage: number, opts?
 
 type ValidationError = { row: number; column: string; message: string };
 
-export async function validateImportData(table: string, rows: Record<string, string>[]): Promise<{ valid: boolean; errors: ValidationError[]; preview: Record<string, string>[] }> {
+export async function validateImportData(
+  table: string,
+  rows: Record<string, string>[],
+): Promise<{
+  valid: boolean;
+  errors: ValidationError[];
+  preview: Record<string, string>[];
+}> {
   const config = IMPORT_CONFIGS[table];
-  if (!config) return { valid: false, errors: [{ row: 0, column: "", message: `Unknown table: "${table}"` }], preview: [] };
+  if (!config)
+    return {
+      valid: false,
+      errors: [{ row: 0, column: "", message: `Unknown table: "${table}"` }],
+      preview: [],
+    };
 
   const errors: ValidationError[] = [];
   const preview: Record<string, string>[] = [];
@@ -1027,21 +1405,42 @@ export async function validateImportData(table: string, rows: Record<string, str
       const val = (row[col.label] ?? row[col.key] ?? "").trim();
 
       if (col.required && !val) {
-        errors.push({ row: rowNum, column: col.label, message: `${col.label} is required` });
+        errors.push({
+          row: rowNum,
+          column: col.label,
+          message: `${col.label} is required`,
+        });
         continue;
       }
-      if (!val) { previewRow[col.key] = ""; continue; }
+      if (!val) {
+        previewRow[col.key] = "";
+        continue;
+      }
 
       if (col.type === "number") {
         const num = Number(val);
-        if (isNaN(num)) errors.push({ row: rowNum, column: col.label, message: `"${val}" is not a valid number` });
+        if (isNaN(num))
+          errors.push({
+            row: rowNum,
+            column: col.label,
+            message: `"${val}" is not a valid number`,
+          });
         else previewRow[col.key] = String(num);
       } else if (col.type === "date") {
         const d = new Date(val);
-        if (isNaN(d.getTime())) errors.push({ row: rowNum, column: col.label, message: `"${val}" is not a valid date` });
+        if (isNaN(d.getTime()))
+          errors.push({
+            row: rowNum,
+            column: col.label,
+            message: `"${val}" is not a valid date`,
+          });
         else previewRow[col.key] = d.toISOString();
       } else if (col.enum && !col.enum.includes(val)) {
-        errors.push({ row: rowNum, column: col.label, message: `"${val}" must be one of: ${col.enum.join(", ")}` });
+        errors.push({
+          row: rowNum,
+          column: col.label,
+          message: `"${val}" must be one of: ${col.enum.join(", ")}`,
+        });
       } else {
         previewRow[col.key] = val;
       }
@@ -1052,12 +1451,18 @@ export async function validateImportData(table: string, rows: Record<string, str
   return { valid: errors.length === 0, errors, preview };
 }
 
-export async function importData(table: string, rows: Record<string, string>[]) {
+export async function importData(
+  table: string,
+  rows: Record<string, string>[],
+) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
   const validation = await validateImportData(table, rows);
-  if (!validation.valid) throw new Error(`Validation failed: ${validation.errors.length} error(s). First: ${validation.errors[0].message}`);
+  if (!validation.valid)
+    throw new Error(
+      `Validation failed: ${validation.errors.length} error(s). First: ${validation.errors[0].message}`,
+    );
 
   let count = 0;
   const userId = Number(session.user.id);
@@ -1071,10 +1476,22 @@ export async function importData(table: string, rows: Record<string, string>[]) 
         const quantity = parseInt(row.quantity);
         const minThreshold = parseInt(row.minThreshold || "0");
         let categoryId: number | undefined;
-        const cat = await prisma.category.findFirst({ where: { name: { contains: row.category, mode: "insensitive" } } });
+        const cat = await prisma.category.findFirst({
+          where: { name: { contains: row.category, mode: "insensitive" } },
+        });
         if (cat) categoryId = cat.id;
         await prisma.product.create({
-          data: { productName: row.productName, category: row.category, categoryId, supplierName: row.supplierName || "", unitPrice, quantity, minThreshold, imageUrl: row.imageUrl || null, isAvailable: quantity > 0 },
+          data: {
+            productName: row.productName,
+            category: row.category,
+            categoryId,
+            supplierName: row.supplierName || "",
+            unitPrice,
+            quantity,
+            minThreshold,
+            imageUrl: row.imageUrl || null,
+            isAvailable: quantity > 0,
+          },
         });
         count++;
       }
@@ -1082,10 +1499,19 @@ export async function importData(table: string, rows: Record<string, string>[]) 
     }
     case "buyers": {
       for (const row of validation.preview) {
-        const existing = await prisma.buyer.findFirst({ where: { name: row.buyerName } });
+        const existing = await prisma.buyer.findFirst({
+          where: { name: row.buyerName },
+        });
         if (!existing) {
           await prisma.buyer.create({
-            data: { name: row.buyerName, address: row.buyerAddress || null, phone: row.buyerContact || null, totalOrders: parseInt(row.totalOrders || "0"), totalSpent: parseFloat(row.totalSpent || "0"), sellerId: userId },
+            data: {
+              name: row.buyerName,
+              address: row.buyerAddress || null,
+              phone: row.buyerContact || null,
+              totalOrders: parseInt(row.totalOrders || "0"),
+              totalSpent: parseFloat(row.totalSpent || "0"),
+              sellerId: userId,
+            },
           });
           count++;
         }
@@ -1095,7 +1521,14 @@ export async function importData(table: string, rows: Record<string, string>[]) 
     case "suppliers": {
       for (const row of validation.preview) {
         await prisma.supplier.create({
-          data: { supplierName: row.supplierName, contactName: row.contactName || null, contactNumber: row.contactNumber || null, email: row.email || null, address: row.address || null, isAvailable: true },
+          data: {
+            supplierName: row.supplierName,
+            contactName: row.contactName || null,
+            contactNumber: row.contactNumber || null,
+            email: row.email || null,
+            address: row.address || null,
+            isAvailable: true,
+          },
         });
         count++;
       }
@@ -1105,7 +1538,11 @@ export async function importData(table: string, rows: Record<string, string>[]) 
       throw new Error(`Import not supported for table: "${table}"`);
   }
 
-  await logAudit("Data Import", `Import ${table}`, `Imported ${count} ${table} via CSV`);
+  await logAudit(
+    "Data Import",
+    `Import ${table}`,
+    `Imported ${count} ${table} via CSV`,
+  );
   revalidatePath(`/${table}`);
   return { imported: count };
 }

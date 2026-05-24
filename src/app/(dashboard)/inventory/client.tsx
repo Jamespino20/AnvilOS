@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ReactNode } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -10,14 +10,12 @@ import {
   Loader2,
   Pencil,
   Trash2,
-  FolderPlus,
   ChevronDown,
 } from "lucide-react";
 import {
   createProduct,
   updateProduct,
   deleteProduct,
-  createCategory,
 } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
@@ -76,10 +74,7 @@ export function InventoryClient({
     minThreshold: "",
     imageUrl: "",
   };
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [catName, setCatName] = useState("");
-  const [catParent, setCatParent] = useState("");
-  const [addingCategory, setAddingCategory] = useState(false);
+
 
   const filtered = initialProducts.filter((p) => {
     if (search && !p.productName.toLowerCase().includes(search.toLowerCase()))
@@ -112,23 +107,12 @@ export function InventoryClient({
     };
   }
 
-  function renderCategoryOptions(
-    cats: typeof categories,
-    depth = 0,
-    fromChildren = false,
-  ): ReactNode[] {
-    const list = fromChildren ? cats : cats.filter((c) => c.parentCategoryId === null);
-    return list.flatMap((c) => {
-      const hasChildren = c.childCategories?.length > 0;
-      return [
-        <option key={c.id} value={c.id} disabled={hasChildren}>
-          {depth > 0 ? `${"—".repeat(depth)} ` : ""}{c.name} {hasChildren ? "(parent)" : ""}
-        </option>,
-        ...(hasChildren
-          ? renderCategoryOptions(c.childCategories as any, depth + 1, true)
-          : []),
-      ];
-    });
+  function flatCategoryOptions() {
+    return categories.map((c) => (
+      <option key={c.id} value={c.id}>
+        {c.name}
+      </option>
+    ));
   }
 
   async function handleAddProduct(e: React.FormEvent) {
@@ -236,7 +220,7 @@ export function InventoryClient({
             className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
           >
             <option value="">All Categories</option>
-            {renderCategoryOptions(categories)}
+            {flatCategoryOptions()}
           </select>
           <select
             value={filterSupplier}
@@ -263,15 +247,10 @@ export function InventoryClient({
         <div className="flex gap-2 w-full lg:w-auto">
           <button
             onClick={() => setShowAdd(true)}
+            title="Add a new product"
             className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all duration-200 active:scale-[0.98]"
           >
             <Plus className="h-4 w-4" /> <span className="sm:inline">Add Product</span>
-          </button>
-          <button
-            onClick={() => setShowCategoryModal(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 border border-[#e2e8f0] text-sm font-medium rounded-lg text-[#64748b] hover:bg-white hover:shadow-sm transition-all"
-          >
-            <FolderPlus className="h-4 w-4" />
           </button>
           <ExportButton
             filename={`anvilos-inventory-${new Date().toISOString().slice(0, 10)}.csv`}
@@ -283,8 +262,9 @@ export function InventoryClient({
               p.quantity === 0 ? "Out of Stock" : p.quantity <= p.minThreshold ? "Low Stock" : "In Stock",
             ])}
             label="Export"
+            title="Export inventory"
           />
-          <CSVImportButton table="inventory" onImported={() => window.location.reload()} />
+          <CSVImportButton table="inventory" onImported={() => window.location.reload()} title="Import products from CSV" />
         </div>
       </div>
 
@@ -378,14 +358,14 @@ export function InventoryClient({
                         <button
                           onClick={() => openEdit(product)}
                           className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all"
-                          title="Edit"
+                          title="Edit product details"
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => setDeleteTarget(product.id)}
                           className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all"
-                          title="Delete"
+                          title="Delete product"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -464,7 +444,7 @@ export function InventoryClient({
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
                   >
                     <option value="">Select category</option>
-                    {renderCategoryOptions(categories)}
+                    {flatCategoryOptions()}
                   </select>
                 </div>
                 <div>
@@ -651,7 +631,7 @@ export function InventoryClient({
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
                   >
                     <option value="">Select category</option>
-                    {renderCategoryOptions(categories)}
+                    {flatCategoryOptions()}
                   </select>
                 </div>
                 <div>
@@ -791,113 +771,7 @@ export function InventoryClient({
         variant="danger"
       />
 
-      {/* Create Category Modal */}
-      {showCategoryModal && (
-        <div
-          className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center"
-          onClick={() => {
-            setShowCategoryModal(false);
-            setCatName("");
-            setCatParent("");
-          }}
-        >
-          <div
-            className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-sm mx-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
-              <h2 className="text-lg font-bold text-[#0e212c]">
-                Create Category
-              </h2>
-              <button
-                onClick={() => {
-                  setShowCategoryModal(false);
-                  setCatName("");
-                  setCatParent("");
-                }}
-                className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                  Category Name *
-                </label>
-                <input
-                  value={catName}
-                  onChange={(e) => setCatName(e.target.value)}
-                  placeholder="e.g. Power Tools"
-                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                  Parent Category (optional)
-                </label>
-                <select
-                  value={catParent}
-                  onChange={(e) => setCatParent(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
-                >
-                  <option value="">None (top-level)</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                      {c.childCategories.length > 0
-                        ? ` (${c.childCategories.length} children)`
-                        : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => {
-                    setShowCategoryModal(false);
-                    setCatName("");
-                    setCatParent("");
-                  }}
-                  className="flex-1 py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-[#f8fafc] transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={async () => {
-                    if (!catName.trim()) return;
-                    setAddingCategory(true);
-                    try {
-                      await createCategory(
-                        catName.trim(),
-                        catParent ? Number(catParent) : undefined,
-                      );
-                      setShowCategoryModal(false);
-                      setCatName("");
-                      setCatParent("");
-                      router.refresh();
-                    } catch (e) {
-                      console.error("Failed to create category", e);
-                    } finally {
-                      setAddingCategory(false);
-                    }
-                  }}
-                  disabled={!catName.trim() || addingCategory}
-                  className="flex-1 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {addingCategory ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> Creating...
-                    </>
-                  ) : (
-                    "Create"
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

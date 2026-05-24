@@ -41,7 +41,7 @@ export function Hero() {
             </span>
           </h1>
           <p className="mx-auto mt-8 max-w-2xl text-lg text-slate-300 md:text-xl font-medium leading-relaxed">
-            Unify your hardware enterprise with AnvilOS. Real-time inventory,
+            Unify your hardware enterprise with CWL Hardware. Real-time inventory,
             seamless POS integrations, and supplier logic engineered for
             reliability.
           </p>

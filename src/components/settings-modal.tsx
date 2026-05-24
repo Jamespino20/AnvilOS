@@ -49,9 +49,14 @@ export function SettingsModal({ open, onClose }: Props) {
     if (typeof document !== "undefined") {
       setDarkMode(document.documentElement.classList.contains("dark"));
       setTwoFactor(localStorage.getItem("2fa_enabled") === "true");
-      setProfileImage(localStorage.getItem("profile_image"));
+      const sessionImg = (session?.user as any)?.imageUrl;
+      if (sessionImg) {
+        setProfileImage(sessionImg);
+      } else {
+        setProfileImage(localStorage.getItem("profile_image"));
+      }
     }
-  }, [open]);
+  }, [open, session?.user]);
 
   useEffect(() => {
     if (session?.user?.name) setName(session.user.name);
@@ -92,8 +97,8 @@ export function SettingsModal({ open, onClose }: Props) {
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await updateProfile({ name: name.trim() });
-      await update({ name: name.trim() });
+      await updateProfile({ name: name.trim(), imageUrl: profileImage || undefined });
+      await update({ name: name.trim(), imageUrl: profileImage || undefined });
       router.refresh();
       onClose();
     } catch (e) {

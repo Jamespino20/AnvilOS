@@ -1,8 +1,9 @@
 /*
-App Name: AnvilOS
+App Name: CWL Hardware
+App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 21, 2026 
+Last Update Date: May 24, 2026
 */
 
 import { useState, useEffect } from "react";
@@ -145,7 +146,7 @@ export function AuthModal({
                   className="space-y-1 z-10 relative"
                 >
                   <h2 className="text-3xl font-black tracking-tighter uppercase leading-none italic">
-                    Anvil<span className="text-[#fd761a]">OS</span>
+                    CWL<span className="text-[#fd761a]">Hardware</span>
                   </h2>
                   <p className="text-[10px] text-white/50 font-bold uppercase tracking-[0.2em]">
                     Industrial Gateway • Secure Access v2.5
