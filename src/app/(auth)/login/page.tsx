@@ -8,7 +8,7 @@ Last Update Date: May 24, 2026
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
@@ -16,6 +16,16 @@ import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    document.cookie.split("; ").forEach((c) => {
+      const eq = c.indexOf("=");
+      const name = eq > -1 ? c.substring(0, eq).trim() : c.trim();
+      if (/authjs\.session-token/.test(name)) {
+        document.cookie = `${name}=; Max-Age=0; path=/; Secure; SameSite=Lax`;
+      }
+    });
+  }, []);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
