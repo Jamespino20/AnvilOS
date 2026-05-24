@@ -18,13 +18,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    document.cookie.split("; ").forEach((c) => {
-      const eq = c.indexOf("=");
-      const name = eq > -1 ? c.substring(0, eq).trim() : c.trim();
-      if (/authjs\.session-token/.test(name)) {
-        document.cookie = `${name}=; Max-Age=0; path=/; Secure; SameSite=Lax`;
-      }
-    });
+    fetch("/api/clear-cookies", { credentials: "same-origin" }).catch(() => {});
   }, []);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

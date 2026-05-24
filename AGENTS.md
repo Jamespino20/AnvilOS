@@ -10,42 +10,31 @@
 
 ## Progress
 ### Done
-- **Editable qty input in POS cart**: Replaced read-only `<span>` with a click-to-edit `<input>` between +/- buttons (press Enter/blur to commit, Escape to cancel). State: `editingQty`, `qtyInput`, with `startQtyEdit`/`commitQtyEdit` functions.
-- **Mobile thumb-zone cart button**: Replaced the small "View Cart" header button with a fixed bottom bar containing cart count + total, positioned in the thumb zone with gradient backdrop. When cart is empty shows an empty-state hint.
-- **Larger touch targets**: +/- buttons increased to 36×36px (w-9 h-9), remove button to 36×36px, both with `aria-label` for accessibility. All buttons have `active:` feedback.
-- **Page-level padding**: Added `pb-24 lg:pb-0` to page root so the fixed bottom bar never overlaps content.
-- **processRestock bug**: Added `prisma.transaction.update` to set status `"Completed"` after processing — fixes infinite loop (Process button stayed active forever)
-- **Restocks page redesign**: POS-style cart modal (search products + cart with qty controls), no supplier name field, restock created as `"Ongoing"` so Process button appears
-- **Product photo upload**: File upload (`accept="image/*"`) replaces URL input in Add/Edit product modals; uses FileReader → base64 data URL
-- **Category dropdown dedup**: `renderCategoryOptions` filters to `parentCategoryId === null` at root, recurses into `childCategories`; parent categories `disabled` with "(parent)" label
-- **POS receipt fixes**: buyerName and grandTotal stored in `done` state at checkout (was being cleared before download)
-- **Homepage fixes**: StatsBar `bg-muted` (no `bg-surface-container`); footer logo `opacity-80 dark:brightness-0 dark:invert`; navbar floating (`top-4 left-4 right-4 w-[calc(100%-2rem)]` when scrolled); FeaturesGrid no misleading `cursor-pointer`; Hero video wrapped with fallback
-- **New public subpages**: `/solutions`, `/company`, `/marketplace`, `/pricing`, `/contact` — moved out of auth-gated `(dashboard)` route group to root `app/`; old `(dashboard)` versions deleted; `[...slug]` catch-all enhanced
-- **Chart.js dashboard**: Installed `chart.js` + `react-chartjs-2`; `src/components/charts.tsx` with RevenueChart (bar), TxnTypeChart (doughnut), StockChart (doughnut); `getDashboardCharts` server action; replaced CSS bar chart
-- **Fixed duplicate `X` import** in POS client (caught by build type-check)
+- **Error 494 fix — accumulated cookie chunks**: Auth.js v5 `SessionStore` chunks JWT tokens >4096 bytes as `__Secure-authjs.session-token.0`, `.1`, etc. Each page load created a new chunk set, and old chunks should be deleted via `Set-Cookie: Max-Age=0`. But when cookie options changed between deploys (custom `cookies` config added then removed), browsers silently kept old chunks. 50+ chunks × ~4KB = 200KB cookie header → Vercel proxy 494. **Fix**: Three layers — (1) `src/app/api/clear-cookies/route.ts`: API endpoint (not behind middleware) reads incoming cookies and sends `Set-Cookie: Max-Age=0` for every `authjs.session-token` cookie. (2) Login page fetches this endpoint via `useEffect` on mount to clear HttpOnly cookies that `document.cookie` cannot read. (3) `src/proxy.ts`: Auth middleware wrapper sends clearing `Set-Cookie` headers on every protected-route request (backup for ongoing prevention). Auth.js v5 always appends its own session-refresh cookie AFTER our clearing headers (`next-auth/lib/index.js:168`), so current sessions aren't disrupted.
+- **auth.ts**: Removed custom `cookies` config — Auth.js v5 uses its own stable defaults (`__Secure-authjs.session-token`, sameSite: "lax", path: "/", secure: true). This prevents the cookie-option churn that caused chunk accumulation.
+- **All earlier progress preserved**: Editable qty, mobile cart bar, processRestock bug, restocks redesign, photo uploads, category dropdown, POS receipts, homepage fixes, public subpages, Chart.js dashboard, etc.
 
 ### Blocked
-- (none)
+- **Error 494 still persists** — despite the three-layer fix, accumulated cookies remain in users' browsers. The `/api/clear-cookies` endpoint should clear them on login page visit. If not, users may need to manually clear browser cookies for the site. Root cause is fully understood (Auth.js v5 cookie chunking + option changes between deploys), and the fix should prevent re-accumulation.
 
 ## Key Decisions
-- Product photos stored as base64 data URLs in PostgreSQL `TEXT` field (no external storage)
-- Chart.js chosen over Recharts or custom SVG for dashboard charts
-- Floating navbar from ui-ux-pro-max skill (`top-4 left-4 right-4` rounded-xl when scrolled)
-- Mobile bottom bar replaced the header-based "View Cart" button for better thumb-zone UX
-- Editable qty uses inline `<input>` that swaps in on click (no modal/popover)
+- Product photos stored as base64 data URLs (no external storage)
+- Chart.js for dashboard charts
+- 494 fix uses three layers: middleware (server-side), API endpoint (behind `/login`), and login-page fetch (client-side)
+- No custom `cookies` config in auth.ts — rely on Auth.js v5 stable defaults
+- `src/proxy.ts` wraps `auth()` instead of re-exporting directly, allowing custom middleware logic
+- Auth.js v5's cookie chunking (`SessionStore`) is documented behavior, not a bug — the accumulation was caused by changing cookie options between deploys
 
 ## Next Steps
-- Deploy to Vercel (vercel.json exists, build passes with 27 routes)
+- Deploy to Vercel; affected users visit `/login` to trigger `/api/clear-cookies` clearing, then log in fresh
+- If 494 persists after deployment, users may need to manually clear browser cookies for `cwlhardware.vercel.app`
+- Monitor for any future chunk accumulation (should be fixed with stable cookie options)
 
 ## Relevant Files
-- `src/actions/index.ts`: `processRestock` updates `transactionStatus: "Completed"` (line ~571); `getDashboardCharts` (lines ~761-779)
-- `src/app/(dashboard)/pos/client.tsx`: Editable qty `<input>`, mobile bottom cart bar, larger touch targets, receipt data in `done` state
-- `src/app/(dashboard)/restocks/page.tsx`: POS-style cart modal, editable qty, no supplier name
-- `src/components/charts.tsx`: RevenueChart (Bar), TxnTypeChart (Doughnut), StockChart (Doughnut)
-- `src/components/Navbar.tsx`: Floating navbar when scrolled
-- `src/components/Hero.tsx`: `"use client"`, video with fallback overlay
-- `src/components/sections/StatsBar.tsx`, `Footer.tsx`: Fixed broken classes/styling
-- `src/app/solutions/page.tsx`, `src/app/company/page.tsx`, `src/app/marketplace/page.tsx`, `src/app/pricing/page.tsx`, `src/app/contact/page.tsx`: New public pages
-- `src/app/[...slug]/page.tsx`: Enhanced catch-all
-- `src/app/(dashboard)/inventory/client.tsx`: File upload product photos, parent-category disabled dropdown
-- `src/app/(dashboard)/dashboard/page.tsx`: Chart.js dashboard
+- `src/proxy.ts`: Auth middleware wrapper — sends `Set-Cookie: Max-Age=0` for accumulated cookies on every request
+- `src/app/api/clear-cookies/route.ts`: API endpoint (no middleware) that reads request cookies and returns clearing headers
+- `src/app/(auth)/login/page.tsx`: Fetches `/api/clear-cookies` on mount to clear HttpOnly cookies before login
+- `src/lib/auth.ts`: Removed custom cookies config — uses Auth.js v5 defaults exclusively
+- `src/app/(dashboard)/layout.tsx`: Dashboard auth gate (unchanged)
+- `node_modules/@auth/core/lib/utils/cookie.js`: `SessionStore` class showing chunking logic (`ALLOWED_COOKIE_SIZE=4096`, chunk naming `base.N`)
+- `node_modules/next-auth/lib/index.js:127-169`: `handleAuth` showing middleware flow — session cookies always appended after user callback response
