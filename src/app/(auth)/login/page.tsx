@@ -45,7 +45,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F1F5F9] relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('/images/warehouse-bg.jpg')] bg-cover bg-center opacity-10" />
+      <div className="absolute inset-0 bg-[url('/images/CWLHardware_Location.png')] bg-cover bg-center opacity-10" />
       <div className="relative w-full max-w-md mx-4">
         <div className="text-center mb-8">
           <img

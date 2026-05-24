@@ -15,6 +15,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   debug: process.env.NODE_ENV === "development",
   secret: process.env.AUTH_SECRET,
   trustHost: true,
+  cookies: {
+    sessionToken: {
+      name: "__Secure-authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+        maxAge: 30 * 24 * 60 * 60,
+      },
+    },
+    callbackUrl: {
+      name: "__Secure-authjs.callback-url",
+      options: { sameSite: "lax", path: "/", secure: true, maxAge: 30 * 24 * 60 * 60 },
+    },
+    csrfToken: {
+      name: "__Host-authjs.csrf-token",
+      options: { httpOnly: true, sameSite: "lax", path: "/", secure: true, maxAge: 30 * 24 * 60 * 60 },
+    },
+  },
   providers: [
     Credentials({
       name: "credentials",
