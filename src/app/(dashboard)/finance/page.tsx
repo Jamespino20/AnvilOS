@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { getFinancialDashboard, getCashFlowTrend, getTopProductsByRevenue } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
-import { TrendingUp, TrendingDown, DollarSign, Receipt, ArrowUpRight, ArrowDownRight, Calendar, ShoppingCart, RotateCcw, Ban, Wallet, BarChart3, PieChart, LineChart } from "lucide-react";
+import { ExportDialog } from "@/components/export-dialog";
+import { TrendingUp, TrendingDown, DollarSign, Receipt, ArrowUpRight, ArrowDownRight, Calendar, ShoppingCart, RotateCcw, Ban, Wallet, BarChart3, PieChart, LineChart, Download } from "lucide-react";
 
 const PERIODS = [
   { label: "This Month", value: "month" },
@@ -61,6 +62,43 @@ export default function FinancePage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeader title="Financial Dashboard" subtitle="Revenue, expenses, profit & cash flow analysis" />
+        <div className="flex items-center gap-2 flex-wrap">
+          <ExportDialog
+            filename={`cwl-hardware-finance-${new Date().toISOString().slice(0, 10)}.csv`}
+            allColumns={[
+              { key: "metric", label: "Metric" },
+              { key: "value", label: "Value" },
+            ]}
+            fetchRows={async (selectedColumns) => {
+              if (!fin) return [];
+              const rows: string[][] = [
+                ["Period", fin.period?.label || ""],
+                ["Gross Revenue", `₱${fin.grossRevenue.toLocaleString()}`],
+                ["Net Revenue", `₱${fin.netRevenue.toLocaleString()}`],
+                ["Restocks Total", `₱${fin.restocksTotal.toLocaleString()}`],
+                ["Profit / Loss", `₱${fin.profitLoss.toLocaleString()}`],
+                ["Sales Transactions", String(fin.salesCount)],
+                ["Returns", String(fin.returnCount)],
+                ["Restocks", String(fin.restockCount)],
+                ["Cancelled", String(fin.cancelledCount)],
+              ];
+              if (fin.paymentBreakdown?.length > 0) {
+                rows.push([]);
+                rows.push(["Payment Method Breakdown"]);
+                for (const pm of fin.paymentBreakdown) {
+                  rows.push([pm.method, `₱${pm.total.toLocaleString()} (${pm.count} txn)`]);
+                }
+              }
+              return rows.map((r) => selectedColumns.map((key) => {
+                if (key === "metric") return r[0];
+                if (key === "value") return r[1] ?? "";
+                return "";
+              }));
+            }}
+            label="Export Report"
+            title="Export financial report"
+          />
+        </div>
         <div className="flex items-center gap-2 bg-white border border-[#e2e8f0] rounded-lg p-1">
           {PERIODS.map((p) => (
             <button key={p.value} onClick={() => setPeriod(p.value)}

@@ -89,7 +89,7 @@ export default function AuditLogPage() {
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeader title="Audit Logs" subtitle="Track all system activities, user actions, and changes across modules." />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <ExportDialog
             filename={`cwl-hardware-audit-logs-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={EXPORT_COLUMNS}

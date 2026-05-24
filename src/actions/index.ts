@@ -434,6 +434,7 @@ export async function createTransaction(data: {
   buyerName: string;
   buyerAddress?: string;
   buyerContact?: string;
+  buyerEmail?: string;
   transactionType:
     | "SaleWalkIn"
     | "SalePO"
@@ -546,6 +547,7 @@ export async function createTransaction(data: {
           totalSpent: { increment: data.grandTotal },
           address: data.buyerAddress || undefined,
           phone: data.buyerContact || undefined,
+          email: data.buyerEmail || undefined,
           sellerId: sellerId || undefined,
         },
       });
@@ -555,6 +557,7 @@ export async function createTransaction(data: {
           name: data.buyerName,
           address: data.buyerAddress || null,
           phone: data.buyerContact || null,
+          email: data.buyerEmail || null,
           totalOrders: 1,
           totalSpent: data.grandTotal,
           sellerId: sellerId || undefined,
@@ -847,6 +850,7 @@ export async function getBuyers() {
     totalSpent: Number(b.totalSpent),
     buyerAddress: b.address,
     buyerContact: b.phone,
+    buyerEmail: b.email,
     lastOrder: latestMap.get(b.name) || null,
   }));
 
@@ -886,6 +890,7 @@ export async function getBuyers() {
         totalSpent: Number(b._sum.grandTotal || 0),
         buyerAddress: info.buyerAddress,
         buyerContact: info.buyerContact,
+        buyerEmail: null,
         lastOrder: info.lastOrder || null,
       });
     }
@@ -899,7 +904,7 @@ export async function getBuyerTransactions(buyerName: string) {
   return prisma.transaction.findMany({
     where: { buyerName },
     orderBy: { transactionDate: "desc" },
-    include: { items: true, seller: { select: { sellerName: true } } },
+    include: { items: true, seller: { select: { sellerName: true } }, buyer: true },
   });
 }
 
@@ -1067,7 +1072,7 @@ export async function processRestock(transactionId: number) {
 
 export async function updateBuyerInfo(
   buyerName: string,
-  data: { buyerAddress?: string; buyerContact?: string },
+  data: { buyerAddress?: string; buyerContact?: string; buyerEmail?: string },
 ) {
   const session = await auth();
   if (!session?.user?.email) throw new Error("Unauthorized");
@@ -1090,13 +1095,14 @@ export async function updateBuyerInfo(
       data: {
         ...(data.buyerAddress !== undefined && { address: data.buyerAddress }),
         ...(data.buyerContact !== undefined && { phone: data.buyerContact }),
+        ...(data.buyerEmail !== undefined && { email: data.buyerEmail }),
       },
     });
   }
   await logAudit(
     "Buyers",
     "Update Buyer Info",
-    `${buyerName}: address/contact updated`,
+    `${buyerName}: address/contact/email updated`,
   );
   revalidatePath("/buyers");
   return txns;

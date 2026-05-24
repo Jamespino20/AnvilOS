@@ -19,9 +19,8 @@ import {
 } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { ExportButton } from "@/components/export-button";
+import { ExportDialog } from "@/components/export-dialog";
 import { CSVImportButton } from "@/components/csv-import";
-import { exportCSV } from "@/lib/csv";
 import type { Product, Category, Supplier } from "@prisma/client";
 
 interface Props {
@@ -244,7 +243,7 @@ export function InventoryClient({
             <option value="out">Out of Stock</option>
           </select>
         </div>
-        <div className="flex gap-2 w-full lg:w-auto">
+        <div className="flex gap-2 w-full lg:w-auto flex-wrap">
           <button
             onClick={() => setShowAdd(true)}
             title="Add a new product"
@@ -252,15 +251,29 @@ export function InventoryClient({
           >
             <Plus className="h-4 w-4" /> <span className="sm:inline">Add Product</span>
           </button>
-          <ExportButton
+          <ExportDialog
             filename={`anvilos-inventory-${new Date().toISOString().slice(0, 10)}.csv`}
-            headers={["Product Name", "Category", "Supplier", "Unit Price", "Quantity", "Min Threshold", "Status"]}
-            rows={filtered.map((p) => [
-              p.productName, p.category, p.supplierName,
-              `₱${Number(p.unitPrice).toLocaleString()}`,
-              String(p.quantity), String(p.minThreshold),
-              p.quantity === 0 ? "Out of Stock" : p.quantity <= p.minThreshold ? "Low Stock" : "In Stock",
-            ])}
+            allColumns={[
+              { key: "productName", label: "Product Name" },
+              { key: "category", label: "Category" },
+              { key: "supplierName", label: "Supplier" },
+              { key: "unitPrice", label: "Unit Price" },
+              { key: "quantity", label: "Quantity" },
+              { key: "minThreshold", label: "Min Threshold" },
+              { key: "isAvailable", label: "Status" },
+            ]}
+            fetchRows={async (selectedColumns) => filtered.map((p) =>
+              selectedColumns.map((key) => {
+                if (key === "productName") return p.productName;
+                if (key === "category") return p.category;
+                if (key === "supplierName") return p.supplierName;
+                if (key === "unitPrice") return `₱${Number(p.unitPrice).toLocaleString()}`;
+                if (key === "quantity") return String(p.quantity);
+                if (key === "minThreshold") return String(p.minThreshold);
+                if (key === "isAvailable") return p.quantity === 0 ? "Out of Stock" : p.quantity <= p.minThreshold ? "Low Stock" : "In Stock";
+                return "";
+              })
+            )}
             label="Export"
             title="Export inventory"
           />

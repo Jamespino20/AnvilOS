@@ -25,6 +25,7 @@ import {
   ChevronUp,
   Phone,
   MapPin,
+  Mail,
   Calendar,
   Pencil,
   X,
@@ -33,12 +34,11 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
-import { ExportButton } from "@/components/export-button";
+import { ExportDialog } from "@/components/export-dialog";
 import { CSVImportButton } from "@/components/csv-import";
-import { exportCSV } from "@/lib/csv";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
-type TxnWithItems = Transaction & { items: TransactionItem[] };
+type TxnWithItems = Transaction & { items: TransactionItem[]; buyer?: { email?: string | null } | null };
 
 interface Buyer {
   buyerName: string;
@@ -63,8 +63,10 @@ export default function BuyersPage() {
   const [showEditBuyer, setShowEditBuyer] = useState(false);
   const [editAddress, setEditAddress] = useState("");
   const [editContact, setEditContact] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [savingBuyer, setSavingBuyer] = useState(false);
-  const perPage = 10;
+  const [perPage, setPerPage] = useState(10);
+  const [detailPage, setDetailPage] = useState(1);
 
   useEffect(() => {
     Promise.all([getBuyers(), getProducts({})]).then(([data, prods]) => {
@@ -78,12 +80,14 @@ export default function BuyersPage() {
     setSelectedBuyer(name);
     setHistoryLoading(true);
     setExpandedReceipt(null);
+    setDetailPage(1);
     try {
       const data = await getBuyerTransactions(name);
       setHistory(data as TxnWithItems[]);
       if (data.length > 0) {
         setEditAddress(data[0].buyerAddress || "");
         setEditContact(data[0].buyerContact || "");
+        setEditEmail((data[0] as any).buyer?.email || "");
       }
     } finally {
       setHistoryLoading(false);
@@ -135,6 +139,13 @@ export default function BuyersPage() {
   const totalPages = Math.ceil(filtered.length / perPage);
   const paged = filtered.slice((page - 1) * perPage, page * perPage);
 
+  const detailPerPage = 5;
+  const detailTotalPages = Math.ceil(history.length / detailPerPage);
+  const detailPaged = history.slice(
+    (detailPage - 1) * detailPerPage,
+    detailPage * detailPerPage,
+  );
+
   if (loading)
     return (
       <div className="space-y-5">
@@ -177,6 +188,11 @@ export default function BuyersPage() {
                     <Phone className="h-3.5 w-3.5" /> {history[0].buyerContact}
                   </span>
                 )}
+                {history[0]?.buyer?.email && (
+                  <span className="flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5" /> {history[0].buyer.email}
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -215,7 +231,7 @@ export default function BuyersPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {history.map((txn) => {
+            {detailPaged.map((txn) => {
               const isExpanded = expandedReceipt === txn.id;
               return (
                 <div
@@ -340,6 +356,33 @@ export default function BuyersPage() {
                 No transactions found
               </div>
             )}
+            {detailTotalPages > 1 && (
+              <div className="flex items-center justify-between pt-3 border-t border-[#e2e8f0]">
+                <span className="text-xs text-[#64748b]">
+                  Page {detailPage} of {detailTotalPages}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setDetailPage(Math.max(1, detailPage - 1))}
+                    disabled={detailPage === 1}
+                    className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-xs text-[#64748b] hover:bg-white disabled:opacity-50 transition-all"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    onClick={() =>
+                      setDetailPage(
+                        Math.min(detailTotalPages, detailPage + 1),
+                      )
+                    }
+                    disabled={detailPage === detailTotalPages}
+                    className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-xs text-[#64748b] hover:bg-white disabled:opacity-50 transition-all"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -387,6 +430,17 @@ export default function BuyersPage() {
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Email
+                  </label>
+                  <input
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="Enter email address"
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                  />
+                </div>
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => setShowEditBuyer(false)}
@@ -401,6 +455,7 @@ export default function BuyersPage() {
                         await updateBuyerInfo(selectedBuyer!, {
                           buyerAddress: editAddress,
                           buyerContact: editContact,
+                          buyerEmail: editEmail,
                         });
                         setHistory((prev) =>
                           prev.map((t) => ({
@@ -444,7 +499,7 @@ export default function BuyersPage() {
         title="Buyers"
         subtitle={`${filtered.length} buyer${filtered.length !== 1 ? "s" : ""} found — view customer purchase histories and contact details.`}
       />
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input
@@ -474,28 +529,29 @@ export default function BuyersPage() {
             className="w-16 px-2 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
           />
         </div>
-        <div className="flex items-center gap-2 ml-auto">
-          <ExportButton
+        <div className="flex items-center gap-2 ml-auto flex-wrap">
+          <ExportDialog
             filename={`cwl-hardware-buyers-${new Date().toISOString().slice(0, 10)}.csv`}
-            headers={[
-              "Buyer Name",
-              "Total Orders",
-              "Total Spent",
-              "Address",
-              "Contact",
-              "Last Order",
+            allColumns={[
+              { key: "buyerName", label: "Buyer Name" },
+              { key: "totalOrders", label: "Total Orders" },
+              { key: "totalSpent", label: "Total Spent" },
+              { key: "buyerAddress", label: "Address" },
+              { key: "buyerContact", label: "Contact" },
+              { key: "lastOrder", label: "Last Order" },
             ]}
-            rows={filtered.map((b) => [
-              b.buyerName,
-              String(b.totalOrders),
-              `₱${b.totalSpent.toLocaleString()}`,
-              b.buyerAddress || "",
-              b.buyerContact || "",
-              b.lastOrder
-                ? new Date(b.lastOrder).toLocaleDateString("en-PH")
-                : "",
-            ])}
-            label="Export CSV"
+            fetchRows={async (selectedColumns) => filtered.map((b) =>
+              selectedColumns.map((key) => {
+                if (key === "buyerName") return b.buyerName;
+                if (key === "totalOrders") return String(b.totalOrders);
+                if (key === "totalSpent") return `₱${b.totalSpent.toLocaleString()}`;
+                if (key === "buyerAddress") return b.buyerAddress || "";
+                if (key === "buyerContact") return b.buyerContact || "";
+                if (key === "lastOrder") return b.lastOrder ? new Date(b.lastOrder).toLocaleDateString("en-PH") : "";
+                return "";
+              })
+            )}
+            label="Export"
             title="Export buyers list"
           />
           <CSVImportButton
@@ -603,7 +659,10 @@ export default function BuyersPage() {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 text-sm">
+        <div className="flex items-center justify-center gap-2 text-sm flex-wrap">
+          <span className="text-xs text-[#64748b] mr-1">
+            Page {page} of {totalPages}
+          </span>
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}
@@ -611,15 +670,33 @@ export default function BuyersPage() {
           >
             Prev
           </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPage(p)}
-              className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${p === page ? "bg-[#fd761a] text-white" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}
-            >
-              {p}
-            </button>
-          ))}
+          {totalPages <= 7
+            ? Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${p === page ? "bg-[#fd761a] text-white" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}
+                  >
+                    {p}
+                  </button>
+                ),
+              )
+            : Array.from({ length: 7 }, (_, i) => {
+                const half = 3;
+                let start = page - half;
+                if (start < 1) start = 1;
+                if (start > totalPages - 6) start = totalPages - 6;
+                return start + i;
+              }).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${p === page ? "bg-[#fd761a] text-white" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}
+                >
+                  {p}
+                </button>
+              ))}
           <button
             onClick={() => setPage(Math.min(totalPages, page + 1))}
             disabled={page === totalPages}
@@ -627,6 +704,18 @@ export default function BuyersPage() {
           >
             Next
           </button>
+          <select
+            value={perPage}
+            onChange={(e) => {
+              setPerPage(Number(e.target.value));
+              setPage(1);
+            }}
+            className="ml-2 px-2 py-1.5 border border-[#e2e8f0] rounded-lg text-xs text-[#64748b] bg-white"
+          >
+            <option value={10}>10 / page</option>
+            <option value={20}>20 / page</option>
+            <option value={50}>50 / page</option>
+          </select>
         </div>
       )}
     </div>

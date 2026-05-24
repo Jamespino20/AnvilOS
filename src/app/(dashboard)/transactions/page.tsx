@@ -27,9 +27,8 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
-import { ExportButton } from "@/components/export-button";
+import { ExportDialog } from "@/components/export-dialog";
 import { CSVImportButton } from "@/components/csv-import";
-import { exportCSV } from "@/lib/csv";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
@@ -168,28 +167,31 @@ export default function TransactionsPage() {
           title="Transactions"
           subtitle="View and manage all sales, returns, restocks, and adjustments."
         />
-        <div className="flex items-center gap-2">
-          <ExportButton
+        <div className="flex items-center gap-2 flex-wrap">
+          <ExportDialog
             filename={`cwl-hardware-transactions-${new Date().toISOString().slice(0, 10)}.csv`}
-            headers={[
-              "Receipt #",
-              "Buyer",
-              "Type",
-              "Date",
-              "Payment",
-              "Total",
-              "Status",
+            allColumns={[
+              { key: "receiptNumber", label: "Receipt #" },
+              { key: "buyerName", label: "Buyer" },
+              { key: "transactionType", label: "Type" },
+              { key: "transactionDate", label: "Date" },
+              { key: "paymentMethod", label: "Payment" },
+              { key: "grandTotal", label: "Total" },
+              { key: "transactionStatus", label: "Status" },
             ]}
-            rows={transactions.map((t) => [
-              String(t.receiptNumber),
-              t.buyerName,
-              t.transactionType.replace(/([A-Z])/g, " $1").trim(),
-              new Date(t.transactionDate).toLocaleDateString("en-PH"),
-              t.paymentMethod || "—",
-              `₱${Number(t.grandTotal || 0).toLocaleString()}`,
-              t.transactionStatus,
-            ])}
-            label="Export CSV"
+            fetchRows={async (selectedColumns) => transactions.map((t) =>
+              selectedColumns.map((key) => {
+                if (key === "receiptNumber") return String(t.receiptNumber);
+                if (key === "buyerName") return t.buyerName;
+                if (key === "transactionType") return t.transactionType.replace(/([A-Z])/g, " $1").trim();
+                if (key === "transactionDate") return new Date(t.transactionDate).toLocaleDateString("en-PH");
+                if (key === "paymentMethod") return t.paymentMethod || "—";
+                if (key === "grandTotal") return `₱${Number(t.grandTotal || 0).toLocaleString()}`;
+                if (key === "transactionStatus") return t.transactionStatus;
+                return "";
+              })
+            )}
+            label="Export"
             title="Export transactions"
           />
           <CSVImportButton

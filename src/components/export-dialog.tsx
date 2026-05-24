@@ -61,7 +61,7 @@ export function ExportDialog({ filename, allColumns, fetchRows, label = "Export"
     <>
       <button onClick={() => setOpen(true)}
         title={title}
-        className="flex items-center gap-2 px-4 py-2.5 border border-[#e2e8f0] text-sm font-medium rounded-lg text-[#64748b] hover:bg-white hover:shadow-sm transition-all duration-200">
+        className="flex items-center gap-2 px-2 sm:px-4 py-2 border border-[#e2e8f0] text-sm font-medium rounded-lg text-[#64748b] hover:bg-white hover:shadow-sm transition-all duration-200 shrink-0">
         <Download className="h-4 w-4" /> {label}
       </button>
 

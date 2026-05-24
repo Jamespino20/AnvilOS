@@ -24,11 +24,17 @@ import {
   Trash2,
   Package,
   FolderTree,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { ExportDialog } from "@/components/export-dialog";
+import { CSVImportButton } from "@/components/csv-import";
 import type { Category } from "@prisma/client";
+
+const PER_PAGE = 10;
 
 export default function CategoriesPage() {
   const router = useRouter();
@@ -49,6 +55,7 @@ export default function CategoriesPage() {
   const [catName, setCatName] = useState("");
   const [editName, setEditName] = useState("");
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchCategories().then((data) => {
@@ -56,6 +63,22 @@ export default function CategoriesPage() {
       setLoading(false);
     });
   }, []);
+
+  const totalPages = Math.ceil(categories.length / PER_PAGE);
+  const paginated = categories.slice(
+    (page - 1) * PER_PAGE,
+    page * PER_PAGE,
+  );
+
+  useEffect(() => {
+    if (page > totalPages && totalPages > 0) setPage(totalPages);
+  }, [page, totalPages]);
+
+  function refetch() {
+    fetchCategories().then((data) => {
+      setCategories(data as any);
+    });
+  }
 
   async function handleAdd() {
     if (!catName.trim()) return;
@@ -116,6 +139,40 @@ export default function CategoriesPage() {
     }
   }
 
+  function renderPageNumbers() {
+    const pages: (number | "ellipsis")[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (page > 3) pages.push("ellipsis");
+      const start = Math.max(2, page - 1);
+      const end = Math.min(totalPages - 1, page + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (page < totalPages - 2) pages.push("ellipsis");
+      pages.push(totalPages);
+    }
+    return pages.map((p, i) =>
+      p === "ellipsis" ? (
+        <span key={`e${i}`} className="px-1 text-[#94a3b8] select-none">
+          …
+        </span>
+      ) : (
+        <button
+          key={p}
+          onClick={() => setPage(p)}
+          className={`min-w-[32px] h-8 text-xs font-semibold rounded-lg transition-all ${
+            p === page
+              ? "bg-[#fd761a] text-white shadow-sm"
+              : "text-[#64748b] hover:bg-[#f1f5f9]"
+          }`}
+        >
+          {p}
+        </button>
+      ),
+    );
+  }
+
   if (loading)
     return (
       <div className="space-y-5">
@@ -126,21 +183,53 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader
           title="Category Management"
           subtitle="Organize your product catalog — add, edit, and remove categories."
         />
-        <button
-          onClick={() => {
-            setShowAdd(true);
-            setError("");
-            setCatName("");
-          }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
-        >
-          <Plus className="h-4 w-4" /> Add Category
-        </button>
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
+          <ExportDialog
+            filename="categories"
+            allColumns={[
+              { key: "name", label: "Name" },
+              { key: "_count.products", label: "Products" },
+              { key: "createdAt", label: "Created" },
+              { key: "isAvailable", label: "Status" },
+            ]}
+            fetchRows={async (selected) =>
+              categories.map((cat) =>
+                selected.map((key) => {
+                  if (key === "name") return cat.name;
+                  if (key === "_count.products")
+                    return String(cat._count.products);
+                  if (key === "createdAt")
+                    return cat.createdAt
+                      ? new Date(cat.createdAt).toLocaleDateString("en-PH", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : "—";
+                  if (key === "isAvailable")
+                    return cat.isAvailable ? "Active" : "Inactive";
+                  return "";
+                }),
+              )
+            }
+          />
+          <CSVImportButton table="categories" onImported={refetch} />
+          <button
+            onClick={() => {
+              setShowAdd(true);
+              setError("");
+              setCatName("");
+            }}
+            className="flex items-center gap-2 px-3 sm:px-5 py-2 shrink-0 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
+          >
+            <Plus className="h-4 w-4" /> Add Category
+          </button>
+        </div>
       </div>
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
@@ -166,7 +255,7 @@ export default function CategoriesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
-              {categories.map((cat, i) => (
+              {paginated.map((cat, i) => (
                 <tr
                   key={cat.id}
                   className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} hover:bg-[#f1f5f9] transition-colors`}
@@ -230,7 +319,7 @@ export default function CategoriesPage() {
                   </td>
                 </tr>
               ))}
-              {categories.length === 0 && (
+              {paginated.length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-[#94a3b8]">
                     No categories found. Click "Add Category" to create one.
@@ -240,6 +329,32 @@ export default function CategoriesPage() {
             </tbody>
           </table>
         </div>
+
+        {categories.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-[#e2e8f0] bg-[#fafbfc]">
+            <span className="text-xs text-[#64748b]">
+              {categories.length}{" "}
+              {categories.length === 1 ? "category" : "categories"}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="h-8 w-8 flex items-center justify-center rounded-lg text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:pointer-events-none transition-all"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              {renderPageNumbers()}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="h-8 w-8 flex items-center justify-center rounded-lg text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:pointer-events-none transition-all"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Category Modal */}

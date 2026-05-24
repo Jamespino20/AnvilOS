@@ -12,7 +12,6 @@ import { X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -36,7 +35,6 @@ export function AuthModal({
 }: AuthModalProps) {
   const [activeTab, setActiveTab] = useState<AuthView>(initialView);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +56,7 @@ export function AuthModal({
           description: "Establishing secure connection to dashboard...",
         });
         onClose();
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       }
     } catch (error) {
       toast.error("System Error", {
@@ -104,7 +102,7 @@ export function AuthModal({
 
         if (result?.ok) {
           onClose();
-          router.push("/dashboard");
+          window.location.href = "/dashboard";
         }
       }
     } catch (error) {

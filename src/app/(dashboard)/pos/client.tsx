@@ -19,6 +19,7 @@ import {
   User,
   MapPin,
   Phone,
+  Mail,
   Loader2,
   CheckCircle,
   Package,
@@ -40,6 +41,7 @@ interface BuyerInfo {
   buyerName: string;
   buyerAddress?: string | null;
   buyerContact?: string | null;
+  buyerEmail?: string | null;
 }
 
 interface Props {
@@ -71,6 +73,7 @@ export function POSClient({ products, buyers }: Props) {
   const [buyerName, setBuyerName] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
   const [buyerContact, setBuyerContact] = useState("");
+  const [buyerEmail, setBuyerEmail] = useState("");
   const [showBuyerDropdown, setShowBuyerDropdown] = useState(false);
   const [txnType, setTxnType] =
     useState<(typeof TXN_TYPES)[number]["value"]>("SaleWalkIn");
@@ -174,6 +177,7 @@ export function POSClient({ products, buyers }: Props) {
         buyerName,
         buyerAddress: buyerAddress || undefined,
         buyerContact: buyerContact || undefined,
+        buyerEmail: buyerEmail || undefined,
         paymentMethod,
         deliveryMethod: deliveryMethod as any,
         transactionType: txnType,
@@ -208,6 +212,7 @@ export function POSClient({ products, buyers }: Props) {
       setBuyerName("");
       setBuyerAddress("");
       setBuyerContact("");
+      setBuyerEmail("");
       setReturnReceipt("");
       setPaymentMethod("Cash");
       setDeliveryMethod("WalkIn");
@@ -459,6 +464,7 @@ export function POSClient({ products, buyers }: Props) {
                             setBuyerName(b.buyerName);
                             setBuyerAddress(b.buyerAddress || "");
                             setBuyerContact(b.buyerContact || "");
+                            setBuyerEmail(b.buyerEmail || "");
                             setShowBuyerDropdown(false);
                           }}
                           className="w-full text-left px-3.5 py-2.5 text-xs text-[#0e212c] hover:bg-[#fff5ed] hover:text-[#fd761a] transition-colors border-b border-[#e2e8f0] last:border-b-0"
@@ -487,6 +493,16 @@ export function POSClient({ products, buyers }: Props) {
                       value={buyerContact}
                       onChange={(e) => setBuyerContact(e.target.value)}
                       placeholder="Contact (opt)"
+                      className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <Mail className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+                    <input
+                      type="email"
+                      value={buyerEmail}
+                      onChange={(e) => setBuyerEmail(e.target.value)}
+                      placeholder="Email (opt)"
                       className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                     />
                   </div>

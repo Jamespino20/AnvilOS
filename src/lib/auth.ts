@@ -15,6 +15,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   debug: process.env.NODE_ENV === "development",
   secret: process.env.AUTH_SECRET,
   trustHost: true,
+  cookies: {
+    sessionToken: {
+      name: "cwl-session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+      },
+    },
+  },
   providers: [
     Credentials({
       name: "credentials",

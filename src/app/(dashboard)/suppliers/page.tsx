@@ -29,9 +29,8 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
-import { ExportButton } from "@/components/export-button";
+import { ExportDialog } from "@/components/export-dialog";
 import { CSVImportButton } from "@/components/csv-import";
-import { exportCSV } from "@/lib/csv";
 import type { Supplier } from "@prisma/client";
 
 export default function SuppliersPage() {
@@ -149,32 +148,35 @@ export default function SuppliersPage() {
           title="Supplier Management"
           subtitle="Manage your supply chain partners — add, edit, and toggle supplier availability."
         />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setShowAdd(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
           >
             <Plus className="h-4 w-4" /> Add Supplier
           </button>
-          <ExportButton
+          <ExportDialog
             filename={`cwl-hardware-suppliers-${new Date().toISOString().slice(0, 10)}.csv`}
-            headers={[
-              "Supplier Name",
-              "Contact Person",
-              "Contact Number",
-              "Email",
-              "Address",
-              "Status",
+            allColumns={[
+              { key: "supplierName", label: "Supplier Name" },
+              { key: "contactName", label: "Contact Person" },
+              { key: "contactNumber", label: "Contact Number" },
+              { key: "email", label: "Email" },
+              { key: "address", label: "Address" },
+              { key: "isAvailable", label: "Status" },
             ]}
-            rows={suppliers.map((s) => [
-              s.supplierName,
-              s.contactName || "",
-              s.contactNumber || "",
-              s.email || "",
-              s.address || "",
-              s.isAvailable ? "Active" : "Inactive",
-            ])}
-            label="Export CSV"
+            fetchRows={async (selectedColumns) => suppliers.map((s) =>
+              selectedColumns.map((key) => {
+                if (key === "supplierName") return s.supplierName;
+                if (key === "contactName") return s.contactName || "";
+                if (key === "contactNumber") return s.contactNumber || "";
+                if (key === "email") return s.email || "";
+                if (key === "address") return s.address || "";
+                if (key === "isAvailable") return s.isAvailable ? "Active" : "Inactive";
+                return "";
+              })
+            )}
+            label="Export"
             title="Export suppliers"
           />
           <CSVImportButton
