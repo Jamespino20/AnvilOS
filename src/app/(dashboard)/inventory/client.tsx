@@ -201,22 +201,22 @@ export function InventoryClient({
         subtitle="Manage your product catalog — add, edit, and remove stock items. Track quantities and thresholds for each product."
       />
 
-      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
-        <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-3 items-center">
+        <div className="relative w-full lg:min-w-[200px] lg:max-w-[320px]">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search SKU, Name..."
-            className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
+            className="w-full h-10 pl-10 pr-4 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
         </div>
-        <div className="grid grid-cols-3 gap-2 w-full lg:w-auto">
+        <div className="flex gap-2 w-full lg:w-auto">
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[140px]"
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
             <option value="">Category</option>
             {flatCategoryOptions()}
@@ -224,7 +224,7 @@ export function InventoryClient({
           <select
             value={filterSupplier}
             onChange={(e) => setFilterSupplier(e.target.value)}
-            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] min-w-[140px]"
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
             <option value="">Supplier</option>
             {suppliers.map((s) => (
@@ -236,21 +236,14 @@ export function InventoryClient({
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[120px]"
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
             <option value="">Status</option>
             <option value="low">Low Stock</option>
             <option value="out">Out of Stock</option>
           </select>
         </div>
-        <div className="flex gap-2 w-full lg:w-auto flex-wrap">
-          <button
-            onClick={() => setShowAdd(true)}
-            title="Add a new product"
-            className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all duration-200 active:scale-[0.98]"
-          >
-            <Plus className="h-4 w-4" /> <span className="sm:inline">Add Product</span>
-          </button>
+        <div className="flex gap-2 w-full lg:w-auto">
           <ExportDialog
             filename={`anvilos-inventory-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={[
@@ -277,7 +270,14 @@ export function InventoryClient({
             label="Export"
             title="Export inventory"
           />
-          <ImportButton table="inventory" onImported={() => window.location.reload()} title="Import products from CSV" />
+          <ImportButton table="inventory" onImported={() => window.location.reload()} title="Import products from CSV or XLSX" />
+          <button
+            onClick={() => setShowAdd(true)}
+            title="Add a new product"
+            className="h-10 flex items-center justify-center gap-2 px-5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all duration-200 active:scale-[0.98]"
+          >
+            <Plus className="h-4 w-4" /> Add Product
+          </button>
         </div>
       </div>
 

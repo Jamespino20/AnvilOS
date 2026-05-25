@@ -4,39 +4,70 @@
 ## Constraints & Preferences
 - Next.js 16.2.6 (App Router) + Prisma 7.8.0 + PostgreSQL (NeonDB) + Tailwind CSS 4 + TypeScript + shadcn/ui (radix-sera preset)
 - Auth.js v5 (credentials provider, JWT strategy); `@prisma/adapter-pg` for Prisma v7 client engine
-- Custom industrial theme: #0e212c blue, #fd761a orange, 4px radius, `bg-surface-container` removed (not a valid class)
-- `anvilos-desktop/` kept in-repo as reference
+- Custom theme: #0e212c blue, #fd761a orange, 4px radius
 - File header comment block required on every source file
+- No emojis in source files unless explicitly requested
+- `StocksX/` directory (Laravel + Filament PHP) kept in-repo as reference
 
 ## Progress
 ### Done
-- **Error 494 fix — accumulated cookie chunks**: Auth.js v5 `SessionStore` chunks JWT tokens >4096 bytes as `__Secure-authjs.session-token.0`, `.1`, etc. Each page load created a new chunk set, and old chunks should be deleted via `Set-Cookie: Max-Age=0`. But when cookie options changed between deploys (custom `cookies` config added then removed), browsers silently kept old chunks. 50+ chunks × ~4KB = 200KB cookie header → Vercel proxy 494. **Fix**: Three layers — (1) `src/app/api/clear-cookies/route.ts`: API endpoint (not behind middleware) reads incoming cookies and sends `Set-Cookie: Max-Age=0` for every `authjs.session-token` cookie. (2) Login page fetches this endpoint via `useEffect` on mount to clear HttpOnly cookies that `document.cookie` cannot read. (3) `src/proxy.ts`: Auth middleware wrapper sends clearing `Set-Cookie` headers on every protected-route request (backup for ongoing prevention). Auth.js v5 always appends its own session-refresh cookie AFTER our clearing headers (`next-auth/lib/index.js:168`), so current sessions aren't disrupted.
-- **auth.ts**: Removed custom `cookies` config — Auth.js v5 uses its own stable defaults (`__Secure-authjs.session-token`, sameSite: "lax", path: "/", secure: true). This prevents the cookie-option churn that caused chunk accumulation.
-- **224KB JWT root cause — imageUrl removed from JWT**: The user's profile photo (stored as base64 data URL in `imageUrl`) was included directly in the JWT token via `token.imageUrl = user.imageUrl`. A 200KB+ base64 image made the JWT 229KB, forcing Auth.js to create 58 cookie chunks per session. **Fix**: Removed `imageUrl` from JWT callback entirely. Session callback now fetches `imageUrl` via `prisma.user.findUnique()` — a fast primary-key lookup instead of bloating the JWT. JWT is now ~400 bytes, no chunking needed.
-- **All earlier progress preserved**: Editable qty, mobile cart bar, processRestock bug, restocks redesign, photo uploads, category dropdown, POS receipts, homepage fixes, public subpages, Chart.js dashboard, etc.
+- **Error 494 root cause fixed**: JWT was 224KB because `token.imageUrl = user.imageUrl` stored base64 profile photo in JWT. Removed `imageUrl` from JWT — session callback fetches via `prisma.user.findUnique()` (fast PK lookup). JWT now ~400 bytes, no chunking.
+- **Three-layer accumulated cookie clearing**: (1) `src/app/api/clear-cookies/route.ts` — GET endpoint not behind middleware. (2) Login page fetches it on mount. (3) `src/proxy.ts` wraps `auth()` to send clearing headers on every protected request.
+- **auth.ts**: Removed custom cookies config — relies on Auth.js v5 stable defaults.
+- **Categories page** — Rewritten to inventory layout (search toolbar with Export/Import/Add, table without isAvailable column, pagination).
+- **Suppliers page** — Delete button already present for zero-product suppliers. No isAvailable column. Reordered toolbar buttons to Export → Import → Add.
+- **Inventory toolbar** — Shortened placeholder text ("Category"/"Supplier"/"Status"), removed conflicting grid/max-width, all elements uniform h-10.
+- **ImportButton component** — Created to replace CSVImportButton. Supports both .csv and .xlsx via xlsx package. Button text is "Import".
+- **ExportDialog** — Trigger button changed from py-2 to h-10 for consistent height.
+- **Orders page** — Added inventory-style toolbar (search + Export + Import). Added delivery method badges and delivery tracking timeline (Placed → Processing → On the Way → Completed) in expanded view.
+- **Transactions page** — Restructured toolbar to inventory pattern: search left, date pills + type/status dropdowns + Export/Import right.
+- **Buyers page** — Restructured toolbar to inventory pattern. Added tabs: All / Walk-In / P.O. getBuyers() server action now accepts type?: "WalkIn" | "PO".
+- **POS live receipt sidebar** — Real-time receipt preview in cart sidebar showing items in receipt format (Item, Qty, Price, Total) updating live. Auto-opens receipt via downloadReceipt() after successful checkout.
+- **POS layout fixes** — Category dropdown made flex-1, address/number/email fields changed from single-row to individual stacked rows.
+- **Low stock email after POS** — Already implemented: checkAndAlertLowStock() called fire-and-forget after every completed transaction, uses each product's minThreshold field.
+- **Audit Logs page** — Restructured toolbar to inventory pattern: search left, Panel dropdown + date range + Export/Import right. Replaced CSVImportButton with ImportButton, Loader2 with TableSkeleton.
+- **Restocks page** — Added inventory-style toolbar with search, date pills, Export, Import, and New Restock button. Replaced CardSkeleton with TableSkeleton.
+- **Dashboard loading.tsx** — Created with CardSkeleton (server component pattern).
+- **Finance page** — Replaced inline pulse animation with CardSkeleton.
+- **Loading skeleton consistency**: Dashboard/Finance use CardSkeleton (card-grid layout). All other modules (Categories, Suppliers, Orders, Buyers, Transactions, Audit Logs, Restocks) use TableSkeleton (table layout).
 
 ### Blocked
 - (none)
 
 ## Key Decisions
-- Product photos stored as base64 data URLs (no external storage)
-- Chart.js for dashboard charts
-- 494 fix uses three layers: middleware (server-side), API endpoint (behind `/login`), and login-page fetch (client-side)
-- No custom `cookies` config in auth.ts — rely on Auth.js v5 stable defaults
-- `src/proxy.ts` wraps `auth()` instead of re-exporting directly, allowing custom middleware logic
-- Auth.js v5's cookie chunking (`SessionStore`) is documented behavior, not a bug — the accumulation was caused by changing cookie options between deploys
-- **imageUrl excluded from JWT** — profile photos stored as base64 are too large for JWT. Fetched from DB via session callback instead.
+- **imageUrl excluded from JWT** — base64 photos too large. Fetched from DB in session callback.
+- **No custom cookies config** in auth.ts — rely on Auth.js v5 stable defaults to prevent versioned-cookie accumulation.
+- **Suppliers delete** only allowed when `_count.products === 0` (server + UI guard).
+- **Import supports CSV+XLSX** — replaced CSVImportButton with ImportButton using xlsx library.
+- **Live receipt** auto-opens print dialog after checkout (StocksX behavior); manual PDF download button retained as fallback.
+- **Delivery tracking** uses existing deliveryMethod + transactionStatus fields — no schema change needed. Timeline shown in expanded PO view.
+- **Buyer tabs** filter by transaction type (WalkIn vs PO) — getBuyers() modified to accept optional type parameter.
+- **Skeleton pattern**: CardSkeleton for dashboard-style pages (cards grid), TableSkeleton for table-based pages.
 
 ## Next Steps
-- Deploy to Vercel; users should visit `/login` once, then log in fresh
-- The JWT is now small (~400 bytes), so Auth.js v5 will create 0-1 cookies instead of 58
-- Monitor for any future chunk accumulation (should be fully resolved)
+- Deploy to Vercel; users should visit /login once, then log in fresh
+- JWT ~400 bytes, no chunking needed
+- Monitor for any future chunk accumulation
 
 ## Relevant Files
-- `src/proxy.ts`: Auth middleware wrapper — sends `Set-Cookie: Max-Age=0` for accumulated cookies on every request
-- `src/app/api/clear-cookies/route.ts`: API endpoint (no middleware) that reads request cookies and returns clearing headers
-- `src/app/(auth)/login/page.tsx`: Fetches `/api/clear-cookies` on mount to clear HttpOnly cookies before login
-- **`src/lib/auth.ts`**: **Critical fix** — removed `imageUrl` from JWT callback (prevents 224KB JWT). Session callback fetches `imageUrl` via `prisma.user.findUnique()` instead.
-- `src/app/(dashboard)/layout.tsx`: Dashboard auth gate (unchanged)
-- `node_modules/@auth/core/lib/utils/cookie.js`: `SessionStore` class showing chunking logic (`ALLOWED_COOKIE_SIZE=4096`, chunk naming `base.N`)
-- `node_modules/next-auth/lib/index.js:127-169`: `handleAuth` showing middleware flow — session cookies always appended after user callback response
+- `src/lib/auth.ts`: JWT fix — removed imageUrl from JWT; session callback fetches via Prisma
+- `src/proxy.ts`: Auth middleware — clears accumulated cookies on every protected request
+- `src/app/api/clear-cookies/route.ts`: API endpoint (no middleware) clearing authjs.session-token cookies
+- `src/app/(auth)/login/page.tsx`: Fetches /api/clear-cookies on mount
+- `src/components/import-button.tsx`: New CSV+XLSX import component replacing CSVImportButton
+- `src/components/export-dialog.tsx`: Updated trigger button height to h-10
+- `src/components/ui/skeleton.tsx`: CardSkeleton and TableSkeleton components
+- `src/app/(dashboard)/categories/page.tsx`: Rewritten — inventory toolbar, no isAvailable column
+- `src/app/(dashboard)/suppliers/page.tsx`: Reordered toolbar buttons, delete guard on `_count.products === 0`
+- `src/app/(dashboard)/inventory/client.tsx`: Fixed toolbar heights, dropdown widths, placeholder text
+- `src/app/(dashboard)/orders/page.tsx`: Added toolbar + delivery badges + tracking timeline
+- `src/app/(dashboard)/transactions/page.tsx`: Restructured toolbar to inventory pattern
+- `src/app/(dashboard)/buyers/page.tsx`: Added Walk-In/PO/All tabs, restructured toolbar
+- `src/app/(dashboard)/pos/client.tsx`: Live receipt sidebar, layout fixes, auto-receipt on checkout
+- `src/app/(dashboard)/audit-log/page.tsx`: Restructured toolbar, ImportButton + TableSkeleton
+- `src/app/(dashboard)/restocks/page.tsx`: Added toolbar with Export/Import/TableSkeleton
+- `src/app/(dashboard)/dashboard/loading.tsx`: CardSkeleton loading page
+- `src/app/(dashboard)/finance/page.tsx`: Replaced inline pulse with CardSkeleton
+- `src/actions/index.ts`: getBuyers(type?) — added type filter
+- `src/actions/email.ts`: checkAndAlertLowStock() — checks per-product minThreshold
+- `StocksX/`: Laravel + Filament PHP reference app

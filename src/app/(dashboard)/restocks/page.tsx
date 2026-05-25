@@ -4,7 +4,9 @@ import { useState, useEffect, useMemo } from "react";
 import { getTransactions, getTransactionsCount, getProducts, processRestock, createTransaction } from "@/actions";
 import { Search, ArrowDownUp, Loader2, ChevronDown, ChevronUp, CheckCircle, Plus, ShoppingCart, Minus, Package, X, Truck, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { CardSkeleton } from "@/components/ui/skeleton";
+import { TableSkeleton } from "@/components/ui/skeleton";
+import { ExportDialog } from "@/components/export-dialog";
+import { ImportButton } from "@/components/import-button";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
@@ -162,18 +164,20 @@ export default function RestocksPage() {
 
   const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
 
-  if (loading) return <div className="space-y-5"><PageHeader title="Restocks" subtitle="Loading..." /><CardSkeleton count={4} /></div>;
+  if (loading) return <div className="space-y-5"><PageHeader title="Restocks" subtitle="Loading..." /><TableSkeleton rows={6} cols={4} /></div>;
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <PageHeader title="Restocks" subtitle={`${total} restock record${total !== 1 ? "s" : ""} — track and process inventory replenishment.`} />
-        <div className="flex items-center gap-3">
-          <button onClick={() => setShowNew(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all active:scale-[0.98]">
-            <Plus className="h-4 w-4" /> New Restock
-          </button>
-          <div className="flex items-center gap-2 bg-white border border-[#e2e8f0] rounded-lg p-1">
+      <PageHeader title="Restocks" subtitle={`${total} restock record${total !== 1 ? "s" : ""} — track and process inventory replenishment.`} />
+
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
+        <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search restocks..."
+            className="w-full h-10 pl-10 pr-4 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+        </div>
+        <div className="flex gap-2 w-full lg:w-auto flex-wrap">
+          <div className="flex items-center gap-1.5 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-1">
             {DATE_SCOPES.map((s) => (
               <button key={s.value} onClick={() => { setDateScope(s.value); setPage(1); }}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${dateScope === s.value ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:text-[#0e212c]"}`}>
@@ -181,10 +185,33 @@ export default function RestocksPage() {
               </button>
             ))}
           </div>
-          <div className="relative w-56">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search restocks..." className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
-          </div>
+          <ExportDialog
+            filename={`cwl-hardware-restocks-${new Date().toISOString().slice(0, 10)}.csv`}
+            allColumns={[
+              { key: "receiptNumber", label: "Receipt #" },
+              { key: "items", label: "Items" },
+              { key: "grandTotal", label: "Total" },
+              { key: "transactionDate", label: "Date" },
+              { key: "transactionStatus", label: "Status" },
+            ]}
+            fetchRows={async (selectedColumns) => restocks.map((r) =>
+              selectedColumns.map((key) => {
+                if (key === "receiptNumber") return String(r.receiptNumber);
+                if (key === "items") return String(r.items.length);
+                if (key === "grandTotal") return `₱${Number(r.grandTotal || 0).toLocaleString()}`;
+                if (key === "transactionDate") return new Date(r.transactionDate).toLocaleDateString("en-PH");
+                if (key === "transactionStatus") return r.transactionStatus;
+                return "";
+              })
+            )}
+            label="Export"
+            title="Export restocks"
+          />
+          <ImportButton table="transactions" onImported={() => window.location.reload()} title="Import restocks from CSV or XLSX" />
+          <button onClick={() => setShowNew(true)}
+            className="h-10 flex items-center justify-center gap-2 px-5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all active:scale-[0.98]">
+            <Plus className="h-4 w-4" /> New Restock
+          </button>
         </div>
       </div>
 

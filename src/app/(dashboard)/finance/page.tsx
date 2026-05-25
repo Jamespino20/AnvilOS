@@ -5,6 +5,7 @@ import { getFinancialDashboard, getCashFlowTrend, getTopProductsByRevenue } from
 import { PageHeader } from "@/components/ui/page-header";
 import { ExportDialog } from "@/components/export-dialog";
 import { TrendingUp, TrendingDown, DollarSign, Receipt, ArrowUpRight, ArrowDownRight, Calendar, ShoppingCart, RotateCcw, Ban, Wallet, BarChart3, PieChart, LineChart, Download } from "lucide-react";
+import { CardSkeleton } from "@/components/ui/skeleton";
 
 const PERIODS = [
   { label: "This Month", value: "month" },
@@ -110,9 +111,7 @@ export default function FinancePage() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-12 gap-5">
-          {[1, 2, 3, 4].map((i) => <div key={i} className="col-span-12 sm:col-span-6 lg:col-span-3 bg-white rounded-xl border border-[#e2e8f0] p-5 animate-pulse"><div className="h-4 w-24 bg-[#f1f5f9] rounded mb-3" /><div className="h-8 w-32 bg-[#f1f5f9] rounded" /></div>)}
-        </div>
+        <CardSkeleton count={4} />
       ) : fin ? (
         <>
           {/* KPI Cards */}

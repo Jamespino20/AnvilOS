@@ -113,7 +113,7 @@ export function ImportButton({ table, onImported, title }: Props) {
     <>
       <button onClick={handleOpen}
         title={title}
-        className="flex items-center gap-2 px-4 py-2.5 border border-[#e2e8f0] text-sm font-medium rounded-lg text-[#64748b] hover:bg-white hover:shadow-sm transition-all duration-200">
+        className="h-10 flex items-center gap-2 px-4 border border-[#e2e8f0] text-sm font-medium rounded-lg text-[#64748b] hover:bg-white hover:shadow-sm transition-all duration-200">
         <Upload className="h-4 w-4" /> Import
       </button>
 

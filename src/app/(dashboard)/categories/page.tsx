@@ -29,7 +29,7 @@ import {
   Search,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { CardSkeleton } from "@/components/ui/skeleton";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
@@ -182,7 +182,7 @@ export default function CategoriesPage() {
     return (
       <div className="space-y-5">
         <PageHeader title="Category Management" subtitle="Loading..." />
-        <CardSkeleton count={6} />
+        <TableSkeleton rows={6} cols={5} />
       </div>
     );
 

@@ -27,7 +27,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { CardSkeleton } from "@/components/ui/skeleton";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
@@ -136,7 +136,7 @@ export default function OrdersPage() {
     return (
       <div className="space-y-5">
         <PageHeader title="Purchase Orders" subtitle="Loading..." />
-        <CardSkeleton count={4} />
+        <TableSkeleton rows={6} cols={7} />
       </div>
     );
 

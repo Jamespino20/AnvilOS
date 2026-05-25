@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { getPaginatedAuditLogs, getAuditLogCount } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
-import { CSVImportButton } from "@/components/csv-import";
+import { ImportButton } from "@/components/import-button";
 import { ExportDialog } from "@/components/export-dialog";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import { Shield, ChevronDown, ChevronUp, Search, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface AuditEntry {
@@ -87,9 +88,34 @@ export default function AuditLogPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <PageHeader title="Audit Logs" subtitle="Track all system activities, user actions, and changes across modules." />
-        <div className="flex items-center gap-2 flex-wrap">
+      <PageHeader title="Audit Logs" subtitle="Track all system activities, user actions, and changes across modules." />
+
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
+        <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
+          <input type="text" value={search} onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder="Search actions, details..."
+            className="w-full h-10 pl-10 pr-4 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+        </div>
+        <div className="flex gap-2 w-full lg:w-auto flex-wrap">
+          <select value={panel} onChange={(e) => handlePanelChange(e.target.value)}
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] min-w-[140px]">
+            <option value="">Panel</option>
+            <option value="POSPanel">POS Panel</option>
+            <option value="ProductDialog">Product Dialog</option>
+            <option value="SupplierPanel">Supplier Panel</option>
+            <option value="EditTransactionDialog">Transaction Edit</option>
+            <option value="Register">Register</option>
+            <option value="InventoryPanel">Inventory</option>
+            <option value="Settings">Settings</option>
+            <option value="Buyers">Buyers</option>
+          </select>
+          <input type="date" value={start} onChange={(e) => handleStartChange(e.target.value)}
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
+          <input type="date" value={end} onChange={(e) => handleEndChange(e.target.value)}
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
+        </div>
+        <div className="flex gap-2 w-full lg:w-auto">
           <ExportDialog
             filename={`cwl-hardware-audit-logs-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={EXPORT_COLUMNS}
@@ -97,33 +123,8 @@ export default function AuditLogPage() {
             label="Export"
             title="Export audit logs as CSV, XLSX, or PDF"
           />
-          <CSVImportButton table="audit-logs" onImported={() => {}} title="Import audit logs from CSV" />
+          <ImportButton table="audit-logs" onImported={() => {}} title="Import audit logs from CSV or XLSX" />
         </div>
-      </div>
-
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
-          <input type="text" value={search} onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Search actions, details..."
-            className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
-        </div>
-        <select value={panel} onChange={(e) => handlePanelChange(e.target.value)}
-          className="min-w-[140px] px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]">
-          <option value="">All Panels</option>
-          <option value="POSPanel">POS Panel</option>
-          <option value="ProductDialog">Product Dialog</option>
-          <option value="SupplierPanel">Supplier Panel</option>
-          <option value="EditTransactionDialog">Transaction Edit</option>
-          <option value="Register">Register</option>
-          <option value="InventoryPanel">Inventory</option>
-          <option value="Settings">Settings</option>
-          <option value="Buyers">Buyers</option>
-        </select>
-        <input type="date" value={start} onChange={(e) => handleStartChange(e.target.value)}
-          className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
-        <input type="date" value={end} onChange={(e) => handleEndChange(e.target.value)}
-          className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
       </div>
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
@@ -142,7 +143,7 @@ export default function AuditLogPage() {
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
               {loading ? (
-                <tr><td colSpan={7} className="p-8 text-center text-[#94a3b8]"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></td></tr>
+                <tr><td colSpan={7}><TableSkeleton rows={6} cols={7} /></td></tr>
               ) : logs.map((log) => {
                 const { deltas } = parseDetails(log.details);
                 const isExpanded = expandedId === log.id;

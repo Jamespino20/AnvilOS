@@ -33,7 +33,7 @@ import {
   Download,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { CardSkeleton } from "@/components/ui/skeleton";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
@@ -153,7 +153,7 @@ export default function BuyersPage() {
     return (
       <div className="space-y-5">
         <PageHeader title="Buyers" subtitle="Loading..." />
-        <CardSkeleton count={6} />
+        <TableSkeleton rows={6} cols={5} />
       </div>
     );
 
