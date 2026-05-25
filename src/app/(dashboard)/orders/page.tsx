@@ -25,6 +25,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Truck,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
@@ -45,7 +46,7 @@ export default function OrdersPage() {
 
   // Edit form state
   const [editStatus, setEditStatus] = useState<
-    "Ongoing" | "Completed" | "Cancelled"
+    "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled"
   >("Ongoing");
   const [editBuyer, setEditBuyer] = useState("");
   const [editAddress, setEditAddress] = useState("");
@@ -61,7 +62,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     Promise.all([
-      getTransactions({ status: "Ongoing", type: "SalePO" }),
+      getTransactions({ statusIn: ["Ongoing", "Processing", "OnTheWay"], type: "SalePO" }),
       getProducts({ status: "available" }),
     ]).then(([txns, prods]) => {
       setOrders(txns as TxnWithItems[]);
@@ -77,7 +78,7 @@ export default function OrdersPage() {
 
   function openEdit(t: TxnWithItems) {
     setEditId(t.id);
-    setEditStatus(t.transactionStatus as "Ongoing" | "Completed" | "Cancelled");
+    setEditStatus(t.transactionStatus as "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled");
     setEditBuyer(t.buyerName);
     setEditAddress(t.buyerAddress || "");
     setEditContact(t.buyerContact || "");
@@ -102,7 +103,7 @@ export default function OrdersPage() {
         transactionStatus: editStatus,
         items: editItems,
       });
-      const data = await getTransactions({ status: "Ongoing", type: "SalePO" });
+      const data = await getTransactions({ statusIn: ["Ongoing", "Processing", "OnTheWay"], type: "SalePO" });
       setOrders(data as TxnWithItems[]);
       setEditId(null);
     } catch (e: any) {
@@ -112,17 +113,33 @@ export default function OrdersPage() {
     }
   }
 
-  // Also handle status-only quick change via updateTransactionStatus
-  async function quickStatusChange(
-    id: number,
-    status: "Completed" | "Cancelled",
-  ) {
+  // Advance to next delivery status
+  async function advanceStatus(id: number) {
+    const order = orders.find((o) => o.id === id);
+    if (!order) return;
+    const nextStatus: Record<string, "Processing" | "OnTheWay" | "Completed"> = {
+      Ongoing: "Processing",
+      Processing: "OnTheWay",
+      OnTheWay: "Completed",
+    };
+    const next = nextStatus[order.transactionStatus];
+    if (!next) return;
     try {
-      await updateTransactionStatus(id, status);
-      const data = await getTransactions({ status: "Ongoing", type: "SalePO" });
+      await updateTransactionStatus(id, next);
+      const data = await getTransactions({ statusIn: ["Ongoing", "Processing", "OnTheWay"], type: "SalePO" });
       setOrders(data as TxnWithItems[]);
     } catch (e: any) {
-      alert(e.message || "Failed to update status");
+      alert(e.message || "Failed to advance status");
+    }
+  }
+
+  async function cancelOrder(id: number) {
+    try {
+      await updateTransactionStatus(id, "Cancelled");
+      const data = await getTransactions({ statusIn: ["Ongoing", "Processing", "OnTheWay"], type: "SalePO" });
+      setOrders(data as TxnWithItems[]);
+    } catch (e: any) {
+      alert(e.message || "Failed to cancel");
     }
   }
 
@@ -144,7 +161,7 @@ export default function OrdersPage() {
     <div className="space-y-5">
       <PageHeader
         title="Purchase Orders"
-        subtitle={`${orders.length} ongoing order${orders.length !== 1 ? "s" : ""} — manage purchase orders, update items, and track delivery status.`}
+        subtitle={`${orders.length} active purchase order${orders.length !== 1 ? "s" : ""} — manage purchase orders, update items, and track delivery status.`}
       />
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
@@ -262,20 +279,42 @@ export default function OrdersPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    onClick={() => quickStatusChange(order.id, "Completed")}
-                    className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                    title="Mark Completed"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => quickStatusChange(order.id, "Cancelled")}
-                    className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                    title="Cancel"
-                  >
-                    <XCircle className="h-4 w-4" />
-                  </button>
+                  {order.transactionStatus === "Ongoing" && (
+                    <button
+                      onClick={() => advanceStatus(order.id)}
+                      className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                      title="Mark as Processing"
+                    >
+                      <Package className="h-4 w-4" />
+                    </button>
+                  )}
+                  {order.transactionStatus === "Processing" && (
+                    <button
+                      onClick={() => advanceStatus(order.id)}
+                      className="p-2 text-sky-600 hover:bg-sky-50 rounded-lg transition-all"
+                      title="Mark as On the Way"
+                    >
+                      <Truck className="h-4 w-4" />
+                    </button>
+                  )}
+                  {order.transactionStatus === "OnTheWay" && (
+                    <button
+                      onClick={() => advanceStatus(order.id)}
+                      className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                      title="Mark as Completed"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                    </button>
+                  )}
+                  {order.transactionStatus !== "Cancelled" && (
+                    <button
+                      onClick={() => cancelOrder(order.id)}
+                      className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                      title="Cancel"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </button>
+                  )}
                   <button
                     onClick={() => openEdit(order)}
                     className="p-2 text-[#64748b] hover:bg-[#f1f5f9] rounded-lg transition-all"
@@ -347,9 +386,10 @@ export default function OrdersPage() {
                       </p>
                       <div className="flex items-center gap-0">
                         {["Placed", "Processing", order.deliveryMethod === "Pickup" ? "Ready" : "On the Way", "Completed"].map((stage, i, arr) => {
-                          const currentStage = order.transactionStatus === "Completed" ? 3 : order.transactionStatus === "Cancelled" ? -1 : 1;
-                          const isActive = i <= currentStage;
-                          const isCurrent = i === currentStage;
+                          const statusMap = ["Ongoing", "Processing", "OnTheWay", "Completed"];
+                          const currentIdx = statusMap.indexOf(order.transactionStatus);
+                          const isActive = i <= currentIdx;
+                          const isCurrent = i === currentIdx;
                           return (
                             <div key={stage} className="flex items-center">
                               <div className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold shrink-0 ${
@@ -427,7 +467,9 @@ export default function OrdersPage() {
                       onChange={(e) => setEditStatus(e.target.value as any)}
                       className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
                     >
-                      <option value="Ongoing">Ongoing</option>
+                      <option value="Ongoing">Placed</option>
+                      <option value="Processing">Processing</option>
+                      <option value="OnTheWay">On the Way</option>
                       <option value="Completed">Completed</option>
                       <option value="Cancelled">Cancelled</option>
                     </select>

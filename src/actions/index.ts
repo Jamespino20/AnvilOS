@@ -319,6 +319,7 @@ export async function deleteSupplier(id: number) {
 
 export async function getTransactions(opts?: {
   status?: string;
+  statusIn?: string[];
   type?: string;
   startDate?: string;
   endDate?: string;
@@ -328,6 +329,7 @@ export async function getTransactions(opts?: {
 }) {
   const where: any = {};
   if (opts?.status) where.transactionStatus = opts.status;
+  if (opts?.statusIn) where.transactionStatus = { in: opts.statusIn };
   if (opts?.type) where.transactionType = opts.type;
   if (opts?.startDate)
     where.transactionDate = { gte: new Date(opts.startDate) };
@@ -455,7 +457,7 @@ export async function createTransaction(data: {
     | "Adjustment"
     | "Return"
     | "Damage";
-  transactionStatus: "Ongoing" | "Completed" | "Cancelled";
+  transactionStatus: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled";
   grandTotal: number;
   paymentMethod?: string;
   deliveryMethod?: "WalkIn" | "Pickup" | "Delivery" | "COD";
@@ -620,7 +622,7 @@ export async function createTransaction(data: {
 
 export async function updateTransactionStatus(
   id: number,
-  status: "Ongoing" | "Completed" | "Cancelled",
+  status: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled",
 ) {
   const txn = await prisma.transaction.findUniqueOrThrow({
     where: { id },
@@ -630,11 +632,11 @@ export async function updateTransactionStatus(
   // If completing a Sale PO, deduct stock now
   if (
     status === "Completed" &&
-    txn.transactionStatus === "Ongoing" &&
+    txn.transactionStatus !== "Completed" &&
     txn.transactionType === "SalePO"
   ) {
     await applyStockChanges(
-      "SalePO",
+      "SaleWalkIn",
       txn.items.map((i) => ({
         productId: i.productId!,
         quantity: i.quantity!,
@@ -662,7 +664,7 @@ export async function updateTransaction(
     buyerName?: string;
     buyerAddress?: string;
     buyerContact?: string;
-    transactionStatus?: "Ongoing" | "Completed" | "Cancelled";
+    transactionStatus?: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled";
     items?: {
       id?: number;
       productId: number;

@@ -40,6 +40,8 @@ enum DeliveryMethod {
 
 enum TransactionStatus {
   Ongoing
+  Processing
+  OnTheWay
   Completed
   Cancelled
 

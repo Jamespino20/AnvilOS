@@ -24,6 +24,8 @@ import {
   XCircle,
   ChevronDown,
   ChevronUp,
+  Package,
+  Truck,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
@@ -64,7 +66,7 @@ function getDateScopeStart(scope: string): string | undefined {
   }
 }
 
-const STATUS_OPTIONS = ["", "Completed", "Ongoing", "Cancelled"];
+const STATUS_OPTIONS = ["", "Completed", "Ongoing", "Processing", "OnTheWay", "Cancelled"];
 const TYPE_OPTIONS = [
   "",
   "SaleWalkIn",
@@ -79,6 +81,8 @@ function statusBadge(status: string) {
   const map: Record<string, string> = {
     Completed: "bg-emerald-50 text-emerald-700 border border-emerald-200",
     Ongoing: "bg-amber-50 text-amber-700 border border-amber-200",
+    Processing: "bg-sky-50 text-sky-700 border border-sky-200",
+    OnTheWay: "bg-violet-50 text-violet-700 border border-violet-200",
     Cancelled: "bg-rose-50 text-rose-700 border border-rose-200",
   };
   return map[status] || "bg-[#f8fafc] text-[#64748b] border border-[#e2e8f0]";
@@ -126,7 +130,7 @@ export default function TransactionsPage() {
 
   async function quickStatusChange(
     id: number,
-    status: "Completed" | "Cancelled",
+    status: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled",
   ) {
     await updateTransactionStatus(id, status);
     const startDate = getDateScopeStart(dateScope);
@@ -347,6 +351,54 @@ export default function TransactionsPage() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                quickStatusChange(t.id, "Processing");
+                              }}
+                              className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-md transition-all"
+                              title="Mark as Processing"
+                            >
+                              <Package className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                quickStatusChange(t.id, "Cancelled");
+                              }}
+                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-all"
+                              title="Cancel transaction"
+                            >
+                              <XCircle className="h-3.5 w-3.5" />
+                            </button>
+                          </>
+                        )}
+                        {t.transactionStatus === "Processing" && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                quickStatusChange(t.id, "OnTheWay");
+                              }}
+                              className="p-1.5 text-sky-600 hover:bg-sky-50 rounded-md transition-all"
+                              title="Mark as On the Way"
+                            >
+                              <Truck className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                quickStatusChange(t.id, "Cancelled");
+                              }}
+                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-all"
+                              title="Cancel transaction"
+                            >
+                              <XCircle className="h-3.5 w-3.5" />
+                            </button>
+                          </>
+                        )}
+                        {t.transactionStatus === "OnTheWay" && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 quickStatusChange(t.id, "Completed");
                               }}
                               className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"
@@ -365,6 +417,9 @@ export default function TransactionsPage() {
                               <XCircle className="h-3.5 w-3.5" />
                             </button>
                           </>
+                        )}
+                        {(t.transactionStatus === "Completed" || t.transactionStatus === "Cancelled") && (
+                          <span className="w-7" />
                         )}
                         <button
                           onClick={(e) => {
