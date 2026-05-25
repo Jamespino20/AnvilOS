@@ -47,8 +47,8 @@ export function ExportDialog({ filename, allColumns, fetchRows, label = "Export"
       const base = filename.replace(/\.[^/.]+$/, "");
       const headers = visible.map((c) => c.label);
       if (format === "csv") exportCSV(`${base}.csv`, headers, rows);
-      else if (format === "xlsx") exportXLSX(`${base}.xlsx`, headers, rows);
-      else exportPDF(`${base}.pdf`, headers, rows);
+      else if (format === "xlsx") await exportXLSX(`${base}.xlsx`, headers, rows);
+      else await exportPDF(`${base}.pdf`, headers, rows);
       setOpen(false);
     } catch (e) {
       console.error("Export failed", e);

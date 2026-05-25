@@ -229,7 +229,7 @@ export function POSClient({ products, buyers }: Props) {
       setPaymentMethod("Cash");
       setDeliveryMethod("WalkIn");
       setTimeout(() => {
-        downloadReceipt(receiptData);
+        downloadReceipt(receiptData).catch(() => {});
         setDone(null);
       }, 500);
     } catch (e: any) {

@@ -17,11 +17,11 @@ const TXN_LABELS: Record<string, string> = {
   Damage: "Damage",
 };
 
-export function downloadReceipt(data: Parameters<typeof downloadReceiptPdf>[0]) {
-  downloadReceiptPdf(data);
+export async function downloadReceipt(data: Parameters<typeof downloadReceiptPdf>[0]) {
+  await downloadReceiptPdf(data);
 }
 
-export function downloadReceiptPdf(data: {
+export async function downloadReceiptPdf(data: {
   receiptNumber: number;
   date: Date;
   sellerName: string;
@@ -50,6 +50,19 @@ export function downloadReceiptPdf(data: {
   // --- Header with orange accent ---
   doc.setFillColor(253, 118, 26);
   doc.rect(0, 0, pw, 3, "F");
+
+  // Logo
+  try {
+    const resp = await fetch("/images/CWLHardware_Logo.png");
+    const blob = await resp.blob();
+    const reader = new FileReader();
+    const b64 = await new Promise<string>((resolve) => {
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+    doc.addImage(b64, "PNG", cx - 10, y, 20, 18);
+    y += 20;
+  } catch {}
 
   doc.setTextColor(14, 33, 44);
   doc.setFont("courier", "bold");

@@ -245,7 +245,7 @@ export function InventoryClient({
         </div>
         <div className="flex gap-2 w-full lg:w-auto">
           <ExportDialog
-            filename={`anvilos-inventory-${new Date().toISOString().slice(0, 10)}.csv`}
+            filename={`cwl-hardware-inventory-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={[
               { key: "productName", label: "Product Name" },
               { key: "category", label: "Category" },

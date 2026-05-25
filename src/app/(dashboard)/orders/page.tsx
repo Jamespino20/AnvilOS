@@ -26,23 +26,57 @@ import {
   ChevronDown,
   ChevronUp,
   Truck,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
+
+const DELIVERY_OPTIONS = ["", "Delivery", "COD", "Pickup", "WalkIn"];
+const PER_PAGE = 15;
+
+const STAGE_LABELS: Record<string, string> = {
+  Ongoing: "Placed",
+  Processing: "Processing",
+  OnTheWay: "On the Way",
+  Completed: "Completed",
+  Cancelled: "Cancelled",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  Ongoing: "bg-amber-50 text-amber-700 border border-amber-200",
+  Processing: "bg-sky-50 text-sky-700 border border-sky-200",
+  OnTheWay: "bg-violet-50 text-violet-700 border border-violet-200",
+  Completed: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  Cancelled: "bg-rose-50 text-rose-700 border border-rose-200",
+};
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<TxnWithItems[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [deliveryFilter, setDeliveryFilter] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  // Confirm action modal
+  const [confirmAction, setConfirmAction] = useState<{
+    id: number;
+    type: "advance" | "cancel";
+    nextStatus?: string;
+  } | null>(null);
 
   // Edit form state
   const [editStatus, setEditStatus] = useState<
@@ -60,15 +94,21 @@ export default function OrdersPage() {
     }[]
   >([]);
 
-  useEffect(() => {
+  function loadOrders() {
+    setLoading(true);
     Promise.all([
       getTransactions({ statusIn: ["Ongoing", "Processing", "OnTheWay"], type: "SalePO" }),
       getProducts({ status: "available" }),
     ]).then(([txns, prods]) => {
-      setOrders(txns as TxnWithItems[]);
-      setProducts(prods as Product[]);
+      const all = txns as TxnWithItems[];
+      setOrders(all);
+      setTotal(all.length);
       setLoading(false);
     });
+  }
+
+  useEffect(() => {
+    loadOrders();
   }, []);
 
   function productLabel(id: number) {
@@ -103,8 +143,7 @@ export default function OrdersPage() {
         transactionStatus: editStatus,
         items: editItems,
       });
-      const data = await getTransactions({ statusIn: ["Ongoing", "Processing", "OnTheWay"], type: "SalePO" });
-      setOrders(data as TxnWithItems[]);
+      loadOrders();
       setEditId(null);
     } catch (e: any) {
       alert(e.message || "Failed to update");
@@ -113,7 +152,6 @@ export default function OrdersPage() {
     }
   }
 
-  // Advance to next delivery status
   async function advanceStatus(id: number) {
     const order = orders.find((o) => o.id === id);
     if (!order) return;
@@ -124,30 +162,102 @@ export default function OrdersPage() {
     };
     const next = nextStatus[order.transactionStatus];
     if (!next) return;
+    setProcessingId(id);
     try {
       await updateTransactionStatus(id, next);
-      const data = await getTransactions({ statusIn: ["Ongoing", "Processing", "OnTheWay"], type: "SalePO" });
-      setOrders(data as TxnWithItems[]);
+      loadOrders();
     } catch (e: any) {
       alert(e.message || "Failed to advance status");
+    } finally {
+      setProcessingId(null);
     }
   }
 
   async function cancelOrder(id: number) {
+    setProcessingId(id);
     try {
       await updateTransactionStatus(id, "Cancelled");
-      const data = await getTransactions({ statusIn: ["Ongoing", "Processing", "OnTheWay"], type: "SalePO" });
-      setOrders(data as TxnWithItems[]);
+      loadOrders();
     } catch (e: any) {
       alert(e.message || "Failed to cancel");
+    } finally {
+      setProcessingId(null);
     }
   }
 
-  const filtered = orders.filter(
-    (o) =>
+  const filtered = orders.filter((o) => {
+    const matchesSearch =
       o.buyerName.toLowerCase().includes(search.toLowerCase()) ||
-      String(o.receiptNumber).includes(search),
-  );
+      String(o.receiptNumber).includes(search);
+    const matchesDelivery = !deliveryFilter || o.deliveryMethod === deliveryFilter;
+    return matchesSearch && matchesDelivery;
+  });
+
+  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  function isProcessing(id: number) {
+    return processingId === id;
+  }
+
+  function getAdvanceTitle(status: string) {
+    switch (status) {
+      case "Ongoing": return "Mark as Processing";
+      case "Processing": return "Mark as On the Way";
+      case "OnTheWay": return "Mark as Completed";
+      default: return "";
+    }
+  }
+
+  function getAdvanceIcon(status: string) {
+    switch (status) {
+      case "Ongoing": return Package;
+      case "Processing": return Truck;
+      case "OnTheWay": return CheckCircle;
+      default: return Package;
+    }
+  }
+
+  function getAdvanceColor(status: string) {
+    switch (status) {
+      case "Ongoing": return "text-amber-600 hover:bg-amber-50";
+      case "Processing": return "text-sky-600 hover:bg-sky-50";
+      case "OnTheWay": return "text-emerald-600 hover:bg-emerald-50";
+      default: return "text-[#64748b] hover:bg-[#f1f5f9]";
+    }
+  }
+
+  function statusIcon(order: TxnWithItems) {
+    switch (order.transactionStatus) {
+      case "Ongoing": return "bg-amber-50 text-amber-600";
+      case "Processing": return "bg-sky-50 text-sky-600";
+      case "OnTheWay": return "bg-violet-50 text-violet-600";
+      case "Completed": return "bg-emerald-50 text-emerald-600";
+      case "Cancelled": return "bg-rose-50 text-rose-500";
+      default: return "bg-amber-50 text-amber-600";
+    }
+  }
+
+  function StatusDots({ status }: { status: string }) {
+    const stages = ["Ongoing", "Processing", "OnTheWay", "Completed"];
+    const idx = stages.indexOf(status);
+    return (
+      <div className="flex items-center gap-1">
+        {stages.map((s, i) => (
+          <div
+            key={s}
+            className={`w-1.5 h-1.5 rounded-full ${
+              i <= idx
+                ? i === idx
+                  ? "bg-[#fd761a]"
+                  : "bg-emerald-500"
+                : "bg-[#e2e8f0]"
+            }`}
+          />
+        ))}
+      </div>
+    );
+  }
 
   if (loading)
     return (
@@ -161,7 +271,7 @@ export default function OrdersPage() {
     <div className="space-y-5">
       <PageHeader
         title="Purchase Orders"
-        subtitle={`${orders.length} active purchase order${orders.length !== 1 ? "s" : ""} — manage purchase orders, update items, and track delivery status.`}
+        subtitle={`${filtered.length} active purchase order${filtered.length !== 1 ? "s" : ""} — manage purchase orders, update items, and track delivery status.`}
       />
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
@@ -170,12 +280,22 @@ export default function OrdersPage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search by buyer or receipt..."
-            className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
+            className="w-full h-10 pl-10 pr-4 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
         </div>
         <div className="flex gap-2 w-full lg:w-auto flex-wrap">
+          <select
+            value={deliveryFilter}
+            onChange={(e) => { setDeliveryFilter(e.target.value); setPage(1); }}
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+          >
+            <option value="">All Delivery</option>
+            {DELIVERY_OPTIONS.slice(1).map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
           <ExportDialog
             filename={`cwl-hardware-purchase-orders-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={[
@@ -184,6 +304,8 @@ export default function OrdersPage() {
               { key: "items", label: "Items" },
               { key: "grandTotal", label: "Total" },
               { key: "transactionDate", label: "Date" },
+              { key: "deliveryMethod", label: "Delivery" },
+              { key: "transactionStatus", label: "Status" },
             ]}
             fetchRows={async (selectedColumns) => filtered.map((order) =>
               selectedColumns.map((key) => {
@@ -192,6 +314,8 @@ export default function OrdersPage() {
                 if (key === "items") return String(order.items.length);
                 if (key === "grandTotal") return `₱${Number(order.grandTotal || 0).toLocaleString()}`;
                 if (key === "transactionDate") return new Date(order.transactionDate).toLocaleDateString("en-PH");
+                if (key === "deliveryMethod") return order.deliveryMethod || "WalkIn";
+                if (key === "transactionStatus") return STAGE_LABELS[order.transactionStatus] || order.transactionStatus;
                 return "";
               })
             )}
@@ -201,9 +325,11 @@ export default function OrdersPage() {
       </div>
 
       <div className="space-y-2">
-        {filtered.map((order) => {
+        {paginated.map((order) => {
           const isExpanded = expandedId === order.id;
           const isEditing = editId === order.id;
+          const AdvanceIcon = getAdvanceIcon(order.transactionStatus);
+          const pending = isProcessing(order.id);
 
           return (
             <div
@@ -211,112 +337,70 @@ export default function OrdersPage() {
               className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden hover:shadow-md transition-shadow"
             >
               <div className="p-4 flex items-center gap-4">
-                <div className="w-11 h-11 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 ${statusIcon(order)}`}>
                   <Package className="h-5 w-5" />
                 </div>
-                <div className="flex-1 min-w-0 grid grid-cols-5 gap-4 text-sm">
+                <div className="flex-1 min-w-0 grid grid-cols-6 gap-3 text-sm items-center">
                   <div>
-                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                      Receipt
-                    </p>
-                    <p className="font-mono text-[#0e212c] font-medium mt-0.5">
-                      #{order.receiptNumber}
-                    </p>
+                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Receipt</p>
+                    <p className="font-mono text-[#0e212c] font-medium mt-0.5">#{order.receiptNumber}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                      Buyer
-                    </p>
-                    <p className="text-[#0e212c] font-medium mt-0.5 truncate">
-                      {order.buyerName}
-                    </p>
+                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Buyer</p>
+                    <p className="text-[#0e212c] font-medium mt-0.5 truncate">{order.buyerName}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                      Items
-                    </p>
-                    <p className="text-[#0e212c] font-medium mt-0.5">
-                      {order.items.length} item
-                      {order.items.length !== 1 ? "s" : ""}
-                    </p>
+                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Total</p>
+                    <p className="font-mono text-[#0e212c] font-semibold mt-0.5">₱{Number(order.grandTotal || 0).toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                      Total
-                    </p>
-                    <p className="font-mono text-[#0e212c] font-semibold mt-0.5">
-                      ₱{Number(order.grandTotal || 0).toLocaleString()}
-                    </p>
+                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Delivery</p>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold mt-0.5 ${
+                      order.deliveryMethod === "Delivery" ? "bg-sky-50 text-sky-700 border border-sky-200"
+                        : order.deliveryMethod === "COD" ? "bg-violet-50 text-violet-700 border border-violet-200"
+                          : order.deliveryMethod === "Pickup" ? "bg-amber-50 text-amber-700 border border-amber-200"
+                            : "bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0]"
+                    }`}>{order.deliveryMethod || "WalkIn"}</span>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                      Date
-                    </p>
-                    <p className="text-[#64748b] mt-0.5">
-                      {new Date(order.transactionDate).toLocaleDateString(
-                        "en-PH",
-                        { month: "short", day: "numeric" },
-                      )}
-                    </p>
+                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Status</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                        STATUS_COLORS[order.transactionStatus] || "bg-[#f1f5f9] text-[#64748b]"
+                      }`}>{STAGE_LABELS[order.transactionStatus] || order.transactionStatus}</span>
+                    </div>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                      Delivery
-                    </p>
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold mt-0.5 ${
-                        order.deliveryMethod === "Delivery"
-                          ? "bg-sky-50 text-sky-700 border border-sky-200"
-                          : order.deliveryMethod === "COD"
-                            ? "bg-violet-50 text-violet-700 border border-violet-200"
-                            : order.deliveryMethod === "Pickup"
-                              ? "bg-amber-50 text-amber-700 border border-amber-200"
-                              : "bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0]"
-                      }`}
-                    >
-                      {order.deliveryMethod || "WalkIn"}
-                    </span>
+                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Progress</p>
+                    <div className="mt-1.5">
+                      <StatusDots status={order.transactionStatus} />
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {order.transactionStatus === "Ongoing" && (
+                  {order.transactionStatus !== "Cancelled" && order.transactionStatus !== "Completed" && (
                     <button
-                      onClick={() => advanceStatus(order.id)}
-                      className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
-                      title="Mark as Processing"
+                      onClick={() => setConfirmAction({ id: order.id, type: "advance" })}
+                      disabled={pending}
+                      className={`p-2 rounded-lg transition-all ${getAdvanceColor(order.transactionStatus)} disabled:opacity-40`}
+                      title={getAdvanceTitle(order.transactionStatus)}
                     >
-                      <Package className="h-4 w-4" />
-                    </button>
-                  )}
-                  {order.transactionStatus === "Processing" && (
-                    <button
-                      onClick={() => advanceStatus(order.id)}
-                      className="p-2 text-sky-600 hover:bg-sky-50 rounded-lg transition-all"
-                      title="Mark as On the Way"
-                    >
-                      <Truck className="h-4 w-4" />
-                    </button>
-                  )}
-                  {order.transactionStatus === "OnTheWay" && (
-                    <button
-                      onClick={() => advanceStatus(order.id)}
-                      className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                      title="Mark as Completed"
-                    >
-                      <CheckCircle className="h-4 w-4" />
+                      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <AdvanceIcon className="h-4 w-4" />}
                     </button>
                   )}
                   {order.transactionStatus !== "Cancelled" && (
                     <button
-                      onClick={() => cancelOrder(order.id)}
-                      className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                      title="Cancel"
+                      onClick={() => setConfirmAction({ id: order.id, type: "cancel" })}
+                      disabled={pending}
+                      className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all disabled:opacity-40"
+                      title="Cancel order"
                     >
-                      <XCircle className="h-4 w-4" />
+                      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
                     </button>
                   )}
                   <button
                     onClick={() => openEdit(order)}
+                    disabled={pending}
                     className="p-2 text-[#64748b] hover:bg-[#f1f5f9] rounded-lg transition-all"
                     title="Edit Order"
                   >
@@ -326,11 +410,7 @@ export default function OrdersPage() {
                     onClick={() => setExpandedId(isExpanded ? null : order.id)}
                     className="p-2 text-[#94a3b8] hover:bg-[#f1f5f9] rounded-lg transition-all"
                   >
-                    {isExpanded ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
+                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -349,35 +429,19 @@ export default function OrdersPage() {
                     <tbody className="divide-y divide-[#e2e8f0]">
                       {order.items.map((item) => (
                         <tr key={item.id}>
-                          <td className="py-2 text-[#0e212c] font-medium">
-                            {productLabel(item.productId!)}
-                          </td>
-                          <td className="py-2 text-right text-[#64748b]">
-                            {item.quantity}
-                          </td>
-                          <td className="py-2 text-right font-mono text-[#64748b]">
-                            ₱{Number(item.unitPrice).toLocaleString()}
-                          </td>
-                          <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">
-                            ₱{Number(item.totalPrice).toLocaleString()}
-                          </td>
+                          <td className="py-2 text-[#0e212c] font-medium">{productLabel(item.productId!)}</td>
+                          <td className="py-2 text-right text-[#64748b]">{item.quantity}</td>
+                          <td className="py-2 text-right font-mono text-[#64748b]">₱{Number(item.unitPrice).toLocaleString()}</td>
+                          <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">₱{Number(item.totalPrice).toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                   <div className="flex flex-wrap items-center gap-4 mt-3">
-                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
-                      Address:
-                    </span>
-                    <span className="text-sm text-[#64748b]">
-                      {order.buyerAddress || "N/A"}
-                    </span>
-                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
-                      Contact:
-                    </span>
-                    <span className="text-sm text-[#64748b]">
-                      {order.buyerContact || "N/A"}
-                    </span>
+                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Address:</span>
+                    <span className="text-sm text-[#64748b]">{order.buyerAddress || "N/A"}</span>
+                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Contact:</span>
+                    <span className="text-sm text-[#64748b]">{order.buyerContact || "N/A"}</span>
                   </div>
                   {(order.deliveryMethod === "Delivery" || order.deliveryMethod === "COD" || order.deliveryMethod === "Pickup") && (
                     <div className="mt-4 pt-3 border-t border-[#e2e8f0]">
@@ -385,7 +449,7 @@ export default function OrdersPage() {
                         {order.deliveryMethod === "Delivery" ? "Delivery Tracking" : order.deliveryMethod === "COD" ? "COD Tracking" : "Pickup Tracking"}
                       </p>
                       <div className="flex items-center gap-0">
-                        {["Placed", "Processing", order.deliveryMethod === "Pickup" ? "Ready" : "On the Way", "Completed"].map((stage, i, arr) => {
+                        {["Placed", "Processing", order.deliveryMethod === "Pickup" ? "Ready" : "On the Way", "Completed"].map((stage, i) => {
                           const statusMap = ["Ongoing", "Processing", "OnTheWay", "Completed"];
                           const currentIdx = statusMap.indexOf(order.transactionStatus);
                           const isActive = i <= currentIdx;
@@ -398,7 +462,7 @@ export default function OrdersPage() {
                                 {isActive ? "✓" : i + 1}
                               </div>
                               <span className={`mx-1 text-[9px] whitespace-nowrap ${isActive ? "text-[#0e212c] font-medium" : "text-[#94a3b8]"}`}>{stage}</span>
-                              {i < arr.length - 1 && <div className="w-4 h-px bg-[#e2e8f0]" />}
+                              {i < statusMap.length - 1 && <div className={`w-6 h-px ${isActive && i < currentIdx ? "bg-emerald-300" : "bg-[#e2e8f0]"}`} />}
                             </div>
                           );
                         })}
@@ -411,62 +475,30 @@ export default function OrdersPage() {
               {isEditing && (
                 <div className="border-t border-[#e2e8f0] p-5 space-y-4 bg-[#f8fafc]">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-sm text-[#0e212c]">
-                      Edit Order #{order.receiptNumber}
-                    </h3>
-                    <button
-                      onClick={() => setEditId(null)}
-                      className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                    <h3 className="font-semibold text-sm text-[#0e212c]">Edit Order #{order.receiptNumber}</h3>
+                    <button onClick={() => setEditId(null)} className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"><X className="h-4 w-4" /></button>
                   </div>
-
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
-                        Buyer
-                      </label>
-                      <input
-                        type="text"
-                        value={editBuyer}
-                        onChange={(e) => setEditBuyer(e.target.value)}
-                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
-                      />
+                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Buyer</label>
+                      <input type="text" value={editBuyer} onChange={(e) => setEditBuyer(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
-                        Address
-                      </label>
-                      <input
-                        type="text"
-                        value={editAddress}
-                        onChange={(e) => setEditAddress(e.target.value)}
-                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
-                      />
+                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Address</label>
+                      <input type="text" value={editAddress} onChange={(e) => setEditAddress(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
-                        Contact
-                      </label>
-                      <input
-                        type="text"
-                        value={editContact}
-                        onChange={(e) => setEditContact(e.target.value)}
-                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
-                      />
+                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Contact</label>
+                      <input type="text" value={editContact} onChange={(e) => setEditContact(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
                     </div>
                   </div>
-
                   <div>
-                    <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
-                      Status
-                    </label>
-                    <select
-                      value={editStatus}
-                      onChange={(e) => setEditStatus(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
-                    >
+                    <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Status</label>
+                    <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as any)}
+                      className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10">
                       <option value="Ongoing">Placed</option>
                       <option value="Processing">Processing</option>
                       <option value="OnTheWay">On the Way</option>
@@ -475,124 +507,52 @@ export default function OrdersPage() {
                     </select>
                     {editStatus === "Completed" && (
                       <p className="text-xs text-emerald-600 mt-1.5 flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3" /> Stock will be
-                        deducted and earnings updated
+                        <CheckCircle className="h-3 w-3" /> Stock will be deducted and earnings updated
                       </p>
                     )}
                   </div>
-
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                        Line Items
-                      </label>
-                      <button
-                        onClick={() =>
-                          setEditItems([
-                            ...editItems,
-                            {
-                              productId: 0,
-                              quantity: 1,
-                              unitPrice: 0,
-                              totalPrice: 0,
-                            },
-                          ])
-                        }
-                        className="text-xs font-semibold text-[#fd761a] hover:text-[#e56600] transition-colors"
-                      >
-                        + Add Item
-                      </button>
+                      <label className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Line Items</label>
+                      <button onClick={() => setEditItems([...editItems, { productId: 0, quantity: 1, unitPrice: 0, totalPrice: 0 }])}
+                        className="text-xs font-semibold text-[#fd761a] hover:text-[#e56600] transition-colors">+ Add Item</button>
                     </div>
                     <div className="space-y-2">
                       {editItems.map((item, i) => (
                         <div key={i} className="flex items-center gap-2">
-                          <select
-                            value={item.productId || ""}
-                            onChange={(e) => {
-                              const newItems = [...editItems];
-                              const pid = Number(e.target.value);
-                              const prod = products.find((p) => p.id === pid);
-                              newItems[i] = {
-                                ...item,
-                                productId: pid,
-                                unitPrice: Number(prod?.unitPrice || 0),
-                                totalPrice:
-                                  Number(prod?.unitPrice || 0) * item.quantity,
-                              };
-                              setEditItems(newItems);
-                            }}
-                            className="flex-1 min-w-[180px] px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]"
-                          >
+                          <select value={item.productId || ""} onChange={(e) => {
+                            const newItems = [...editItems];
+                            const pid = Number(e.target.value);
+                            const prod = products.find((p) => p.id === pid);
+                            newItems[i] = { ...item, productId: pid, unitPrice: Number(prod?.unitPrice || 0), totalPrice: Number(prod?.unitPrice || 0) * item.quantity };
+                            setEditItems(newItems);
+                          }} className="flex-1 min-w-[180px] px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]">
                             <option value="">Select product</option>
                             {products.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                #{p.id} · {p.productName}
-                                {(p as any).imageUrl ? " 📷" : ""}
-                              </option>
+                              <option key={p.id} value={p.id}>#{p.id} · {p.productName}{(p as any).imageUrl ? " 📷" : ""}</option>
                             ))}
                           </select>
-                          <label className="text-[10px] font-semibold text-[#94a3b8] uppercase shrink-0">
-                            Qty
-                          </label>
-                          <input
-                            type="number"
-                            min={1}
-                            value={item.quantity}
-                            onChange={(e) => {
-                              const newItems = [...editItems];
-                              const qty = Math.max(
-                                1,
-                                Number(e.target.value) || 1,
-                              );
-                              newItems[i] = {
-                                ...item,
-                                quantity: qty,
-                                totalPrice: qty * item.unitPrice,
-                              };
-                              setEditItems(newItems);
-                            }}
-                            className="w-16 px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]"
-                          />
-                          <label className="text-[10px] font-semibold text-[#94a3b8] uppercase shrink-0">
-                            Price
-                          </label>
-                          <span className="text-sm font-mono text-[#0e212c] w-20 text-right">
-                            ₱{item.unitPrice.toLocaleString()}
-                          </span>
-                          <span className="text-sm font-mono text-[#fd761a] font-semibold w-24 text-right">
-                            ₱{item.totalPrice.toLocaleString()}
-                          </span>
-                          <button
-                            onClick={() =>
-                              setEditItems(editItems.filter((_, j) => j !== i))
-                            }
-                            className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded transition-all"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
+                          <label className="text-[10px] font-semibold text-[#94a3b8] uppercase shrink-0">Qty</label>
+                          <input type="number" min={1} value={item.quantity} onChange={(e) => {
+                            const newItems = [...editItems];
+                            const qty = Math.max(1, Number(e.target.value) || 1);
+                            newItems[i] = { ...item, quantity: qty, totalPrice: qty * item.unitPrice };
+                            setEditItems(newItems);
+                          }} className="w-16 px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]" />
+                          <span className="text-sm font-mono text-[#0e212c] w-20 text-right">₱{item.unitPrice.toLocaleString()}</span>
+                          <span className="text-sm font-mono text-[#fd761a] font-semibold w-24 text-right">₱{item.totalPrice.toLocaleString()}</span>
+                          <button onClick={() => setEditItems(editItems.filter((_, j) => j !== i))}
+                            className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded transition-all"><X className="h-3.5 w-3.5" /></button>
                         </div>
                       ))}
                     </div>
                   </div>
-
                   <div className="flex justify-end gap-3 pt-2 border-t border-[#e2e8f0]">
-                    <button
-                      onClick={() => setEditId(null)}
-                      className="px-5 py-2 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-white transition-all"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white rounded-lg font-semibold text-sm shadow-lg shadow-[#fd761a]/20 hover:from-[#e56600] hover:to-[#d45d00] transition-all active:scale-[0.98] disabled:opacity-50"
-                    >
-                      {saving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CheckCircle className="h-4 w-4" />
-                      )}{" "}
-                      Save Changes
+                    <button onClick={() => setEditId(null)}
+                      className="px-5 py-2 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-white transition-all">Cancel</button>
+                    <button onClick={handleSave} disabled={saving}
+                      className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white rounded-lg font-semibold text-sm shadow-lg shadow-[#fd761a]/20 hover:from-[#e56600] hover:to-[#d45d00] transition-all active:scale-[0.98] disabled:opacity-50">
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />} Save Changes
                     </button>
                   </div>
                 </div>
@@ -600,16 +560,66 @@ export default function OrdersPage() {
             </div>
           );
         })}
-        {filtered.length === 0 && (
+        {paginated.length === 0 && (
           <div className="text-center py-16 text-[#94a3b8]">
             <Package className="h-8 w-8 mx-auto mb-3 opacity-50" />
             <p className="font-medium">All orders completed</p>
-            <p className="text-xs mt-1">
-              No ongoing purchase orders at this time
-            </p>
+            <p className="text-xs mt-1">No active purchase orders match your filters</p>
           </div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 text-sm">
+          <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}
+            className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all flex items-center gap-1">
+            <ChevronLeft className="h-3.5 w-3.5" /> Prev
+          </button>
+          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+            const start = Math.max(1, Math.min(page - 3, totalPages - 6));
+            const p = start + i;
+            if (p > totalPages) return null;
+            return (
+              <button key={p} onClick={() => setPage(p)}
+                className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${p === page ? "bg-[#fd761a] text-white" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>{p}</button>
+            );
+          })}
+          <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}
+            className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all flex items-center gap-1">
+            Next <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Confirm action modal */}
+      {confirmAction && (() => {
+        const order = orders.find((o) => o.id === confirmAction.id);
+        if (!order || order.transactionStatus === "Cancelled" || order.transactionStatus === "Completed") return null;
+        const isAdvance = confirmAction.type === "advance";
+        const nextStatus = isAdvance
+          ? ({ Ongoing: "Processing", Processing: "OnTheWay", OnTheWay: "Completed" } as Record<string, string>)[order.transactionStatus] || ""
+          : "Cancelled";
+        const nextLabel = nextStatus ? STAGE_LABELS[nextStatus] || nextStatus : "";
+        return (
+          <ConfirmModal
+            open={true}
+            title={isAdvance ? `Advance to "${nextLabel}"?` : `Cancel Order #${order.receiptNumber}?`}
+            message={
+              isAdvance
+                ? `Move this order from "${STAGE_LABELS[order.transactionStatus]}" to "${nextLabel}".`
+                : `This will cancel order #${order.receiptNumber} for ${order.buyerName}. This action cannot be undone.`
+            }
+            confirmLabel={isAdvance ? `Advance to ${nextLabel}` : "Yes, Cancel Order"}
+            variant={isAdvance ? "warning" : "danger"}
+            onConfirm={() => {
+              if (isAdvance) advanceStatus(confirmAction.id);
+              else cancelOrder(confirmAction.id);
+              setConfirmAction(null);
+            }}
+            onClose={() => setConfirmAction(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

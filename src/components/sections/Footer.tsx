@@ -12,26 +12,17 @@ const footerLinks: Record<string, [string, string][]> = {
   Product: [
     ["Features", "/solutions"],
     ["Pricing", "/pricing"],
-    ["Integrations", "/solutions"],
-    ["Changelog", "/changelog"],
   ],
   Company: [
-    ["About", "/about"],
-    ["Blog", "/blog"],
-    ["Careers", "/careers"],
-    ["Press", "/press"],
+    ["About", "/solutions"],
+    ["Contact", "/contact"],
   ],
   Support: [
-    ["Documentation", "/docs"],
-    ["API Reference", "/api-docs"],
-    ["Status", "/status"],
+    ["Documentation", "#"],
     ["Contact", "/contact"],
   ],
   Legal: [
-    ["Privacy Policy", "/privacy"],
-    ["Terms of Service", "/terms"],
-    ["Cookie Policy", "/cookies"],
-    ["GDPR", "/gdpr"],
+    ["Privacy Policy", "/contact"],
   ],
 };
 

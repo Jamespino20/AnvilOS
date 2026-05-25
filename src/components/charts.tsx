@@ -29,7 +29,7 @@ export function RevenueChart({ data }: { data: { date: string; total: number }[]
         labels: data.map((d) => d.date),
         datasets: [{
           data: data.map((d) => d.total),
-          backgroundColor: data.map((d) => d.total === Math.max(...data.map((x) => x.total)) ? "#fd761a" : "#fd761a/30"),
+          backgroundColor: data.map((d) => d.total === Math.max(...data.map((x) => x.total)) ? "#fd761a" : "rgba(253, 118, 26, 0.3)"),
           borderRadius: 6,
           borderSkipped: false,
         }],
