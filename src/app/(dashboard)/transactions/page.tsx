@@ -34,6 +34,7 @@ import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
+import { toast } from "sonner";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
 
@@ -130,11 +131,13 @@ export default function TransactionsPage() {
     });
   }, [statusFilter, typeFilter, search, page, dateScope]);
 
-  async function quickStatusChange(
-    id: number,
-    status: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled",
-  ) {
+async function quickStatusChange(
+  id: number,
+  status: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled",
+) {
+  try {
     await updateTransactionStatus(id, status);
+    toast.success("Status updated to " + status);
     const startDate = getDateScopeStart(dateScope);
     const [data, count] = await Promise.all([
       getTransactions({
@@ -154,7 +157,10 @@ export default function TransactionsPage() {
     ]);
     setTransactions(data as TxnWithItems[]);
     setTotal(count);
+  } catch (e: any) {
+    toast.error(e.message || "Failed to update status");
   }
+}
 
   const totalPages = Math.ceil(total / perPage);
 

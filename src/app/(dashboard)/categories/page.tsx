@@ -34,6 +34,7 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
 import type { Category } from "@prisma/client";
+import { toast } from "sonner";
 
 const PER_PAGE = 10;
 
@@ -95,8 +96,10 @@ export default function CategoriesPage() {
       setShowAdd(false);
       setCatName("");
       router.refresh();
+      toast.success("Category created successfully");
     } catch (e: any) {
       setError(e.message || "Failed to create category");
+      toast.error(e.message || "Failed to create category");
     } finally {
       setAdding(false);
     }
@@ -120,8 +123,10 @@ export default function CategoriesPage() {
       setEditId(null);
       setEditName("");
       router.refresh();
+      toast.success("Category updated successfully");
     } catch (e: any) {
       setError(e.message || "Failed to update category");
+      toast.error(e.message || "Failed to update category");
     } finally {
       setSaving(false);
     }
@@ -136,8 +141,10 @@ export default function CategoriesPage() {
       setCategories((prev) => prev.filter((c) => c.id !== deleteTarget));
       setDeleteTarget(null);
       router.refresh();
+      toast.success("Category deleted successfully");
     } catch (e: any) {
       setDeleteError(e.message || "Failed to delete category");
+      toast.error(e.message || "Failed to delete category");
       setDeleteTarget(null);
     } finally {
       setDeleteLoading(false);

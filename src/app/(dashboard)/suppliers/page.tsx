@@ -37,6 +37,7 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
 import type { Supplier } from "@prisma/client";
+import { toast } from "sonner";
 
 export default function SuppliersPage() {
   const router = useRouter();
@@ -111,8 +112,10 @@ export default function SuppliersPage() {
         address: "",
       });
       router.refresh();
+      toast.success("Supplier added successfully");
     } catch (e) {
       console.error("Failed to add supplier", e);
+      toast.error("Failed to add supplier");
     } finally {
       setAdding(false);
     }
@@ -138,8 +141,10 @@ export default function SuppliersPage() {
         prev.map((s) => (s.id === editId ? { ...s, ...editForm } : s)),
       );
       setEditId(null);
+      toast.success("Supplier updated successfully");
     } catch (e) {
       console.error("Failed to update supplier", e);
+      toast.error("Failed to update supplier");
     } finally {
       setSaving(false);
     }
@@ -154,8 +159,10 @@ export default function SuppliersPage() {
       setSuppliers((prev) => prev.filter((s) => s.id !== deleteTarget));
       setDeleteTarget(null);
       router.refresh();
+      toast.success("Supplier deleted successfully");
     } catch (e: any) {
       setDeleteError(e.message || "Failed to delete supplier");
+      toast.error(e.message || "Failed to delete supplier");
     } finally {
       setDeleteLoading(false);
     }

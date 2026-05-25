@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { X, Settings as SettingsIcon, Save, Loader2, Upload, User, Moon, Sun, Key, Lock, Shield, Camera } from "lucide-react";
 import { updateProfile, updateSecurityQuestions, updatePassword } from "@/actions";
+import { toast } from "sonner";
 
 const SECURITY_QUESTIONS = [
   "What is your mother's maiden name?",
@@ -97,11 +98,12 @@ export function SettingsModal({ open, onClose }: Props) {
     setSaving(true);
     try {
       await updateProfile({ name: name.trim(), imageUrl: profileImage || undefined });
-      await update({ name: name.trim(), imageUrl: profileImage || undefined });
-      router.refresh();
-      onClose();
-    } catch (e) {
-      console.error("Failed to update profile", e);
+    await update({ name: name.trim(), imageUrl: profileImage || undefined });
+    router.refresh();
+    onClose();
+    toast.success("Profile updated");
+  } catch (e) {
+    toast.error("Failed to update profile");
     } finally {
       setSaving(false);
     }
@@ -133,10 +135,11 @@ export function SettingsModal({ open, onClose }: Props) {
       await updatePassword(newPassword);
       setNewPassword("");
       setConfirmPassword("");
-      setPwError("");
-      router.refresh();
-    } catch (e: any) {
-      setPwError(e.message || "Failed to change password");
+    setPwError("");
+    router.refresh();
+    toast.success("Password changed");
+  } catch (e: any) {
+    toast.error(e.message || "Failed to change password");
     } finally {
       setChangingPw(false);
     }

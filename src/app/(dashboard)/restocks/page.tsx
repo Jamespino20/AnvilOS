@@ -8,6 +8,7 @@ import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
+import { toast } from "sonner";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
 
@@ -79,8 +80,10 @@ export default function RestocksPage() {
     try {
       await processRestock(id);
       refresh();
+      toast.success("Restock processed successfully");
     } catch (e) {
       console.error("Failed to process restock", e);
+      toast.error("Failed to process restock");
     } finally {
       setProcessingId(null);
     }
@@ -155,8 +158,10 @@ export default function RestocksPage() {
       setRestockSearch("");
       setPage(1);
       refresh(1);
+      toast.success("Restock created successfully");
     } catch (e) {
       console.error("Failed to create restock", e);
+      toast.error("Failed to create restock");
     } finally {
       setSubmitting(false);
     }

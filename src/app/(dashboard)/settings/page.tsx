@@ -13,6 +13,7 @@ import { useSession } from "next-auth/react";
 import { Bell, Shield, User, Palette, Save, Loader2, CheckCircle } from "lucide-react";
 import { getNotifPrefs, updateNotifPrefs } from "@/actions/email";
 import { updatePassword } from "@/actions";
+import { toast } from "sonner";
 
 const sections = [
   { id: "profile", label: "Profile", icon: User },
@@ -67,10 +68,16 @@ export default function SettingsPage() {
 
   async function handleSaveNotifs() {
     setSaving(true);
-    await updateNotifPrefs(notifPrefs);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    setSaving(false);
+    try {
+      await updateNotifPrefs(notifPrefs);
+      setSaved(true);
+      toast.success("Notification preferences saved");
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      toast.error("Failed to save notification preferences");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleChangePassword() {
@@ -87,11 +94,13 @@ export default function SettingsPage() {
     try {
       await updatePassword(newPassword);
       setPasswordMsg({ type: "success", text: "Password changed successfully" });
+      toast.success("Password changed successfully");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (e: any) {
       setPasswordMsg({ type: "error", text: e.message || "Failed to change password" });
+      toast.error(e.message || "Failed to change password");
     } finally {
       setSaving(false);
     }

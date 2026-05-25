@@ -39,6 +39,7 @@ import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
+import { toast } from "sonner";
 
 type TxnWithItems = Transaction & { items: TransactionItem[]; buyer?: { email?: string | null } | null };
 
@@ -99,39 +100,61 @@ export default function BuyersPage() {
     }
   }
 
-  function exportBuyerReport() {
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+
+  function exportBuyerReport(format: "csv" | "xlsx" | "pdf") {
     if (!selectedBuyer) return;
+    setShowExportDropdown(false);
     const totalSpent = history.reduce(
       (s, t) => s + Number(t.grandTotal || 0),
       0,
     );
-    const rows: string[][] = [];
-    rows.push(["Buyer Report", selectedBuyer]);
-    rows.push(["Address", history[0]?.buyerAddress || "—"]);
-    rows.push(["Contact", history[0]?.buyerContact || "—"]);
-    rows.push([]);
-    rows.push(["Receipt #", "Type", "Date", "Total", "Status"]);
-    for (const t of history) {
-      rows.push([
-        `#${t.receiptNumber}`,
-        t.transactionType.replace(/([A-Z])/g, " $1").trim(),
-        new Date(t.transactionDate).toLocaleDateString("en-PH"),
-        `₱${Number(t.grandTotal || 0).toLocaleString()}`,
-        t.transactionStatus,
-      ]);
-    }
-    rows.push([]);
-    rows.push(["Summary"]);
-    rows.push(["Total Orders", String(history.length)]);
-    rows.push(["Total Spent", `₱${totalSpent.toLocaleString()}`]);
+    const headers = ["Receipt #", "Type", "Date", "Total", "Status"];
+    const dataRows = history.map((t) => [
+      `#${t.receiptNumber}`,
+      t.transactionType.replace(/([A-Z])/g, " $1").trim(),
+      new Date(t.transactionDate).toLocaleDateString("en-PH"),
+      `₱${Number(t.grandTotal || 0).toLocaleString()}`,
+      t.transactionStatus,
+    ]);
+    const metaRows = [
+      [`Buyer Report: ${selectedBuyer}`],
+      [`Address: ${history[0]?.buyerAddress || "—"}`],
+      [`Contact: ${history[0]?.buyerContact || "—"}`],
+      [],
+    ];
+    const summaryRows = [
+      [],
+      ["Summary"],
+      [`Total Orders,${history.length}`],
+      [`Total Spent,₱${totalSpent.toLocaleString()}`],
+    ];
+    const allHeaders = ["Receipt #", "Type", "Date", "Total", "Status"];
+    const allRows = [...metaRows, allHeaders, ...dataRows, ...summaryRows];
 
-    const csv =
-      "data:text/csv;charset=utf-8," +
-      rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
-    const a = document.createElement("a");
-    a.href = encodeURI(csv);
-    a.download = `buyer-report-${selectedBuyer.replace(/\s+/g, "-")}.csv`;
-    a.click();
+    if (format === "csv") {
+      const csv = "data:text/csv;charset=utf-8," + allRows.map((r) => `"${(Array.isArray(r) ? r : [r]).join('","')}"`).join("\n");
+      const a = document.createElement("a");
+      a.href = encodeURI(csv);
+      a.download = `buyer-report-${selectedBuyer.replace(/\s+/g, "-")}.csv`;
+      a.click();
+    } else if (format === "xlsx") {
+      import("@/lib/csv").then((m) =>
+        m.exportXLSX(
+          `buyer-report-${selectedBuyer.replace(/\s+/g, "-")}.xlsx`,
+          allHeaders,
+          dataRows,
+        ),
+      );
+    } else {
+      import("@/lib/csv").then((m) =>
+        m.exportPDF(
+          `buyer-report-${selectedBuyer.replace(/\s+/g, "-")}.pdf`,
+          allHeaders,
+          dataRows,
+        ),
+      );
+    }
   }
 
   const filtered = buyers.filter((b) => {
@@ -208,13 +231,28 @@ export default function BuyersPage() {
               >
                 <Pencil className="h-4 w-4" /> Edit Info
               </button>
-              <button
-                onClick={exportBuyerReport}
-                title="Export buyer transaction report"
-                className="p-2 text-[#64748b] hover:bg-[#f1f5f9] rounded-lg transition-all text-sm flex items-center gap-1.5"
-              >
-                <Download className="h-4 w-4" /> Export Report
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportDropdown(!showExportDropdown)}
+                  title="Export buyer transaction report"
+                  className="p-2 text-[#64748b] hover:bg-[#f1f5f9] rounded-lg transition-all text-sm flex items-center gap-1.5"
+                >
+                  <Download className="h-4 w-4" /> Export Report
+                </button>
+                {showExportDropdown && (
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-[#e2e8f0] rounded-lg shadow-xl z-50 min-w-[140px] py-1">
+                    <button onClick={() => exportBuyerReport("csv")} className="w-full px-4 py-2 text-left text-sm text-[#0e212c] hover:bg-[#f8fafc] transition-colors flex items-center gap-2">
+                      <Download className="h-3.5 w-3.5 text-[#94a3b8]" /> CSV
+                    </button>
+                    <button onClick={() => exportBuyerReport("xlsx")} className="w-full px-4 py-2 text-left text-sm text-[#0e212c] hover:bg-[#f8fafc] transition-colors flex items-center gap-2">
+                      <Download className="h-3.5 w-3.5 text-[#94a3b8]" /> XLSX
+                    </button>
+                    <button onClick={() => exportBuyerReport("pdf")} className="w-full px-4 py-2 text-left text-sm text-[#0e212c] hover:bg-[#f8fafc] transition-colors flex items-center gap-2">
+                      <Download className="h-3.5 w-3.5 text-[#94a3b8]" /> PDF
+                    </button>
+                  </div>
+                )}
+              </div>
               <div className="text-right">
                 <p className="text-xs text-[#94a3b8] uppercase tracking-wider font-semibold">
                   Total Spent
@@ -470,8 +508,9 @@ export default function BuyersPage() {
                           })),
                         );
                         setShowEditBuyer(false);
+                        toast.success("Buyer info updated successfully");
                       } catch (e) {
-                        console.error("Failed to update", e);
+                        toast.error("Failed to update buyer info");
                       } finally {
                         setSavingBuyer(false);
                       }

@@ -24,6 +24,7 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
 import type { Product, Category, Supplier } from "@prisma/client";
+import { toast } from "sonner";
 
 interface Props {
   products: (Product & {
@@ -174,8 +175,10 @@ export function InventoryClient({
       setShowAdd(false);
       setForm(defaultForm);
       router.refresh();
+      toast.success("Product added successfully");
     } catch (e) {
       console.error("Failed to add product", e);
+      toast.error("Failed to add product");
     } finally {
       setAdding(false);
     }
@@ -214,8 +217,10 @@ export function InventoryClient({
       setShowEdit(null);
       setForm(defaultForm);
       router.refresh();
+      toast.success("Product updated successfully");
     } catch (e) {
       console.error("Failed to update product", e);
+      toast.error("Failed to update product");
     } finally {
       setSaving(false);
     }
@@ -228,8 +233,10 @@ export function InventoryClient({
       await deleteProduct(deleteTarget);
       setDeleteTarget(null);
       router.refresh();
+      toast.success("Product deleted successfully");
     } catch (e) {
       console.error("Failed to delete product", e);
+      toast.error("Failed to delete product");
     } finally {
       setDeleting(false);
     }

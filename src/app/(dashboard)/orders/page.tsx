@@ -36,6 +36,7 @@ import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
+import { toast } from "sonner";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
 
@@ -71,6 +72,10 @@ export default function OrdersPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
+  // Delivery tracking fields
+  const [deliveryRef, setDeliveryRef] = useState("");
+  const [deliveryNotes, setDeliveryNotes] = useState("");
+
   // Confirm action modal
   const [confirmAction, setConfirmAction] = useState<{
     id: number;
@@ -85,6 +90,8 @@ export default function OrdersPage() {
   const [editBuyer, setEditBuyer] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [editContact, setEditContact] = useState("");
+  const [editDeliveryRef, setEditDeliveryRef] = useState("");
+  const [editDeliveryNotes, setEditDeliveryNotes] = useState("");
   const [editItems, setEditItems] = useState<
     {
       productId: number;
@@ -113,7 +120,7 @@ export default function OrdersPage() {
 
   function productLabel(id: number) {
     const p = products.find((p) => p.id === id);
-    return p ? `#${id} · ${p.productName}` : `#${id}`;
+    return p ? p.productName : `Product #${id}`;
   }
 
   function openEdit(t: TxnWithItems) {
@@ -122,6 +129,8 @@ export default function OrdersPage() {
     setEditBuyer(t.buyerName);
     setEditAddress(t.buyerAddress || "");
     setEditContact(t.buyerContact || "");
+    setEditDeliveryRef(t.deliveryRef || "");
+    setEditDeliveryNotes(t.deliveryNotes || "");
     setEditItems(
       t.items.map((i) => ({
         productId: i.productId!,
@@ -140,13 +149,16 @@ export default function OrdersPage() {
         buyerName: editBuyer,
         buyerAddress: editAddress,
         buyerContact: editContact,
+        deliveryRef: editDeliveryRef,
+        deliveryNotes: editDeliveryNotes,
         transactionStatus: editStatus,
         items: editItems,
       });
       loadOrders();
       setEditId(null);
+      toast.success("Order updated");
     } catch (e: any) {
-      alert(e.message || "Failed to update");
+      toast.error(e.message || "Failed to update");
     } finally {
       setSaving(false);
     }
@@ -164,10 +176,11 @@ export default function OrdersPage() {
     if (!next) return;
     setProcessingId(id);
     try {
-      await updateTransactionStatus(id, next);
-      loadOrders();
-    } catch (e: any) {
-      alert(e.message || "Failed to advance status");
+    await updateTransactionStatus(id, next, { deliveryRef, deliveryNotes });
+    loadOrders();
+    toast.success("Order advanced");
+  } catch (e: any) {
+    toast.error(e.message || "Failed to advance status");
     } finally {
       setProcessingId(null);
     }
@@ -176,10 +189,11 @@ export default function OrdersPage() {
   async function cancelOrder(id: number) {
     setProcessingId(id);
     try {
-      await updateTransactionStatus(id, "Cancelled");
-      loadOrders();
-    } catch (e: any) {
-      alert(e.message || "Failed to cancel");
+    await updateTransactionStatus(id, "Cancelled");
+    loadOrders();
+    toast.success("Order cancelled");
+  } catch (e: any) {
+    toast.error(e.message || "Failed to cancel");
     } finally {
       setProcessingId(null);
     }
@@ -380,7 +394,11 @@ export default function OrdersPage() {
                 <div className="flex items-center gap-1.5 shrink-0">
                   {order.transactionStatus !== "Cancelled" && order.transactionStatus !== "Completed" && (
                     <button
-                      onClick={() => setConfirmAction({ id: order.id, type: "advance" })}
+                      onClick={() => {
+                        setDeliveryRef(order.deliveryRef || "");
+                        setDeliveryNotes(order.deliveryNotes || "");
+                        setConfirmAction({ id: order.id, type: "advance" });
+                      }}
                       disabled={pending}
                       className={`p-2 rounded-lg transition-all ${getAdvanceColor(order.transactionStatus)} disabled:opacity-40`}
                       title={getAdvanceTitle(order.transactionStatus)}
@@ -443,6 +461,22 @@ export default function OrdersPage() {
                     <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Contact:</span>
                     <span className="text-sm text-[#64748b]">{order.buyerContact || "N/A"}</span>
                   </div>
+                  {(order.deliveryRef || order.deliveryNotes) && (
+                    <div className="flex flex-wrap items-center gap-4 mt-2 pt-2 border-t border-[#e2e8f0]">
+                      {order.deliveryRef && (
+                        <>
+                          <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Delivery Ref:</span>
+                          <span className="text-sm text-[#64748b]">{order.deliveryRef}</span>
+                        </>
+                      )}
+                      {order.deliveryNotes && (
+                        <>
+                          <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Delivery Notes:</span>
+                          <span className="text-sm text-[#64748b]">{order.deliveryNotes}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                   {(order.deliveryMethod === "Delivery" || order.deliveryMethod === "COD" || order.deliveryMethod === "Pickup") && (
                     <div className="mt-4 pt-3 border-t border-[#e2e8f0]">
                       <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-2">
@@ -495,6 +529,18 @@ export default function OrdersPage() {
                         className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Delivery Reference</label>
+                      <input type="text" value={editDeliveryRef} onChange={(e) => setEditDeliveryRef(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Delivery Notes</label>
+                      <input type="text" value={editDeliveryNotes} onChange={(e) => setEditDeliveryNotes(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Status</label>
                     <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as any)}
@@ -529,7 +575,7 @@ export default function OrdersPage() {
                           }} className="flex-1 min-w-[180px] px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]">
                             <option value="">Select product</option>
                             {products.map((p) => (
-                              <option key={p.id} value={p.id}>#{p.id} · {p.productName}{(p as any).imageUrl ? " 📷" : ""}</option>
+                              <option key={p.id} value={p.id}>{p.productName}{(p as any).imageUrl ? " 📷" : ""}</option>
                             ))}
                           </select>
                           <label className="text-[10px] font-semibold text-[#94a3b8] uppercase shrink-0">Qty</label>
@@ -641,7 +687,25 @@ export default function OrdersPage() {
               setConfirmAction(null);
             }}
             onClose={() => setConfirmAction(null)}
-          />
+          >
+            {isAdvance && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Delivery Reference / Tracking #</label>
+                  <input type="text" value={deliveryRef} onChange={(e) => setDeliveryRef(e.target.value)}
+                    placeholder="e.g. Courier tracking number"
+                    className="w-full px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Delivery Notes</label>
+                  <textarea value={deliveryNotes} onChange={(e) => setDeliveryNotes(e.target.value)}
+                    placeholder="Optional notes about delivery..."
+                    rows={2}
+                    className="w-full px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10 resize-none" />
+                </div>
+              </div>
+            )}
+          </ConfirmModal>
         );
       })()}
     </div>

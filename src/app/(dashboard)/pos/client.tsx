@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { createTransaction } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { downloadReceipt, downloadReceiptPdf } from "@/lib/receipt";
+import { toast } from "sonner";
 import type { Product } from "@prisma/client";
 
 interface BuyerInfo {
@@ -115,22 +116,25 @@ export function POSClient({ products, buyers }: Props) {
   function addToCart(product: Product) {
     setCart((prev) => {
       const existing = prev.find((c) => c.product.id === product.id);
-      if (existing)
+      if (existing) {
+        const maxQty = product.quantity + existing.quantity;
         return prev.map((c) =>
-          c.product.id === product.id ? { ...c, quantity: c.quantity + 1 } : c,
+          c.product.id === product.id ? { ...c, quantity: Math.min(c.quantity + 1, maxQty) } : c,
         );
-      return [...prev, { product, quantity: 1 }];
+      }
+      return [...prev, { product, quantity: Math.min(1, product.quantity || 0) || 1 }];
     });
   }
 
   function updateQuantity(productId: number, delta: number) {
     setCart((prev) =>
       prev
-        .map((c) =>
-          c.product.id === productId
-            ? { ...c, quantity: Math.max(1, c.quantity + delta) }
-            : c,
-        )
+        .map((c) => {
+          const maxQty = c.product.quantity + (delta > 0 ? 0 : 0);
+          return c.product.id === productId
+            ? { ...c, quantity: Math.min(Math.max(1, c.quantity + delta), c.product.quantity) }
+            : c;
+        })
         .filter((c) => c.quantity > 0),
     );
   }
@@ -142,7 +146,9 @@ export function POSClient({ products, buyers }: Props) {
   function setCartQty(productId: number, qty: number) {
     setCart((prev) =>
       prev.map((c) =>
-        c.product.id === productId ? { ...c, quantity: Math.max(1, qty) } : c,
+        c.product.id === productId
+          ? { ...c, quantity: Math.min(Math.max(1, qty), c.product.quantity) }
+          : c,
       ),
     );
   }
@@ -230,10 +236,11 @@ export function POSClient({ products, buyers }: Props) {
       setDeliveryMethod("WalkIn");
       setTimeout(() => {
         downloadReceipt(receiptData).catch(() => {});
+        toast.success("Transaction completed successfully");
         setDone(null);
       }, 500);
     } catch (e: any) {
-      setError(e.message || "Transaction failed");
+      toast.error(e.message || "Transaction failed");
     } finally {
       setCheckingOut(false);
     }

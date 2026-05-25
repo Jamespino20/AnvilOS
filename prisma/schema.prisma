@@ -148,6 +148,8 @@ model Transaction {
   sellerName             String?           @map("SELLER_NAME")
   transactionType        TransactionType   @map("TRANSACTION_TYPE")
   deliveryMethod         DeliveryMethod    @map("DELIVERY_METHOD")
+  deliveryRef            String?           @map("DELIVERY_REF")
+  deliveryNotes          String?           @map("DELIVERY_NOTES")
   transactionStatus      TransactionStatus @default(Ongoing) @map("TRANSACTION_STATUS")
   transactionDate        DateTime          @map("TRANSACTION_DATE")
   grandTotal             Decimal?          @db.Decimal(10, 2) @map("GRAND_TOTAL")

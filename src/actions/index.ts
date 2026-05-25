@@ -639,6 +639,7 @@ export async function createTransaction(data: {
 export async function updateTransactionStatus(
   id: number,
   status: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled",
+  deliveryData?: { deliveryRef?: string; deliveryNotes?: string },
 ) {
   const txn = await prisma.transaction.findUniqueOrThrow({
     where: { id },
@@ -662,7 +663,11 @@ export async function updateTransactionStatus(
 
   const updated = await prisma.transaction.update({
     where: { id },
-    data: { transactionStatus: status },
+    data: {
+      transactionStatus: status,
+      ...(deliveryData?.deliveryRef !== undefined && { deliveryRef: deliveryData.deliveryRef }),
+      ...(deliveryData?.deliveryNotes !== undefined && { deliveryNotes: deliveryData.deliveryNotes }),
+    },
   });
   await logAudit(
     "EditTransactionDialog",
@@ -680,6 +685,8 @@ export async function updateTransaction(
     buyerName?: string;
     buyerAddress?: string;
     buyerContact?: string;
+    deliveryRef?: string;
+    deliveryNotes?: string;
     transactionStatus?: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled";
     items?: {
       id?: number;
@@ -703,6 +710,8 @@ export async function updateTransaction(
       buyerName: data.buyerName,
       buyerAddress: data.buyerAddress,
       buyerContact: data.buyerContact,
+      deliveryRef: data.deliveryRef,
+      deliveryNotes: data.deliveryNotes,
       transactionStatus: data.transactionStatus,
     },
   });
@@ -1364,11 +1373,23 @@ export async function getTopProductsByRevenue(
         transactionType: { in: ["SaleWalkIn", "SalePO"] },
       },
     },
-    select: { productName: true, quantity: true, totalPrice: true },
+    select: { productName: true, productId: true, quantity: true, totalPrice: true },
   });
+
+  // Build a lookup of product names for any null productNames
+  const missingIds = [...new Set(items.filter((i) => !i.productName).map((i) => i.productId).filter((id): id is number => id !== null))];
+  const productLookup = new Map<number, string>();
+  if (missingIds.length > 0) {
+    const prods = await prisma.product.findMany({
+      where: { id: { in: missingIds } },
+      select: { id: true, productName: true },
+    });
+    for (const p of prods) productLookup.set(p.id, p.productName);
+  }
+
   const map = new Map<string, { qty: number; total: number }>();
   for (const item of items) {
-    const name = item.productName || `Deleted Product`;
+    const name = item.productName || (item.productId ? productLookup.get(item.productId) : null) || "Deleted Product";
     const existing = map.get(name) || { qty: 0, total: 0 };
     existing.qty += item.quantity || 0;
     existing.total += Number(item.totalPrice || 0);

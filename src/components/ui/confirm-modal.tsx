@@ -10,9 +10,10 @@ interface ConfirmModalProps {
   message: string;
   confirmLabel?: string;
   variant?: "danger" | "warning";
+  children?: React.ReactNode;
 }
 
-export function ConfirmModal({ open, onClose, onConfirm, title, message, confirmLabel = "Confirm", variant = "danger" }: ConfirmModalProps) {
+export function ConfirmModal({ open, onClose, onConfirm, title, message, confirmLabel = "Confirm", variant = "danger", children }: ConfirmModalProps) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
@@ -24,6 +25,7 @@ export function ConfirmModal({ open, onClose, onConfirm, title, message, confirm
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm text-[#0e212c]">{title}</h3>
             <p className="text-sm text-[#64748b] mt-1 leading-relaxed">{message}</p>
+            {children && <div className="mt-3">{children}</div>}
           </div>
           <button onClick={onClose} className="p-1 text-[#94a3b8] hover:text-[#64748b] transition-colors"><X className="h-4 w-4" /></button>
         </div>
