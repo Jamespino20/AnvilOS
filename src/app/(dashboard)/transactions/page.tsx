@@ -484,7 +484,7 @@ async function quickStatusChange(
                             <span>Payment: {t.paymentMethod || "—"}</span>
                             {t.returnForReceiptNumber && (
                               <span>
-                                Return of: #{t.returnForReceiptNumber}
+                                {t.transactionType === "Return" ? "Return of" : t.transactionType === "Damage" ? "Damage ref" : "Adjustment ref"}: #{t.returnForReceiptNumber}
                               </span>
                             )}
                           </div>

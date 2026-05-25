@@ -202,7 +202,8 @@ export function POSClient({ products, buyers }: Props) {
           totalPrice: Number(c.product.unitPrice) * c.quantity,
         })),
         returnForReceiptNumber:
-          txnType === "Return" ? Number(returnReceipt) || undefined : undefined,
+          (txnType === "Return" || txnType === "Damage" || txnType === "Adjustment")
+            ? Number(returnReceipt) || undefined : undefined,
       });
       const receiptData = {
         receiptNumber: result.receiptNumber,
@@ -467,7 +468,7 @@ export function POSClient({ products, buyers }: Props) {
                 </select>
               </div>
 
-              {txnType === "Return" && (
+              {(txnType === "Return" || txnType === "Damage" || txnType === "Adjustment") && (
                 <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-2 flex-1 min-w-0">
                   {loadingReturn ? (
                     <Loader2 className="h-3.5 w-3.5 text-amber-600 shrink-0 animate-spin" />
@@ -478,7 +479,7 @@ export function POSClient({ products, buyers }: Props) {
                     type="number"
                     value={returnReceipt}
                     onChange={(e) => setReturnReceipt(e.target.value)}
-                    placeholder="Receipt #"
+                    placeholder={txnType === "Return" ? "Original Receipt #" : "Reference Receipt #"}
                     className="w-full min-w-0 bg-transparent text-xs text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                   />
                 </div>
