@@ -53,7 +53,7 @@ export function SettingsModal({ open, onClose }: Props) {
       if (sessionImg) {
         setProfileImage(sessionImg);
       } else {
-        setProfileImage(localStorage.getItem("profile_image"));
+        setProfileImage(null);
       }
     }
   }, [open, session?.user]);
@@ -87,7 +87,6 @@ export function SettingsModal({ open, onClose }: Props) {
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
       setProfileImage(dataUrl);
-      localStorage.setItem("profile_image", dataUrl);
     };
     reader.readAsDataURL(file);
   }

@@ -570,24 +570,48 @@ export default function OrdersPage() {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 text-sm">
-          <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}
-            className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all flex items-center gap-1">
-            <ChevronLeft className="h-3.5 w-3.5" /> Prev
-          </button>
-          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-            const start = Math.max(1, Math.min(page - 3, totalPages - 6));
-            const p = start + i;
-            if (p > totalPages) return null;
-            return (
-              <button key={p} onClick={() => setPage(p)}
-                className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${p === page ? "bg-[#fd761a] text-white" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>{p}</button>
-            );
-          })}
-          <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}
-            className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all flex items-center gap-1">
-            Next <ChevronRight className="h-3.5 w-3.5" />
-          </button>
+        <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex items-center justify-between text-sm text-[#64748b]">
+          <span>
+            Showing {paginated.length} of {filtered.length} items
+          </span>
+          <div className="flex items-center gap-1">
+            <button disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            {(() => {
+              const pages: React.ReactNode[] = [];
+              const maxVisible = 7;
+              if (totalPages <= maxVisible) {
+                for (let i = 1; i <= totalPages; i++) {
+                  pages.push(
+                    <button key={i} onClick={() => setPage(i)}
+                      className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
+                      {i}
+                    </button>
+                  );
+                }
+              } else {
+                let start = Math.max(1, page - 3);
+                let end = Math.min(totalPages, page + 3);
+                if (start > 1) pages.push(<span key="s" className="px-1 text-[#94a3b8] text-xs">...</span>);
+                for (let i = start; i <= end; i++) {
+                  pages.push(
+                    <button key={i} onClick={() => setPage(i)}
+                      className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
+                      {i}
+                    </button>
+                  );
+                }
+                if (end < totalPages) pages.push(<span key="e" className="px-1 text-[#94a3b8] text-xs">...</span>);
+              }
+              return pages;
+            })()}
+            <button disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
 

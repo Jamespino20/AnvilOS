@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   try {
     const { username, passwordHash } = await req.json();
     const user = await prisma.user.findUnique({
-      where: { sellerName: username },
+      where: { username },
     });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });

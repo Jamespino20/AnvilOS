@@ -24,6 +24,8 @@ import {
   XCircle,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Package,
   Truck,
 } from "lucide-react";
@@ -498,33 +500,50 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 text-sm">
-          <button
-            onClick={() => setPage(Math.max(1, page - 1))}
-            disabled={page === 1}
-            className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all"
-          >
-            Prev
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPage(p)}
-              className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${p === page ? "bg-[#fd761a] text-white" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}
-            >
-              {p}
-            </button>
-          ))}
-          <button
-            onClick={() => setPage(Math.min(totalPages, page + 1))}
-            disabled={page === totalPages}
-            className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all"
-          >
-            Next
-          </button>
+        <div className="border-t border-[#e2e8f0] p-4 flex items-center justify-between text-sm text-[#64748b]">
+          <span>
+            Showing {transactions.length} of {total} items
+          </span>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              {(() => {
+                const pages: React.ReactNode[] = [];
+                if (totalPages <= 7) {
+                  for (let i = 1; i <= totalPages; i++) {
+                    pages.push(
+                      <button key={i} onClick={() => setPage(i)}
+                        className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
+                        {i}
+                      </button>
+                    );
+                  }
+                } else {
+                  let start = Math.max(1, page - 3);
+                  let end = Math.min(totalPages, page + 3);
+                  if (start > 1) pages.push(<span key="s" className="px-1 text-[#94a3b8] text-xs">...</span>);
+                  for (let i = start; i <= end; i++) {
+                    pages.push(
+                      <button key={i} onClick={() => setPage(i)}
+                        className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
+                        {i}
+                      </button>
+                    );
+                  }
+                  if (end < totalPages) pages.push(<span key="e" className="px-1 text-[#94a3b8] text-xs">...</span>);
+                }
+                return pages;
+              })()}
+              <button disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
-      )}
     </div>
   );
 }

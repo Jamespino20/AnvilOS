@@ -524,6 +524,22 @@ export async function createTransaction(data: {
     await applyStockChanges(data.transactionType, data.items);
   }
 
+  // Look up product names for transaction items
+  const productIds = [...new Set(data.items.map((i) => i.productId))];
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: { id: true, productName: true },
+  });
+  const productNameMap = new Map(products.map((p) => [p.id, p.productName]));
+
+  const itemsWithNames = data.items.map((i) => ({
+    productId: i.productId,
+    productName: productNameMap.get(i.productId) || `Product #${i.productId}`,
+    quantity: i.quantity,
+    unitPrice: i.unitPrice,
+    totalPrice: i.totalPrice,
+  }));
+
   const transaction = await withTimeout(
     prisma.transaction.create({
       data: {
@@ -541,7 +557,7 @@ export async function createTransaction(data: {
         grandTotal: data.grandTotal,
         returnForReceiptNumber: data.returnForReceiptNumber,
         isReturned: data.transactionType === "Return",
-        items: { create: data.items },
+        items: { create: itemsWithNames },
       },
     }),
     DB_TIMEOUT,
@@ -601,8 +617,8 @@ export async function createTransaction(data: {
               receiptNumber,
               data.buyerName,
               buyer.email!,
-              data.items.map((i) => ({
-                productName: `Product #${i.productId}`,
+              itemsWithNames.map((i) => ({
+                productName: i.productName,
                 quantity: i.quantity,
                 unitPrice: i.unitPrice,
                 totalPrice: i.totalPrice,
@@ -693,10 +709,23 @@ export async function updateTransaction(
 
   // If items changed, recalculate stock deltas
   if (data.items) {
-    await prisma.transactionItem.deleteMany({ where: { transactionId: id } });
-    await prisma.transactionItem.createMany({
-      data: data.items.map((i) => ({ ...i, transactionId: id })),
+    const prodIds = [...new Set(data.items.map((i) => i.productId))];
+    const prods = await prisma.product.findMany({
+      where: { id: { in: prodIds } },
+      select: { id: true, productName: true },
     });
+    const nameMap = new Map(prods.map((p) => [p.id, p.productName]));
+    const itemsWithNames = data.items.map((i) => ({
+      productId: i.productId,
+      productName: nameMap.get(i.productId) || `Product #${i.productId}`,
+      quantity: i.quantity,
+      unitPrice: i.unitPrice,
+      totalPrice: i.totalPrice,
+      transactionId: id,
+    }));
+
+    await prisma.transactionItem.deleteMany({ where: { transactionId: id } });
+    await prisma.transactionItem.createMany({ data: itemsWithNames });
 
     // Recalculate stock based on delta between old and new items
     for (const newItem of data.items) {
@@ -1339,7 +1368,7 @@ export async function getTopProductsByRevenue(
   });
   const map = new Map<string, { qty: number; total: number }>();
   for (const item of items) {
-    const name = item.productName || "Unknown";
+    const name = item.productName || `Deleted Product`;
     const existing = map.get(name) || { qty: 0, total: 0 };
     existing.qty += item.quantity || 0;
     existing.total += Number(item.totalPrice || 0);

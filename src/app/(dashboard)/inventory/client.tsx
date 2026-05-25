@@ -11,6 +11,8 @@ import {
   Pencil,
   Trash2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   createProduct,
@@ -74,6 +76,9 @@ export function InventoryClient({
     imageUrl: "",
   };
 
+  const [page, setPage] = useState(1);
+  const perPage = 15;
+
 
   const filtered = initialProducts.filter((p) => {
     if (search && !p.productName.toLowerCase().includes(search.toLowerCase()))
@@ -88,6 +93,42 @@ export function InventoryClient({
     if (filterStatus === "out" && p.quantity !== 0) return false;
     return true;
   });
+
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const paginated = filtered.slice((page - 1) * perPage, page * perPage);
+
+  function renderPageNumbers() {
+    const pages: React.ReactNode[] = [];
+    const maxVisible = 7;
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(
+          <button key={i} onClick={() => setPage(i)}
+            className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
+            {i}
+          </button>
+        );
+      }
+    } else {
+      let start = Math.max(1, page - 3);
+      let end = Math.min(totalPages, page + 3);
+      if (start > 1) {
+        pages.push(<span key="start-ellipsis" className="px-1 text-[#94a3b8] text-xs">...</span>);
+      }
+      for (let i = start; i <= end; i++) {
+        pages.push(
+          <button key={i} onClick={() => setPage(i)}
+            className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
+            {i}
+          </button>
+        );
+      }
+      if (end < totalPages) {
+        pages.push(<span key="end-ellipsis" className="px-1 text-[#94a3b8] text-xs">...</span>);
+      }
+    }
+    return pages;
+  }
 
   function statusBadge(product: Product) {
     if (product.quantity === 0)
@@ -207,7 +248,7 @@ export function InventoryClient({
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search SKU, Name..."
             className="w-full h-10 pl-10 pr-4 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
@@ -215,7 +256,7 @@ export function InventoryClient({
         <div className="flex gap-2 w-full lg:w-auto">
           <select
             value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
+            onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
             className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
             <option value="">Category</option>
@@ -223,7 +264,7 @@ export function InventoryClient({
           </select>
           <select
             value={filterSupplier}
-            onChange={(e) => setFilterSupplier(e.target.value)}
+            onChange={(e) => { setFilterSupplier(e.target.value); setPage(1); }}
             className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
             <option value="">Supplier</option>
@@ -235,7 +276,7 @@ export function InventoryClient({
           </select>
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
             className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
             <option value="">Status</option>
@@ -320,7 +361,7 @@ export function InventoryClient({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
-              {filtered.map((product, i) => {
+              {paginated.map((product, i) => {
                 const badge = statusBadge(product);
                 const imgUrl = (product as any).imageUrl;
                 return (
@@ -399,8 +440,21 @@ export function InventoryClient({
         </div>
         <div className="border-t border-[#e2e8f0] p-4 flex items-center justify-between text-sm text-[#64748b]">
           <span>
-            Showing {filtered.length} of {initialProducts.length} items
+            Showing {paginated.length} of {filtered.length} items
           </span>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              {renderPageNumbers()}
+              <button disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
