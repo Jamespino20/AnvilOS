@@ -14,6 +14,7 @@ import {
   getSuppliers as fetchSuppliers,
   createSupplier,
   updateSupplier,
+  deleteSupplier,
 } from "@/actions";
 import {
   Plus,
@@ -26,9 +27,13 @@ import {
   Edit3,
   Save,
   Search,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
 import { CSVImportButton } from "@/components/csv-import";
 import type { Supplier } from "@prisma/client";
@@ -41,6 +46,9 @@ export default function SuppliersPage() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
@@ -59,7 +67,6 @@ export default function SuppliersPage() {
     contactNumber: "",
     email: "",
     address: "",
-    isAvailable: true,
   });
 
   useEffect(() => {
@@ -68,6 +75,25 @@ export default function SuppliersPage() {
       setLoading(false);
     });
   }, []);
+
+  const filtered = suppliers.filter((s) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      s.supplierName.toLowerCase().includes(q) ||
+      (s.contactName || "").toLowerCase().includes(q) ||
+      (s.email || "").toLowerCase().includes(q)
+    );
+  });
+
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const paged = filtered.slice((page - 1) * perPage, page * perPage);
+
+  function refetch() {
+    fetchSuppliers().then((data) => {
+      setSuppliers(data as any);
+    });
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -100,7 +126,6 @@ export default function SuppliersPage() {
       contactNumber: s.contactNumber || "",
       email: s.email || "",
       address: s.address || "",
-      isAvailable: s.isAvailable,
     });
   }
 
@@ -120,18 +145,55 @@ export default function SuppliersPage() {
     }
   }
 
-  const filtered = suppliers.filter((s) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      s.supplierName.toLowerCase().includes(q) ||
-      (s.contactName || "").toLowerCase().includes(q) ||
-      (s.email || "").toLowerCase().includes(q)
-    );
-  });
+  async function handleDelete() {
+    if (deleteTarget === null) return;
+    setDeleteLoading(true);
+    setDeleteError("");
+    try {
+      await deleteSupplier(deleteTarget);
+      setSuppliers((prev) => prev.filter((s) => s.id !== deleteTarget));
+      setDeleteTarget(null);
+      router.refresh();
+    } catch (e: any) {
+      setDeleteError(e.message || "Failed to delete supplier");
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
 
-  const totalPages = Math.ceil(filtered.length / perPage);
-  const paged = filtered.slice((page - 1) * perPage, page * perPage);
+  function renderPageNumbers() {
+    const pages: (number | "ellipsis")[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (page > 3) pages.push("ellipsis");
+      const start = Math.max(2, page - 1);
+      const end = Math.min(totalPages - 1, page + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (page < totalPages - 2) pages.push("ellipsis");
+      pages.push(totalPages);
+    }
+    return pages.map((p, i) =>
+      p === "ellipsis" ? (
+        <span key={`e${i}`} className="px-1 text-[#94a3b8] select-none">
+          …
+        </span>
+      ) : (
+        <button
+          key={p}
+          onClick={() => setPage(p)}
+          className={`min-w-[32px] h-8 text-xs font-semibold rounded-lg transition-all ${
+            p === page
+              ? "bg-[#fd761a] text-white shadow-sm"
+              : "text-[#64748b] hover:bg-[#f1f5f9]"
+          }`}
+        >
+          {p}
+        </button>
+      ),
+    );
+  }
 
   if (loading)
     return (
@@ -143,18 +205,26 @@ export default function SuppliersPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <PageHeader
-          title="Supplier Management"
-          subtitle="Manage your supply chain partners — add, edit, and toggle supplier availability."
-        />
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
-          >
-            <Plus className="h-4 w-4" /> Add Supplier
-          </button>
+      <PageHeader
+        title="Supplier Management"
+        subtitle="Manage your supply chain partners — add, edit, and remove suppliers."
+      />
+
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
+        <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search supplier name, contact, email..."
+            className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
+          />
+        </div>
+        <div className="flex gap-2 w-full lg:w-auto flex-wrap">
           <ExportDialog
             filename={`cwl-hardware-suppliers-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={[
@@ -163,7 +233,6 @@ export default function SuppliersPage() {
               { key: "contactNumber", label: "Contact Number" },
               { key: "email", label: "Email" },
               { key: "address", label: "Address" },
-              { key: "isAvailable", label: "Status" },
             ]}
             fetchRows={async (selectedColumns) => suppliers.map((s) =>
               selectedColumns.map((key) => {
@@ -172,7 +241,6 @@ export default function SuppliersPage() {
                 if (key === "contactNumber") return s.contactNumber || "";
                 if (key === "email") return s.email || "";
                 if (key === "address") return s.address || "";
-                if (key === "isAvailable") return s.isAvailable ? "Active" : "Inactive";
                 return "";
               })
             )}
@@ -184,21 +252,13 @@ export default function SuppliersPage() {
             onImported={() => window.location.reload()}
             title="Import suppliers from CSV"
           />
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all duration-200 active:scale-[0.98]"
+          >
+            <Plus className="h-4 w-4" /> Add Supplier
+          </button>
         </div>
-      </div>
-
-      <div className="relative max-w-xs">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          placeholder="Search suppliers..."
-          className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-        />
       </div>
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden">
@@ -222,12 +282,9 @@ export default function SuppliersPage() {
                   Address
                 </th>
                 <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Products
                 </th>
-                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-24">
                   Actions
                 </th>
               </tr>
@@ -256,30 +313,37 @@ export default function SuppliersPage() {
                   <td className="p-4 text-[#64748b] max-w-[200px] truncate">
                     {s.address || "—"}
                   </td>
-                  <td className="p-4 text-center">
-                    <span
-                      className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${s.isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}
-                    >
-                      {s.isAvailable ? "Active" : "Inactive"}
-                    </span>
-                  </td>
                   <td className="p-4 text-center text-[#64748b]">
                     {s._count.products}
                   </td>
                   <td className="p-4 text-center">
-                    <button
-                      onClick={() => openEdit(s)}
-                      className="p-2 text-[#94a3b8] hover:text-[#fd761a] hover:bg-[#fff5ed] rounded-lg transition-all"
-                      title="Edit supplier details"
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => openEdit(s)}
+                        className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all"
+                        title="Edit supplier details"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                      {s._count.products === 0 && (
+                        <button
+                          onClick={() => {
+                            setDeleteTarget(s.id);
+                            setDeleteError("");
+                          }}
+                          className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all"
+                          title="Delete supplier"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-[#94a3b8]">
+                  <td colSpan={7} className="p-8 text-center text-[#94a3b8]">
                     No suppliers registered yet
                   </td>
                 </tr>
@@ -287,35 +351,48 @@ export default function SuppliersPage() {
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-[#e2e8f0] bg-[#fafbfc]">
+            <span className="text-xs text-[#64748b]">
+              Showing {paged.length} of {filtered.length} suppliers
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="h-8 w-8 flex items-center justify-center rounded-lg text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:pointer-events-none transition-all"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              {renderPageNumbers()}
+              <button
+                onClick={() => setPage(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+                className="h-8 w-8 flex items-center justify-center rounded-lg text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:pointer-events-none transition-all"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 text-sm">
-          <button
-            onClick={() => setPage(Math.max(1, page - 1))}
-            disabled={page === 1}
-            className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all"
-          >
-            Prev
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPage(p)}
-              className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${p === page ? "bg-[#fd761a] text-white" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}
-            >
-              {p}
-            </button>
-          ))}
-          <button
-            onClick={() => setPage(Math.min(totalPages, page + 1))}
-            disabled={page === totalPages}
-            className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-[#64748b] hover:bg-white disabled:opacity-50 transition-all"
-          >
-            Next
-          </button>
-        </div>
-      )}
+      {/* Delete Confirm Modal */}
+      <ConfirmModal
+        open={deleteTarget !== null}
+        onClose={() => {
+          setDeleteTarget(null);
+          setDeleteError("");
+        }}
+        onConfirm={handleDelete}
+        title="Delete Supplier"
+        message={
+          deleteError ||
+          "Are you sure you want to delete this supplier? This action cannot be undone."
+        }
+        confirmLabel={deleteLoading ? "Deleting..." : "Delete"}
+        variant="danger"
+      />
 
       {/* Edit Supplier Modal */}
       {editId && (
@@ -405,22 +482,6 @@ export default function SuppliersPage() {
                   }
                   className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
                 />
-              </div>
-              <div className="flex items-center gap-3">
-                <label className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
-                  Status
-                </label>
-                <button
-                  onClick={() =>
-                    setEditForm({
-                      ...editForm,
-                      isAvailable: !editForm.isAvailable,
-                    })
-                  }
-                  className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${editForm.isAvailable ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-700 border border-rose-200"}`}
-                >
-                  {editForm.isAvailable ? "Active" : "Inactive"}
-                </button>
               </div>
               <div className="flex gap-3 pt-2">
                 <button

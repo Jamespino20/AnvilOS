@@ -302,6 +302,19 @@ export async function updateSupplier(
   return s;
 }
 
+export async function deleteSupplier(id: number) {
+  const supplier = await prisma.supplier.findUniqueOrThrow({
+    where: { id },
+    include: { _count: { select: { products: true } } },
+  });
+  if (supplier._count.products > 0) {
+    throw new Error("Cannot delete supplier with associated products");
+  }
+  await prisma.supplier.delete({ where: { id } });
+  await logAudit("SupplierPanel", "Delete Supplier", `${supplier.supplierName} deleted`);
+  revalidatePath("/suppliers");
+}
+
 // ─────────── Transactions ───────────
 
 export async function getTransactions(opts?: {

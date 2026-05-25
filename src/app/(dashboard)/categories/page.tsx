@@ -26,6 +26,7 @@ import {
   FolderTree,
   ChevronLeft,
   ChevronRight,
+  Search,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
@@ -45,6 +46,7 @@ export default function CategoriesPage() {
     })[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
@@ -64,8 +66,11 @@ export default function CategoriesPage() {
     });
   }, []);
 
-  const totalPages = Math.ceil(categories.length / PER_PAGE);
-  const paginated = categories.slice(
+  const filtered = categories.filter((c) =>
+    !search || c.name.toLowerCase().includes(search.toLowerCase())
+  );
+  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+  const paginated = filtered.slice(
     (page - 1) * PER_PAGE,
     page * PER_PAGE,
   );
@@ -183,22 +188,35 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <PageHeader
-          title="Category Management"
-          subtitle="Organize your product catalog — add, edit, and remove categories."
-        />
-        <div className="flex items-center gap-2 flex-wrap shrink-0">
+      <PageHeader
+        title="Category Management"
+        subtitle="Organize your product catalog — add, edit, and remove categories."
+      />
+
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
+        <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search categories..."
+            className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
+          />
+        </div>
+        <div className="flex gap-2 w-full lg:w-auto flex-wrap">
           <ExportDialog
             filename="categories"
             allColumns={[
               { key: "name", label: "Name" },
               { key: "_count.products", label: "Products" },
               { key: "createdAt", label: "Created" },
-              { key: "isAvailable", label: "Status" },
             ]}
             fetchRows={async (selected) =>
-              categories.map((cat) =>
+              filtered.map((cat) =>
                 selected.map((key) => {
                   if (key === "name") return cat.name;
                   if (key === "_count.products")
@@ -211,8 +229,6 @@ export default function CategoriesPage() {
                           day: "numeric",
                         })
                       : "—";
-                  if (key === "isAvailable")
-                    return cat.isAvailable ? "Active" : "Inactive";
                   return "";
                 }),
               )
@@ -225,9 +241,9 @@ export default function CategoriesPage() {
               setError("");
               setCatName("");
             }}
-            className="flex items-center gap-2 px-3 sm:px-5 py-2 shrink-0 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
+            className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
           >
-            <Plus className="h-4 w-4" /> Add Category
+            <Plus className="h-4 w-4" /> <span className="sm:inline">Add Category</span>
           </button>
         </div>
       </div>
@@ -245,9 +261,6 @@ export default function CategoriesPage() {
                 </th>
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Created
-                </th>
-                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Status
                 </th>
                 <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-28">
                   Actions
@@ -286,17 +299,6 @@ export default function CategoriesPage() {
                       : "—"}
                   </td>
                   <td className="p-4 text-center">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                        cat.isAvailable
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : "bg-rose-50 text-rose-700 border border-rose-200"
-                      }`}
-                    >
-                      {cat.isAvailable ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={() => openEdit(cat)}
@@ -321,7 +323,7 @@ export default function CategoriesPage() {
               ))}
               {paginated.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-[#94a3b8]">
+                  <td colSpan={4} className="p-8 text-center text-[#94a3b8]">
                     No categories found. Click "Add Category" to create one.
                   </td>
                 </tr>
@@ -333,8 +335,8 @@ export default function CategoriesPage() {
         {categories.length > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-[#e2e8f0] bg-[#fafbfc]">
             <span className="text-xs text-[#64748b]">
-              {categories.length}{" "}
-              {categories.length === 1 ? "category" : "categories"}
+              Showing {paginated.length} of {filtered.length}{" "}
+              {filtered.length === 1 ? "category" : "categories"}
             </span>
             <div className="flex items-center gap-1">
               <button

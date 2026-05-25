@@ -212,21 +212,21 @@ export function InventoryClient({
             className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full lg:w-auto">
+        <div className="grid grid-cols-3 gap-2 w-full lg:w-auto">
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[140px]"
           >
-            <option value="">All Categories</option>
+            <option value="">Category</option>
             {flatCategoryOptions()}
           </select>
           <select
             value={filterSupplier}
             onChange={(e) => setFilterSupplier(e.target.value)}
-            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[140px]"
           >
-            <option value="">All Suppliers</option>
+            <option value="">Supplier</option>
             {suppliers.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.supplierName}
@@ -236,9 +236,9 @@ export function InventoryClient({
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="col-span-2 sm:col-span-1 px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[120px]"
           >
-            <option value="">All Status</option>
+            <option value="">Status</option>
             <option value="low">Low Stock</option>
             <option value="out">Out of Stock</option>
           </select>
