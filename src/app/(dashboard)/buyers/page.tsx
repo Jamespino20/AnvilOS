@@ -35,7 +35,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
-import { CSVImportButton } from "@/components/csv-import";
+import { ImportButton } from "@/components/import-button";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[]; buyer?: { email?: string | null } | null };
@@ -56,6 +56,7 @@ export default function BuyersPage() {
   const [search, setSearch] = useState("");
   const [minOrders, setMinOrders] = useState("");
   const [selectedBuyer, setSelectedBuyer] = useState<string | null>(null);
+  const [buyerType, setBuyerType] = useState<"all" | "WalkIn" | "PO">("all");
   const [history, setHistory] = useState<TxnWithItems[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [expandedReceipt, setExpandedReceipt] = useState<number | null>(null);
@@ -69,12 +70,14 @@ export default function BuyersPage() {
   const [detailPage, setDetailPage] = useState(1);
 
   useEffect(() => {
-    Promise.all([getBuyers(), getProducts({})]).then(([data, prods]) => {
+    setLoading(true);
+    Promise.all([getBuyers(buyerType === "all" ? undefined : buyerType), getProducts({})]).then(([data, prods]) => {
       setBuyers(data as Buyer[]);
       setProducts(prods as Product[]);
       setLoading(false);
+      setPage(1);
     });
-  }, []);
+  }, [buyerType]);
 
   async function selectBuyer(name: string) {
     setSelectedBuyer(name);
@@ -499,9 +502,9 @@ export default function BuyersPage() {
         title="Buyers"
         subtitle={`${filtered.length} buyer${filtered.length !== 1 ? "s" : ""} found — view customer purchase histories and contact details.`}
       />
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
+        <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input
             type="text"
             value={search}
@@ -510,26 +513,39 @@ export default function BuyersPage() {
               setPage(1);
             }}
             placeholder="Search buyers..."
-            className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+            className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
         </div>
-        <div className="flex items-center gap-2 text-sm text-[#64748b]">
-          <span className="text-[10px] font-semibold uppercase">
-            Min Orders
-          </span>
-          <input
-            type="number"
-            min={0}
-            value={minOrders}
-            onChange={(e) => {
-              setMinOrders(e.target.value);
-              setPage(1);
-            }}
-            placeholder="0"
-            className="w-16 px-2 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
-          />
+        <div className="flex items-center gap-1.5 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-1">
+          {(["all", "WalkIn", "PO"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setBuyerType(t)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                buyerType === t
+                  ? "bg-[#fd761a] text-white shadow-sm"
+                  : "text-[#64748b] hover:text-[#0e212c]"
+              }`}
+            >
+              {t === "all" ? "All" : t === "WalkIn" ? "Walk-In" : "P.O."}
+            </button>
+          ))}
         </div>
-        <div className="flex items-center gap-2 ml-auto flex-wrap">
+        <div className="flex gap-2 w-full lg:w-auto flex-wrap items-center">
+          <div className="flex items-center gap-2 text-sm text-[#64748b]">
+            <span className="text-[10px] font-semibold uppercase">Min Orders</span>
+            <input
+              type="number"
+              min={0}
+              value={minOrders}
+              onChange={(e) => {
+                setMinOrders(e.target.value);
+                setPage(1);
+              }}
+              placeholder="0"
+              className="w-16 px-2 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+            />
+          </div>
           <ExportDialog
             filename={`cwl-hardware-buyers-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={[
@@ -554,10 +570,10 @@ export default function BuyersPage() {
             label="Export"
             title="Export buyers list"
           />
-          <CSVImportButton
+          <ImportButton
             table="buyers"
             onImported={() => window.location.reload()}
-            title="Import buyers from CSV"
+            title="Import buyers from CSV or XLSX"
           />
         </div>
       </div>

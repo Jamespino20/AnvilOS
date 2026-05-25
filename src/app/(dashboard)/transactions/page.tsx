@@ -28,7 +28,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
-import { CSVImportButton } from "@/components/csv-import";
+import { ImportButton } from "@/components/import-button";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
@@ -162,12 +162,72 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <PageHeader
-          title="Transactions"
-          subtitle="View and manage all sales, returns, restocks, and adjustments."
-        />
-        <div className="flex items-center gap-2 flex-wrap">
+      <PageHeader
+        title="Transactions"
+        subtitle="View and manage all sales, returns, restocks, and adjustments."
+      />
+
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
+        <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search receipt..."
+            className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
+          />
+        </div>
+        <div className="flex gap-2 w-full lg:w-auto flex-wrap">
+          <div className="flex items-center gap-2 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-1">
+            {DATE_SCOPES.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => {
+                  setDateScope(s.value);
+                  setPage(1);
+                }}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${dateScope === s.value ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:text-[#0e212c]"}`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <select
+            value={typeFilter}
+            onChange={(e) => {
+              setTypeFilter(e.target.value);
+              setPage(1);
+            }}
+            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[140px]"
+          >
+            <option value="">Type</option>
+            {TYPE_OPTIONS.slice(1).map((t) => (
+              <option key={t} value={t}>
+                {t.replace(/([A-Z])/g, " $1").trim()}
+              </option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[120px]"
+          >
+            <option value="">Status</option>
+            {STATUS_OPTIONS.slice(1).map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex gap-2 w-full lg:w-auto flex-wrap">
           <ExportDialog
             filename={`cwl-hardware-transactions-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={[
@@ -194,72 +254,11 @@ export default function TransactionsPage() {
             label="Export"
             title="Export transactions"
           />
-          <CSVImportButton
+          <ImportButton
             table="transactions"
             onImported={() => window.location.reload()}
-            title="Import transactions from CSV"
+            title="Import transactions from CSV or XLSX"
           />
-        </div>
-        <div className="flex items-center gap-2 bg-white border border-[#e2e8f0] rounded-lg p-1 w-full lg:w-auto">
-          {DATE_SCOPES.map((s) => (
-            <button
-              key={s.value}
-              onClick={() => {
-                setDateScope(s.value);
-                setPage(1);
-              }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${dateScope === s.value ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:text-[#0e212c]"}`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-          <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              placeholder="Search receipt..."
-              className="w-full pl-9 pr-3 py-2 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-            />
-          </div>
-          <div className="flex gap-2">
-            <select
-              value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value);
-                setPage(1);
-              }}
-              className="flex-1 sm:w-40 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-            >
-              <option value="">All Types</option>
-              {TYPE_OPTIONS.slice(1).map((t) => (
-                <option key={t} value={t}>
-                  {t.replace(/([A-Z])/g, " $1").trim()}
-                </option>
-              ))}
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="flex-1 sm:w-40 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-            >
-              <option value="">All Status</option>
-              {STATUS_OPTIONS.slice(1).map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
       </div>
 

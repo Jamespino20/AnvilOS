@@ -843,12 +843,27 @@ export async function getUnreadNotificationCount() {
 
 // ─────────── Buyers ───────────
 
-export async function getBuyers() {
-  const buyerRecords = await prisma.buyer.findMany({
-    orderBy: { totalSpent: "desc" },
-  });
+export async function getBuyers(type?: "WalkIn" | "PO") {
+  const nameFilter =
+    type === "WalkIn"
+      ? await prisma.transaction
+          .groupBy({ by: ["buyerName"], where: { transactionType: "SaleWalkIn" } })
+          .then((r) => r.map((x) => x.buyerName))
+      : type === "PO"
+        ? await prisma.transaction
+            .groupBy({ by: ["buyerName"], where: { transactionType: "SalePO" } })
+            .then((r) => r.map((x) => x.buyerName))
+        : null;
 
-  // Get latest transaction date per buyer
+  const buyerRecords = nameFilter
+    ? await prisma.buyer.findMany({
+        where: { name: { in: nameFilter } },
+        orderBy: { totalSpent: "desc" },
+      })
+    : await prisma.buyer.findMany({
+        orderBy: { totalSpent: "desc" },
+      });
+
   const latest = await prisma.transaction.groupBy({
     by: ["buyerName"],
     _max: { transactionDate: true },
@@ -869,17 +884,19 @@ export async function getBuyers() {
 
   // Include legacy buyers from transactions not yet in Buyer table
   const existingNames = new Set(buyerRecords.map((b) => b.name));
-  if (existingNames.size > 0) {
+  const legacyWhere: any = { buyerName: { notIn: Array.from(existingNames) } };
+  if (nameFilter) legacyWhere.buyerName = { in: nameFilter, notIn: Array.from(existingNames) };
+  if (existingNames.size > 0 && !(nameFilter && nameFilter.length === 0)) {
     const legacyBuyers = await prisma.transaction.groupBy({
       by: ["buyerName"],
       _count: { id: true },
       _sum: { grandTotal: true },
-      where: { buyerName: { notIn: Array.from(existingNames) } },
+      where: legacyWhere,
     });
     const legacyLatest = await prisma.transaction.groupBy({
       by: ["buyerName"],
       _max: { transactionDate: true, buyerAddress: true, buyerContact: true },
-      where: { buyerName: { notIn: Array.from(existingNames) } },
+      where: legacyWhere,
     });
     const legacyLatestMap = new Map(
       legacyLatest.map((l) => [

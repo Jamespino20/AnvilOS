@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
+import { ExportDialog } from "@/components/export-dialog";
+import { ImportButton } from "@/components/import-button";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
@@ -140,12 +142,13 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <PageHeader
-          title="Purchase Orders"
-          subtitle={`${orders.length} ongoing order${orders.length !== 1 ? "s" : ""} — manage purchase orders, update items, and track delivery status.`}
-        />
-        <div className="relative w-72">
+      <PageHeader
+        title="Purchase Orders"
+        subtitle={`${orders.length} ongoing order${orders.length !== 1 ? "s" : ""} — manage purchase orders, update items, and track delivery status.`}
+      />
+
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
+        <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input
             type="text"
@@ -154,6 +157,29 @@ export default function OrdersPage() {
             placeholder="Search by buyer or receipt..."
             className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
+        </div>
+        <div className="flex gap-2 w-full lg:w-auto flex-wrap">
+          <ExportDialog
+            filename={`cwl-hardware-purchase-orders-${new Date().toISOString().slice(0, 10)}.csv`}
+            allColumns={[
+              { key: "receiptNumber", label: "Receipt #" },
+              { key: "buyerName", label: "Buyer" },
+              { key: "items", label: "Items" },
+              { key: "grandTotal", label: "Total" },
+              { key: "transactionDate", label: "Date" },
+            ]}
+            fetchRows={async (selectedColumns) => filtered.map((order) =>
+              selectedColumns.map((key) => {
+                if (key === "receiptNumber") return String(order.receiptNumber);
+                if (key === "buyerName") return order.buyerName;
+                if (key === "items") return String(order.items.length);
+                if (key === "grandTotal") return `₱${Number(order.grandTotal || 0).toLocaleString()}`;
+                if (key === "transactionDate") return new Date(order.transactionDate).toLocaleDateString("en-PH");
+                return "";
+              })
+            )}
+          />
+          <ImportButton table="transactions" onImported={() => window.location.reload()} title="Import purchase orders from CSV or XLSX" />
         </div>
       </div>
 
@@ -215,6 +241,24 @@ export default function OrdersPage() {
                         { month: "short", day: "numeric" },
                       )}
                     </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                      Delivery
+                    </p>
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold mt-0.5 ${
+                        order.deliveryMethod === "Delivery"
+                          ? "bg-sky-50 text-sky-700 border border-sky-200"
+                          : order.deliveryMethod === "COD"
+                            ? "bg-violet-50 text-violet-700 border border-violet-200"
+                            : order.deliveryMethod === "Pickup"
+                              ? "bg-amber-50 text-amber-700 border border-amber-200"
+                              : "bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0]"
+                      }`}
+                    >
+                      {order.deliveryMethod || "WalkIn"}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -282,20 +326,45 @@ export default function OrdersPage() {
                       ))}
                     </tbody>
                   </table>
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex flex-wrap items-center gap-4 mt-3">
                     <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
                       Address:
                     </span>
                     <span className="text-sm text-[#64748b]">
                       {order.buyerAddress || "N/A"}
                     </span>
-                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase ml-4">
+                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
                       Contact:
                     </span>
                     <span className="text-sm text-[#64748b]">
                       {order.buyerContact || "N/A"}
                     </span>
                   </div>
+                  {(order.deliveryMethod === "Delivery" || order.deliveryMethod === "COD" || order.deliveryMethod === "Pickup") && (
+                    <div className="mt-4 pt-3 border-t border-[#e2e8f0]">
+                      <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-2">
+                        {order.deliveryMethod === "Delivery" ? "Delivery Tracking" : order.deliveryMethod === "COD" ? "COD Tracking" : "Pickup Tracking"}
+                      </p>
+                      <div className="flex items-center gap-0">
+                        {["Placed", "Processing", order.deliveryMethod === "Pickup" ? "Ready" : "On the Way", "Completed"].map((stage, i, arr) => {
+                          const currentStage = order.transactionStatus === "Completed" ? 3 : order.transactionStatus === "Cancelled" ? -1 : 1;
+                          const isActive = i <= currentStage;
+                          const isCurrent = i === currentStage;
+                          return (
+                            <div key={stage} className="flex items-center">
+                              <div className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold shrink-0 ${
+                                isActive ? "bg-emerald-100 text-emerald-700" : "bg-[#f1f5f9] text-[#94a3b8]"
+                              } ${isCurrent ? "ring-2 ring-emerald-300" : ""}`}>
+                                {isActive ? "✓" : i + 1}
+                              </div>
+                              <span className={`mx-1 text-[9px] whitespace-nowrap ${isActive ? "text-[#0e212c] font-medium" : "text-[#94a3b8]"}`}>{stage}</span>
+                              {i < arr.length - 1 && <div className="w-4 h-px bg-[#e2e8f0]" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

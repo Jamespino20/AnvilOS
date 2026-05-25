@@ -35,7 +35,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
-import { CSVImportButton } from "@/components/csv-import";
+import { ImportButton } from "@/components/import-button";
 import type { Supplier } from "@prisma/client";
 
 export default function SuppliersPage() {
@@ -247,7 +247,7 @@ export default function SuppliersPage() {
             label="Export"
             title="Export suppliers"
           />
-          <CSVImportButton
+          <ImportButton
             table="suppliers"
             onImported={() => window.location.reload()}
             title="Import suppliers from CSV"

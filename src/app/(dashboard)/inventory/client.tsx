@@ -20,7 +20,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
-import { CSVImportButton } from "@/components/csv-import";
+import { ImportButton } from "@/components/import-button";
 import type { Product, Category, Supplier } from "@prisma/client";
 
 interface Props {
@@ -224,7 +224,7 @@ export function InventoryClient({
           <select
             value={filterSupplier}
             onChange={(e) => setFilterSupplier(e.target.value)}
-            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[140px]"
+            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] min-w-[140px]"
           >
             <option value="">Supplier</option>
             {suppliers.map((s) => (
@@ -277,7 +277,7 @@ export function InventoryClient({
             label="Export"
             title="Export inventory"
           />
-          <CSVImportButton table="inventory" onImported={() => window.location.reload()} title="Import products from CSV" />
+          <ImportButton table="inventory" onImported={() => window.location.reload()} title="Import products from CSV" />
         </div>
       </div>
 

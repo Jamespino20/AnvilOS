@@ -32,7 +32,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { CardSkeleton } from "@/components/ui/skeleton";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
-import { CSVImportButton } from "@/components/csv-import";
+import { ImportButton } from "@/components/import-button";
 import type { Category } from "@prisma/client";
 
 const PER_PAGE = 10;
@@ -234,7 +234,7 @@ export default function CategoriesPage() {
               )
             }
           />
-          <CSVImportButton table="categories" onImported={refetch} />
+          <ImportButton table="categories" onImported={refetch} />
           <button
             onClick={() => {
               setShowAdd(true);
