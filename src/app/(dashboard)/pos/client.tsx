@@ -53,6 +53,7 @@ interface Props {
 interface CartItem {
   product: Product;
   quantity: number;
+  originalQty?: number;
 }
 
 const PAYMENT_METHODS = ["Cash", "Card", "GCash", "Credit"];
@@ -118,12 +119,13 @@ export function POSClient({ products, buyers }: Props) {
     setCart((prev) => {
       const existing = prev.find((c) => c.product.id === product.id);
       if (existing) {
-        const maxQty = product.quantity + existing.quantity;
+        const maxQty = txnType === "Return" ? (existing.originalQty || product.quantity) : product.quantity;
         return prev.map((c) =>
           c.product.id === product.id ? { ...c, quantity: Math.min(c.quantity + 1, maxQty) } : c,
         );
       }
-      return [...prev, { product, quantity: Math.min(1, product.quantity || 0) || 1 }];
+      const maxInit = txnType === "Return" ? 0 : Math.min(1, product.quantity || 0) || 1;
+      return [...prev, { product, quantity: maxInit }];
     });
   }
 
@@ -131,9 +133,9 @@ export function POSClient({ products, buyers }: Props) {
     setCart((prev) =>
       prev
         .map((c) => {
-          const maxQty = c.product.quantity + (delta > 0 ? 0 : 0);
+          const maxQty = txnType === "Return" ? (c.originalQty || c.product.quantity) : c.product.quantity;
           return c.product.id === productId
-            ? { ...c, quantity: Math.min(Math.max(1, c.quantity + delta), c.product.quantity) }
+            ? { ...c, quantity: Math.min(Math.max(0, c.quantity + delta), maxQty) }
             : c;
         })
         .filter((c) => c.quantity > 0),
@@ -146,11 +148,12 @@ export function POSClient({ products, buyers }: Props) {
 
   function setCartQty(productId: number, qty: number) {
     setCart((prev) =>
-      prev.map((c) =>
-        c.product.id === productId
-          ? { ...c, quantity: Math.min(Math.max(1, qty), c.product.quantity) }
-          : c,
-      ),
+      prev.map((c) => {
+        if (c.product.id !== productId) return c;
+        const maxQty = txnType === "Return" ? (c.originalQty || c.product.quantity) : c.product.quantity;
+        const minQty = txnType === "Return" ? 0 : 1;
+        return { ...c, quantity: Math.min(Math.max(minQty, qty), maxQty) };
+      }),
     );
   }
 
@@ -161,7 +164,8 @@ export function POSClient({ products, buyers }: Props) {
 
   function commitQtyEdit(productId: number) {
     const val = parseInt(qtyInput, 10);
-    if (!isNaN(val) && val > 0) setCartQty(productId, val);
+    const minVal = txnType === "Return" ? 0 : 1;
+    if (!isNaN(val) && val >= minVal) setCartQty(productId, val);
     setEditingQty(null);
     setQtyInput("");
   }
@@ -176,7 +180,8 @@ export function POSClient({ products, buyers }: Props) {
   );
 
   async function handleCheckout() {
-    if (cart.length === 0 || !buyerName) return;
+    const hasItems = txnType === "Return" ? cart.some((c) => c.quantity > 0) : cart.length > 0;
+    if (!hasItems || !buyerName) return;
     setError("");
     setCheckingOut(true);
     try {
@@ -194,8 +199,15 @@ export function POSClient({ products, buyers }: Props) {
           txnType === "Adjustment"
             ? "Completed"
             : "Ongoing",
-        grandTotal,
-        items: cart.map((c) => ({
+        grandTotal: cart
+          .filter((c) => !(txnType === "Return" && c.quantity === 0))
+          .reduce(
+            (sum, c) => sum + Number(c.product.unitPrice) * c.quantity,
+            0,
+          ),
+        items: cart
+          .filter((c) => !(txnType === "Return" && c.quantity === 0))
+          .map((c) => ({
           productId: c.product.id,
           quantity: c.quantity,
           unitPrice: Number(c.product.unitPrice),
@@ -213,7 +225,9 @@ export function POSClient({ products, buyers }: Props) {
         buyerAddress: buyerAddress || undefined,
         buyerContact: buyerContact || undefined,
         grandTotal: grandTotal,
-        items: cart.map((c) => ({
+        items: cart
+          .filter((c) => !(txnType === "Return" && c.quantity === 0))
+          .map((c) => ({
           productName: c.product.productName,
           quantity: c.quantity,
           unitPrice: Number(c.product.unitPrice),
@@ -222,11 +236,13 @@ export function POSClient({ products, buyers }: Props) {
         paymentMethod,
         transactionType: txnType,
       };
+      const doneItems = receiptData.items;
+      const doneGrandTotal = doneItems.reduce((s, i) => s + i.totalPrice, 0);
       setDone({
         receipt: result.receiptNumber,
         buyerName: buyerName,
-        grandTotal: grandTotal,
-        items: receiptData.items,
+        grandTotal: doneGrandTotal,
+        items: doneItems,
       });
       setCart([]);
       setBuyerName("");
@@ -263,7 +279,8 @@ export function POSClient({ products, buyers }: Props) {
         const autoItems = orig.items
           .map((i) => {
             const prod = products.find((p) => p.id === i.productId);
-            return prod ? { product: prod, quantity: i.quantity } : null;
+            if (!prod) return null;
+            return { product: prod, quantity: 0, originalQty: i.quantity ?? 0 } as CartItem;
           })
           .filter((x): x is CartItem => x !== null);
         setCart(autoItems);
@@ -605,6 +622,9 @@ export function POSClient({ products, buyers }: Props) {
                   </p>
                   <p className="text-[10px] text-[#94a3b8] font-mono">
                     ₱{Number(item.product.unitPrice).toLocaleString()}
+                    {item.originalQty !== undefined && (
+                      <span className="ml-2 text-[#94a3b8]">Orig: {item.originalQty}</span>
+                    )}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">

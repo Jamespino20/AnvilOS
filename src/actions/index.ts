@@ -1301,6 +1301,7 @@ export async function getFinancialDashboard(period?: {
           where: {
             transactionDate: { gte: s, lte: e },
             transactionStatus: "Completed",
+            transactionType: { in: ["SaleWalkIn", "SalePO"] },
           },
           _sum: { grandTotal: true },
           _count: true,
