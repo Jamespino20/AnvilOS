@@ -9,7 +9,7 @@ const barOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: { legend: { display: false }, tooltip: { backgroundColor: "#0e212c", titleFont: { size: 11 }, bodyFont: { size: 12 }, padding: 10, cornerRadius: 6 } },
-  scales: { x: { grid: { display: false }, ticks: { color: "#94a3b8", font: { size: 11 } } }, y: { grid: { color: "#e2e8f0" }, ticks: { color: "#94a3b8", font: { size: 11 }, callback: (v: any) => "₱" + v.toLocaleString() } } },
+  scales: { x: { grid: { display: false }, ticks: { color: "#94a3b8", font: { size: 11 } } }, y: { grid: { color: "#e2e8f0" }, ticks: { color: "#94a3b8", font: { size: 11 }, callback: (v: any) => "₱" + v.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) } } },
 };
 
 const doughnutOptions = {

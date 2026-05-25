@@ -258,7 +258,7 @@ async function quickStatusChange(
                 if (key === "transactionType") return t.transactionType.replace(/([A-Z])/g, " $1").trim();
                 if (key === "transactionDate") return new Date(t.transactionDate).toLocaleDateString("en-PH");
                 if (key === "paymentMethod") return t.paymentMethod || "—";
-                if (key === "grandTotal") return `₱${Number(t.grandTotal || 0).toLocaleString()}`;
+                if (key === "grandTotal") return `₱${Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 if (key === "transactionStatus") return t.transactionStatus;
                 return "";
               })
@@ -343,7 +343,7 @@ async function quickStatusChange(
                       {t.paymentMethod || "—"}
                     </td>
                     <td className="p-4 text-right font-mono text-[#0e212c] font-semibold">
-                      ₱{Number(t.grandTotal || 0).toLocaleString()}
+                      ₱{Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="p-4 text-center">
                       <span
@@ -470,10 +470,10 @@ async function quickStatusChange(
                                     {item.quantity}
                                   </td>
                                   <td className="py-1.5 text-right font-mono text-[#64748b]">
-                                    ₱{Number(item.unitPrice).toLocaleString()}
+                                    ₱{Number(item.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </td>
                                   <td className="py-1.5 text-right font-mono text-[#0e212c] font-semibold">
-                                    ₱{Number(item.totalPrice).toLocaleString()}
+                                    ₱{Number(item.totalPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </td>
                                 </tr>
                               ))}

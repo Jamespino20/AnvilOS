@@ -219,15 +219,15 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
   const marginLeft = 14;
   const marginRight = 14;
   const usable = pw - marginLeft - marginRight;
-  const minColWidth = 18;
-  const maxColWidth = 75;
+  const minColWidth = 20;
+  const maxColWidth = 80;
 
   const colWidths = headers.map((h, i) => {
     const maxContent = Math.max(
       h.length,
       ...rows.map((r) => (r[i] || "").length),
     );
-    return Math.min(maxColWidth, Math.max(minColWidth, maxContent * 2.5));
+    return Math.min(maxColWidth, Math.max(minColWidth, maxContent * 3));
   });
   const totalWidth = colWidths.reduce((s, w) => s + w, 0);
   const scaled = colWidths.map((w) => (w / totalWidth) * usable);
@@ -243,8 +243,6 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
       lineColor: [226, 232, 240],
       lineWidth: 0.2,
       textColor: [14, 33, 44],
-      overflow: "linebreak",
-      cellWidth: "auto",
     },
     headStyles: {
       fillColor: [...THEME_BLUE],

@@ -308,7 +308,7 @@ export function InventoryClient({
                 if (key === "productName") return p.productName;
                 if (key === "category") return p.category;
                 if (key === "supplierName") return p.supplierName;
-                if (key === "unitPrice") return `₱${Number(p.unitPrice).toLocaleString()}`;
+                if (key === "unitPrice") return `₱${Number(p.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 if (key === "quantity") return String(p.quantity);
                 if (key === "minThreshold") return String(p.minThreshold);
                 if (key === "isAvailable") return p.quantity === 0 ? "Out of Stock" : p.quantity <= p.minThreshold ? "Low Stock" : "In Stock";
@@ -397,7 +397,7 @@ export function InventoryClient({
                       {product.supplierName}
                     </td>
                     <td className="p-4 text-right font-mono text-[#0e212c]">
-                      ₱{Number(product.unitPrice).toLocaleString()}
+                      ₱{Number(product.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td
                       className={`p-4 text-right font-mono ${product.quantity <= product.minThreshold ? "text-[#fd761a] font-bold" : "text-[#0e212c]"}`}

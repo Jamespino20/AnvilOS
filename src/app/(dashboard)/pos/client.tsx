@@ -336,7 +336,7 @@ export function POSClient({ products, buyers }: Props) {
                 </span>
                 <span className="flex items-center gap-2">
                   <span className="text-lg font-black">
-                    ₱{grandTotal.toLocaleString()}
+                    ₱{grandTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                   <svg
                     className="h-4 w-4"
@@ -413,7 +413,7 @@ export function POSClient({ products, buyers }: Props) {
                 </p>
                 <div className="flex items-baseline justify-between mt-1 gap-1">
                   <p className="text-base sm:text-lg font-bold text-[#fd761a]">
-                    ₱{Number(product.unitPrice).toLocaleString()}
+                    ₱{Number(product.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <p
                     className={`text-[10px] ${product.quantity <= product.minThreshold && product.quantity > 0 ? "text-rose-500 font-bold" : "text-[#94a3b8]"}`}
@@ -621,7 +621,7 @@ export function POSClient({ products, buyers }: Props) {
                     {item.product.productName}
                   </p>
                   <p className="text-[10px] text-[#94a3b8] font-mono">
-                    ₱{Number(item.product.unitPrice).toLocaleString()}
+                    ₱{Number(item.product.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     {item.originalQty !== undefined && (
                       <span className="ml-2 text-[#94a3b8]">Orig: {item.originalQty}</span>
                     )}
@@ -707,8 +707,8 @@ export function POSClient({ products, buyers }: Props) {
                     <div key={item.product.id} className="flex justify-between items-center text-[11px] py-0.5">
                       <span className="flex-1 text-[#0e212c] font-medium truncate pr-1">{item.product.productName}</span>
                       <span className="w-10 text-center text-[#64748b]">{item.quantity}</span>
-                      <span className="w-[72px] text-right font-mono text-[#64748b]">₱{Number(item.product.unitPrice).toLocaleString()}</span>
-                      <span className="w-[72px] text-right font-mono text-[#0e212c] font-semibold">₱{(Number(item.product.unitPrice) * item.quantity).toLocaleString()}</span>
+                      <span className="w-[72px] text-right font-mono text-[#64748b]">₱{Number(item.product.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="w-[72px] text-right font-mono text-[#0e212c] font-semibold">₱{(Number(item.product.unitPrice) * item.quantity).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   ))}
                 </div>
@@ -720,7 +720,7 @@ export function POSClient({ products, buyers }: Props) {
             <div className="flex justify-between items-center">
               <span className="text-sm font-bold text-[#0e212c]">Total</span>
               <span className="text-xl font-black text-[#fd761a]">
-                ₱{grandTotal.toLocaleString()}
+                ₱{grandTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
 

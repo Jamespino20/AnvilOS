@@ -606,7 +606,7 @@ export async function createTransaction(data: {
   await logAudit(
     "POSPanel",
     "Complete Transaction",
-    `${data.transactionType} #${receiptNumber} — ${data.buyerName} — ₱${data.grandTotal.toLocaleString()}`,
+    `${data.transactionType} #${receiptNumber} — ${data.buyerName} — ₱${data.grandTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
   );
 
   // Fire-and-forget email alerts (non-blocking)

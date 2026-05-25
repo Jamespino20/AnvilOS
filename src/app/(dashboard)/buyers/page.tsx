@@ -114,7 +114,7 @@ export default function BuyersPage() {
       `#${t.receiptNumber}`,
       t.transactionType.replace(/([A-Z])/g, " $1").trim(),
       new Date(t.transactionDate).toLocaleDateString("en-PH"),
-      `₱${Number(t.grandTotal || 0).toLocaleString()}`,
+      `₱${Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       t.transactionStatus,
     ]);
     const metaRows = [
@@ -127,7 +127,7 @@ export default function BuyersPage() {
       [],
       ["Summary"],
       [`Total Orders,${history.length}`],
-      [`Total Spent,₱${totalSpent.toLocaleString()}`],
+      [`Total Spent,₱${totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
     ];
     const allHeaders = ["Receipt #", "Type", "Date", "Total", "Status"];
     const allRows = [...metaRows, allHeaders, ...dataRows, ...summaryRows];
@@ -261,7 +261,7 @@ export default function BuyersPage() {
                   ₱
                   {history
                     .reduce((s, t) => s + Number(t.grandTotal || 0), 0)
-                    .toLocaleString()}
+                    .toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
@@ -328,7 +328,7 @@ export default function BuyersPage() {
                           Total
                         </p>
                         <p className="font-mono text-[#0e212c] font-semibold mt-0.5">
-                          ₱{Number(txn.grandTotal || 0).toLocaleString()}
+                          ₱{Number(txn.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
                     </div>
@@ -380,10 +380,10 @@ export default function BuyersPage() {
                                 {item.quantity}
                               </td>
                               <td className="py-2 text-right font-mono text-[#64748b]">
-                                ₱{Number(item.unitPrice).toLocaleString()}
+                                ₱{Number(item.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </td>
                               <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">
-                                ₱{Number(item.totalPrice).toLocaleString()}
+                                ₱{Number(item.totalPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </td>
                             </tr>
                           ))}
@@ -601,7 +601,7 @@ export default function BuyersPage() {
               selectedColumns.map((key) => {
                 if (key === "buyerName") return b.buyerName;
                 if (key === "totalOrders") return String(b.totalOrders);
-                if (key === "totalSpent") return `₱${b.totalSpent.toLocaleString()}`;
+                if (key === "totalSpent") return `₱${b.totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 if (key === "buyerAddress") return b.buyerAddress || "";
                 if (key === "buyerContact") return b.buyerContact || "";
                 if (key === "lastOrder") return b.lastOrder ? new Date(b.lastOrder).toLocaleDateString("en-PH") : "";
@@ -674,7 +674,7 @@ export default function BuyersPage() {
                     {buyer.totalOrders}
                   </td>
                   <td className="p-4 text-right font-mono font-semibold text-[#fd761a]">
-                    ₱{buyer.totalSpent.toLocaleString()}
+                    ₱{buyer.totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                   <td className="p-4 text-right text-[#64748b]">
                     {buyer.lastOrder

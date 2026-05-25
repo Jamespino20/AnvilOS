@@ -59,6 +59,11 @@ export default function RootLayout({
         instrumentSansHeading.variable,
       )}
     >
+      <head>
+        <meta httpEquiv="cache-control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="pragma" content="no-cache" />
+        <meta httpEquiv="expires" content="0" />
+      </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-inter antialiased`}
       >

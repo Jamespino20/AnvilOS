@@ -99,7 +99,7 @@ export async function sendTransactionReceipt(
   grandTotal: number,
 ) {
   const itemRows = items
-    .map((i) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0">${i.productName}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${i.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">₱${i.unitPrice.toLocaleString()}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">₱${i.totalPrice.toLocaleString()}</td></tr>`)
+    .map((i) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0">${i.productName}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${i.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">₱${i.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">₱${i.totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>`)
     .join("");
 
   await sendMail({
@@ -123,7 +123,7 @@ export async function sendTransactionReceipt(
           <tbody>${itemRows}</tbody>
           <tfoot><tr>
             <td colspan="3" style="padding:12px;text-align:right;font-weight:700;font-size:15px">Grand Total</td>
-            <td style="padding:12px;text-align:right;font-weight:700;font-size:15px;color:#fd761a">₱${grandTotal.toLocaleString()}</td>
+            <td style="padding:12px;text-align:right;font-weight:700;font-size:15px;color:#fd761a">₱${grandTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
           </tr></tfoot>
         </table>
         <p style="color:#94a3b8;font-size:12px;margin-top:16px">Need help? Contact us at <a href="mailto:${process.env.SMTP_USER || "support@cwlhardware.com"}" style="color:#fd761a">${process.env.SMTP_USER || "support@cwlhardware.com"}</a></p>
@@ -171,7 +171,7 @@ export async function sendDailySalesReport() {
         <div style="display:flex;gap:16px;margin-bottom:16px">
           <div style="flex:1;background:#f8fafc;border-radius:8px;padding:16px;text-align:center">
             <p style="color:#64748b;font-size:12px;margin:0 0 4px">Total Sales</p>
-            <p style="color:#0e212c;font-size:24px;font-weight:700;margin:0">₱${totalSales.toLocaleString()}</p>
+            <p style="color:#0e212c;font-size:24px;font-weight:700;margin:0">₱${totalSales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
           <div style="flex:1;background:#f8fafc;border-radius:8px;padding:16px;text-align:center">
             <p style="color:#64748b;font-size:12px;margin:0 0 4px">Transactions</p>
@@ -183,7 +183,7 @@ export async function sendDailySalesReport() {
     </div>`,
   });
 
-  await logAudit("Dashboard", "Daily Sales Report Sent", `₱${totalSales.toLocaleString()} (${txnCount} txns)`);
+  await logAudit("Dashboard", "Daily Sales Report Sent", `₱${totalSales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${txnCount} txns)`);
 }
 
 /** Check all products for low stock and send alerts if any found */

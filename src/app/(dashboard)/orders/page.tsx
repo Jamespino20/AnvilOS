@@ -335,7 +335,7 @@ export default function OrdersPage() {
                 if (key === "receiptNumber") return String(order.receiptNumber);
                 if (key === "buyerName") return order.buyerName;
                 if (key === "items") return String(order.items.length);
-                if (key === "grandTotal") return `₱${Number(order.grandTotal || 0).toLocaleString()}`;
+                if (key === "grandTotal") return `₱${Number(order.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 if (key === "transactionDate") return new Date(order.transactionDate).toLocaleDateString("en-PH");
                 if (key === "deliveryMethod") return order.deliveryMethod || "WalkIn";
                 if (key === "transactionStatus") return STAGE_LABELS[order.transactionStatus] || order.transactionStatus;
@@ -374,7 +374,7 @@ export default function OrdersPage() {
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Total</p>
-                    <p className="font-mono text-[#0e212c] font-semibold mt-0.5">₱{Number(order.grandTotal || 0).toLocaleString()}</p>
+                    <p className="font-mono text-[#0e212c] font-semibold mt-0.5">₱{Number(order.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Delivery</p>
@@ -459,8 +459,8 @@ export default function OrdersPage() {
                         <tr key={item.id}>
                           <td className="py-2 text-[#0e212c] font-medium">{displayName(item)}</td>
                           <td className="py-2 text-right text-[#64748b]">{item.quantity}</td>
-                          <td className="py-2 text-right font-mono text-[#64748b]">₱{Number(item.unitPrice).toLocaleString()}</td>
-                          <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">₱{Number(item.totalPrice).toLocaleString()}</td>
+                          <td className="py-2 text-right font-mono text-[#64748b]">₱{Number(item.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">₱{Number(item.totalPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -613,8 +613,8 @@ export default function OrdersPage() {
                             setEditItems(newItems);
                           }} disabled={editStatus === "OnTheWay"}
                             className="w-16 px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a] disabled:bg-[#f1f5f9] disabled:cursor-not-allowed" />
-                          <span className="text-sm font-mono text-[#0e212c] w-20 text-right">₱{item.unitPrice.toLocaleString()}</span>
-                          <span className="text-sm font-mono text-[#fd761a] font-semibold w-24 text-right">₱{item.totalPrice.toLocaleString()}</span>
+                          <span className="text-sm font-mono text-[#0e212c] w-20 text-right">₱{item.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="text-sm font-mono text-[#fd761a] font-semibold w-24 text-right">₱{item.totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           <button onClick={() => setEditItems(editItems.filter((_, j) => j !== i))}
                             disabled={editStatus === "OnTheWay"}
                             className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"><X className="h-3.5 w-3.5" /></button>

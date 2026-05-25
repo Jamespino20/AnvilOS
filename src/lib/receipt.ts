@@ -192,8 +192,8 @@ export async function downloadReceiptPdf(data: {
     doc.rect(l, y - 2, r - l, 4.5, "F");
     doc.text(name, l + 0.5, y);
     doc.text(String(item.quantity), 42, y, { align: "center" });
-    doc.text(`PHP${item.unitPrice.toLocaleString()}`, 57, y, { align: "right" });
-    doc.text(`PHP${item.totalPrice.toLocaleString()}`, r, y, { align: "right" });
+    doc.text(`PHP${item.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 57, y, { align: "right" });
+    doc.text(`PHP${item.totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r, y, { align: "right" });
     y += 4.5;
   }
 
@@ -207,7 +207,7 @@ export async function downloadReceiptPdf(data: {
   doc.setFontSize(10);
   doc.setTextColor(253, 118, 26);
   doc.text("GRAND TOTAL", l, y);
-  doc.text(`PHP${data.grandTotal.toLocaleString()}`, r, y, { align: "right" });
+  doc.text(`PHP${data.grandTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r, y, { align: "right" });
   y += 7;
 
   // --- Footer ---
