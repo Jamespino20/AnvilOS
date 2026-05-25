@@ -148,9 +148,6 @@ export default function FinancePage() {
     }
   }
 
-  const profit = fin ? Math.max(0, fin.profitLoss) : 0;
-  const loss = fin ? Math.max(0, -fin.profitLoss) : 0;
-
   return (
     <div className="space-y-6">
       <div>
@@ -194,13 +191,12 @@ export default function FinancePage() {
               if (!fin) return [];
               const rows: string[][] = [
                 ["Period", fin.period?.label || ""],
+                ["Gross Sales", `₱${fin.grossSales.toLocaleString()}`],
+                ["Returns", `₱${fin.returnsTotal.toLocaleString()}`],
                 ["Gross Revenue", `₱${fin.grossRevenue.toLocaleString()}`],
+                ["Restocks Cost", `₱${fin.restocksTotal.toLocaleString()}`],
+                ["Damages Loss", `₱${fin.damagesTotal.toLocaleString()}`],
                 ["Net Revenue", `₱${fin.netRevenue.toLocaleString()}`],
-                ["Restocks Total", `₱${fin.restocksTotal.toLocaleString()}`],
-                ["Damages Total", `₱${fin.damagesTotal.toLocaleString()}`],
-                ["Adjustments Total", `₱${fin.adjustmentsTotal.toLocaleString()}`],
-                ["Profit", `₱${profit.toLocaleString()}`],
-                ["Loss", `₱${loss.toLocaleString()}`],
                 ["Sales Transactions", String(fin.salesCount)],
                 ["Returns", String(fin.returnCount)],
                 ["Restocks", String(fin.restockCount)],
@@ -228,18 +224,17 @@ export default function FinancePage() {
       </div>
 
       {loading ? (
-        <CardSkeleton count={6} />
+        <CardSkeleton count={5} />
       ) : fin ? (
         <>
           {/* KPI Cards */}
           <div className="grid grid-cols-12 gap-4">
             {[
-              { icon: TrendingUp, label: "Gross Revenue", value: `₱${fin.grossRevenue.toLocaleString()}`, change: fin.comparison.grossChange, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50" },
-              { icon: DollarSign, label: "Net Revenue", value: `₱${fin.netRevenue.toLocaleString()}`, change: fin.comparison.netChange, color: "from-blue-500 to-indigo-600", bg: "bg-blue-50" },
-              { icon: ShoppingCart, label: "Expenses (Restocks + Damages)", value: `₱${(fin.restocksTotal + fin.damagesTotal).toLocaleString()}`, color: "from-rose-500 to-pink-600", bg: "bg-rose-50" },
-              { icon: TrendingUp, label: "Profit", value: `₱${profit.toLocaleString()}`, profit: profit > 0, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50" },
-              { icon: TrendingDown, label: "Loss", value: `₱${loss.toLocaleString()}`, profit: loss === 0, color: "from-rose-500 to-pink-600", bg: "bg-rose-50" },
-              { icon: Wallet, label: "Profit / Loss", value: `₱${fin.profitLoss.toLocaleString()}`, profit: fin.profitLoss >= 0, color: "from-violet-500 to-purple-600", bg: "bg-violet-50" },
+              { icon: TrendingUp, label: "Gross Sales", value: `₱${fin.grossSales.toLocaleString()}`, change: fin.comparison.grossChange, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50" },
+              { icon: DollarSign, label: "Gross Revenue", value: `₱${fin.grossRevenue.toLocaleString()}`, change: fin.comparison.netChange, color: "from-blue-500 to-indigo-600", bg: "bg-blue-50" },
+              { icon: ShoppingCart, label: "Restocks Cost", value: `₱${fin.restocksTotal.toLocaleString()}`, color: "from-rose-500 to-pink-600", bg: "bg-rose-50" },
+              { icon: AlertTriangle, label: "Damages Loss", value: `₱${fin.damagesTotal.toLocaleString()}`, color: "from-orange-500 to-red-600", bg: "bg-orange-50" },
+              { icon: TrendingUp, label: "Net Revenue", value: `₱${fin.netRevenue.toLocaleString()}`, profit: fin.netRevenue >= 0, color: "from-violet-500 to-purple-600", bg: "bg-violet-50" },
             ].map((card, i) => (
               <div key={i} className="col-span-12 sm:col-span-6 lg:col-span-2 bg-white/90 backdrop-blur-sm rounded-xl border border-[#e2e8f0] p-5 hover:shadow-lg hover:shadow-black/5 hover:bg-white transition-all duration-300 hover:-translate-y-0.5 group">
                 <div className="flex justify-between items-start mb-4">

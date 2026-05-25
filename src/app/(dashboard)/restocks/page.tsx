@@ -50,7 +50,7 @@ export default function RestocksPage() {
   const [showNew, setShowNew] = useState(false);
 
   // New restock cart state
-  const [cart, setCart] = useState<{ productId: number; productName: string; quantity: number }[]>([]);
+  const [cart, setCart] = useState<{ productId: number; productName: string; quantity: number; costPrice: number }[]>([]);
   const [restockSearch, setRestockSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -98,7 +98,7 @@ export default function RestocksPage() {
     setCart((prev) => {
       const existing = prev.find((i) => i.productId === product.id);
       if (existing) return prev.map((i) => i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i);
-      return [...prev, { productId: product.id, productName: product.productName, quantity: 1 }];
+      return [...prev, { productId: product.id, productName: product.productName, quantity: 1, costPrice: 0 }];
     });
   }
 
@@ -137,6 +137,7 @@ export default function RestocksPage() {
     if (cart.length === 0) return;
     setSubmitting(true);
     try {
+      const totalCost = cart.reduce((sum, i) => sum + i.costPrice * i.quantity, 0);
       await createTransaction({
         buyerName: "CWL Hardware (Company Restock)",
         buyerAddress: "Company Restock",
@@ -145,12 +146,13 @@ export default function RestocksPage() {
         deliveryMethod: "WalkIn",
         transactionType: "Restock",
         transactionStatus: "Ongoing",
-        grandTotal: 0,
+        grandTotal: totalCost,
         items: cart.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
-          unitPrice: 0,
-          totalPrice: 0,
+          unitPrice: i.costPrice,
+          totalPrice: i.costPrice * i.quantity,
+          costPrice: i.costPrice,
         })),
       });
       setShowNew(false);
@@ -203,7 +205,10 @@ export default function RestocksPage() {
               selectedColumns.map((key) => {
                 if (key === "receiptNumber") return String(r.receiptNumber);
                 if (key === "items") return String(r.items.length);
-                if (key === "grandTotal") return `₱${Number(r.grandTotal || 0).toLocaleString()}`;
+                if (key === "grandTotal") {
+                  const total = r.items.reduce((s, i) => s + Number(i.costPrice || i.unitPrice || 0) * (i.quantity || 0), 0);
+                  return `₱${total.toLocaleString()}`;
+                }
                 if (key === "transactionDate") return new Date(r.transactionDate).toLocaleDateString("en-PH");
                 if (key === "transactionStatus") return r.transactionStatus;
                 return "";
@@ -269,14 +274,18 @@ export default function RestocksPage() {
                     <thead>
                       <tr className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
                         <th className="text-left pb-2">Product</th>
+                        <th className="text-right pb-2">Cost/Unit</th>
                         <th className="text-right pb-2">Qty</th>
+                        <th className="text-right pb-2">Total Cost</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#e2e8f0]">
                       {r.items.map((item) => (
                         <tr key={item.id}>
                           <td className="py-2 text-[#0e212c] font-medium">{products.find(p => p.id === item.productId)?.productName || `#${item.productId}`}</td>
+                          <td className="py-2 text-right text-[#64748b] font-mono">₱{Number(item.costPrice || item.unitPrice || 0).toLocaleString()}</td>
                           <td className="py-2 text-right text-[#64748b]">{item.quantity}</td>
+                          <td className="py-2 text-right text-[#0e212c] font-semibold font-mono">₱{((Number(item.costPrice || item.unitPrice || 0)) * (item.quantity || 0)).toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -377,6 +386,14 @@ export default function RestocksPage() {
                     <div key={item.productId} className="flex items-center gap-2 bg-[#f8fafc] rounded-lg p-2.5 group hover:bg-[#f1f5f9] transition-colors">
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-[#0e212c] truncate">{item.productName}</p>
+                        <p className="text-[10px] text-[#64748b] mt-0.5">₱{(item.costPrice * item.quantity).toLocaleString()} total</p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Cost</span>
+                        <input type="number" min={0} step={0.01} value={item.costPrice} onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          setCart((prev) => prev.map((i) => i.productId === item.productId ? { ...i, costPrice: val } : i));
+                        }} className="w-20 h-9 px-2 text-xs text-right font-mono border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#fd761a]" placeholder="0.00" />
                       </div>
                       <div className="flex items-center gap-1">
                         <button type="button" onClick={() => updateCartQty(item.productId, -1)} className="w-9 h-9 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors" aria-label="Decrease quantity"><Minus className="h-3.5 w-3.5" /></button>

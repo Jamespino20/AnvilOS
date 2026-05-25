@@ -466,6 +466,7 @@ export async function createTransaction(data: {
     quantity: number;
     unitPrice: number;
     totalPrice: number;
+    costPrice?: number;
   }[];
   returnForReceiptNumber?: number;
 }) {
@@ -538,6 +539,7 @@ export async function createTransaction(data: {
     quantity: i.quantity,
     unitPrice: i.unitPrice,
     totalPrice: i.totalPrice,
+    costPrice: i.costPrice,
   }));
 
   const transaction = await withTimeout(
@@ -1241,7 +1243,7 @@ export async function getFinancialDashboard(period?: {
   prevEnd.setDate(prevEnd.getDate() - 1);
 
   async function periodStats(s: Date, e: Date) {
-    const [sales, returns, restocks, damages, adjustments, cancelled, paymentByMethod] =
+    const [sales, returns, restocksRaw, damages, adjustments, cancelled, paymentByMethod] =
       await Promise.all([
         prisma.transaction.aggregate({
           where: {
@@ -1261,14 +1263,13 @@ export async function getFinancialDashboard(period?: {
           _sum: { grandTotal: true },
           _count: true,
         }),
-        prisma.transaction.aggregate({
+        prisma.transaction.findMany({
           where: {
             transactionDate: { gte: s, lte: e },
             transactionStatus: "Completed",
             transactionType: "Restock",
           },
-          _sum: { grandTotal: true },
-          _count: true,
+          select: { id: true, grandTotal: true },
         }),
         prisma.transaction.aggregate({
           where: {
@@ -1305,7 +1306,20 @@ export async function getFinancialDashboard(period?: {
           _count: true,
         }),
       ]);
-    return { sales, returns, restocks, damages, adjustments, cancelled, paymentByMethod };
+
+    // Calculate restock cost from items if grandTotal is 0 (old data)
+    let restocksTotal = restocksRaw.reduce((sum, r) => sum + Number(r.grandTotal || 0), 0);
+    const restocksCount = restocksRaw.length;
+    if (restocksTotal === 0 && restocksCount > 0) {
+      const itemIds = restocksRaw.map((r) => r.id);
+      const items = await prisma.transactionItem.findMany({
+        where: { transactionId: { in: itemIds } },
+        select: { costPrice: true, unitPrice: true, quantity: true },
+      });
+      restocksTotal = items.reduce((sum, i) => sum + Number(i.costPrice || i.unitPrice || 0) * (i.quantity || 0), 0);
+    }
+
+    return { sales, returns, restocksTotal, restocksCount, damages, adjustments, cancelled, paymentByMethod };
   }
 
   const [cur, prev] = await Promise.all([
@@ -1316,11 +1330,11 @@ export async function getFinancialDashboard(period?: {
   const gross = Number(cur.sales._sum.grandTotal || 0);
   const prevGross = Number(prev.sales._sum.grandTotal || 0);
   const returnsTotal = Number(cur.returns._sum.grandTotal || 0);
-  const restocksTotal = Number(cur.restocks._sum.grandTotal || 0);
+  const restocksTotal = cur.restocksTotal;
   const damagesTotal = Number(cur.damages._sum.grandTotal || 0);
   const adjustmentsTotal = Number(cur.adjustments._sum.grandTotal || 0);
-  const netRev = gross - returnsTotal;
-  const profit = netRev - restocksTotal - damagesTotal;
+  const grossRev = gross - returnsTotal;
+  const netRev = grossRev - restocksTotal - damagesTotal;
   const prevNet = prevGross - Number(prev.returns._sum.grandTotal || 0);
 
   return {
@@ -1329,16 +1343,16 @@ export async function getFinancialDashboard(period?: {
       end: end.toISOString(),
       label: `${start.toLocaleDateString("en-PH", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`,
     },
-    grossRevenue: gross,
+    grossSales: gross,
     returnsTotal,
     restocksTotal,
     damagesTotal,
     adjustmentsTotal,
+    grossRevenue: grossRev,
     netRevenue: netRev,
-    profitLoss: profit,
     salesCount: cur.sales._count,
     returnCount: cur.returns._count,
-    restockCount: cur.restocks._count,
+    restockCount: cur.restocksCount,
     damageCount: cur.damages._count,
     adjustmentCount: cur.adjustments._count,
     cancelledCount: cur.cancelled._count,
