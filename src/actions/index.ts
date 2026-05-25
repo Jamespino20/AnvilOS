@@ -646,6 +646,26 @@ export async function getDeliverers() {
   return result.map((r) => r.delivererName!);
 }
 
+export async function getReturnTransaction(receiptNumber: number) {
+  const txn = await prisma.transaction.findFirst({
+    where: { receiptNumber },
+    include: { items: true },
+  });
+  if (!txn) throw new Error("Receipt not found");
+  if (txn.transactionType !== "SaleWalkIn" && txn.transactionType !== "SalePO")
+    throw new Error("Can only return Sale transactions");
+  return {
+    buyerName: txn.buyerName,
+    items: txn.items.map((i) => ({
+      productId: i.productId,
+      productName: i.productName,
+      quantity: i.quantity,
+      unitPrice: Number(i.unitPrice),
+      totalPrice: Number(i.totalPrice),
+    })),
+  };
+}
+
 export async function updateTransactionStatus(
   id: number,
   status: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled",
@@ -1221,7 +1241,7 @@ export async function getFinancialDashboard(period?: {
   prevEnd.setDate(prevEnd.getDate() - 1);
 
   async function periodStats(s: Date, e: Date) {
-    const [sales, returns, restocks, cancelled, paymentByMethod] =
+    const [sales, returns, restocks, damages, adjustments, cancelled, paymentByMethod] =
       await Promise.all([
         prisma.transaction.aggregate({
           where: {
@@ -1253,6 +1273,24 @@ export async function getFinancialDashboard(period?: {
         prisma.transaction.aggregate({
           where: {
             transactionDate: { gte: s, lte: e },
+            transactionStatus: "Completed",
+            transactionType: "Damage",
+          },
+          _sum: { grandTotal: true },
+          _count: true,
+        }),
+        prisma.transaction.aggregate({
+          where: {
+            transactionDate: { gte: s, lte: e },
+            transactionStatus: "Completed",
+            transactionType: "Adjustment",
+          },
+          _sum: { grandTotal: true },
+          _count: true,
+        }),
+        prisma.transaction.aggregate({
+          where: {
+            transactionDate: { gte: s, lte: e },
             transactionStatus: "Cancelled",
           },
           _count: true,
@@ -1267,7 +1305,7 @@ export async function getFinancialDashboard(period?: {
           _count: true,
         }),
       ]);
-    return { sales, returns, restocks, cancelled, paymentByMethod };
+    return { sales, returns, restocks, damages, adjustments, cancelled, paymentByMethod };
   }
 
   const [cur, prev] = await Promise.all([
@@ -1279,8 +1317,10 @@ export async function getFinancialDashboard(period?: {
   const prevGross = Number(prev.sales._sum.grandTotal || 0);
   const returnsTotal = Number(cur.returns._sum.grandTotal || 0);
   const restocksTotal = Number(cur.restocks._sum.grandTotal || 0);
+  const damagesTotal = Number(cur.damages._sum.grandTotal || 0);
+  const adjustmentsTotal = Number(cur.adjustments._sum.grandTotal || 0);
   const netRev = gross - returnsTotal;
-  const profit = netRev - restocksTotal;
+  const profit = netRev - restocksTotal - damagesTotal;
   const prevNet = prevGross - Number(prev.returns._sum.grandTotal || 0);
 
   return {
@@ -1292,11 +1332,15 @@ export async function getFinancialDashboard(period?: {
     grossRevenue: gross,
     returnsTotal,
     restocksTotal,
+    damagesTotal,
+    adjustmentsTotal,
     netRevenue: netRev,
     profitLoss: profit,
     salesCount: cur.sales._count,
     returnCount: cur.returns._count,
     restockCount: cur.restocks._count,
+    damageCount: cur.damages._count,
+    adjustmentCount: cur.adjustments._count,
     cancelledCount: cur.cancelled._count,
     comparison: {
       grossChange: prevGross
@@ -1335,7 +1379,7 @@ export async function getCashFlowTrend(days: number = 30) {
       where: {
         transactionDate: { gte: start, lte: end },
         transactionStatus: "Completed",
-        transactionType: { in: ["Restock"] },
+        transactionType: { in: ["Restock", "Damage"] },
       },
       select: { transactionDate: true, grandTotal: true },
     }),

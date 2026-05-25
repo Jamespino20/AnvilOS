@@ -32,7 +32,7 @@ import {
   FolderPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { createTransaction } from "@/actions";
+import { createTransaction, getReturnTransaction } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { downloadReceipt, downloadReceiptPdf } from "@/lib/receipt";
 import { toast } from "sonner";
@@ -81,6 +81,7 @@ export function POSClient({ products, buyers }: Props) {
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [deliveryMethod, setDeliveryMethod] = useState("WalkIn");
   const [returnReceipt, setReturnReceipt] = useState("");
+  const [loadingReturn, setLoadingReturn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [done, setDone] = useState<{
     receipt: number;
@@ -248,6 +249,29 @@ export function POSClient({ products, buyers }: Props) {
 
   const [showCartMobile, setShowCartMobile] = useState(false);
   const [shortcutHint, setShortcutHint] = useState<"ready" | "done" | "">("");
+
+  useEffect(() => {
+    if (txnType !== "Return" || !returnReceipt) return;
+    const num = parseInt(returnReceipt, 10);
+    if (isNaN(num)) return;
+    setLoadingReturn(true);
+    setCart([]);
+    getReturnTransaction(num)
+      .then((orig) => {
+        setBuyerName(orig.buyerName);
+        const autoItems = orig.items
+          .map((i) => {
+            const prod = products.find((p) => p.id === i.productId);
+            return prod ? { product: prod, quantity: i.quantity } : null;
+          })
+          .filter((x): x is CartItem => x !== null);
+        setCart(autoItems);
+      })
+      .catch(() => {
+        setCart([]);
+      })
+      .finally(() => setLoadingReturn(false));
+  }, [returnReceipt, txnType, products]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -445,7 +469,11 @@ export function POSClient({ products, buyers }: Props) {
 
               {txnType === "Return" && (
                 <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-2 flex-1 min-w-0">
-                  <RotateCcw className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                  {loadingReturn ? (
+                    <Loader2 className="h-3.5 w-3.5 text-amber-600 shrink-0 animate-spin" />
+                  ) : (
+                    <RotateCcw className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                  )}
                   <input
                     type="number"
                     value={returnReceipt}

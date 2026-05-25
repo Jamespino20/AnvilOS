@@ -611,11 +611,13 @@ export default function OrdersPage() {
                             const qty = Math.max(1, Number(e.target.value) || 1);
                             newItems[i] = { ...item, quantity: qty, totalPrice: qty * item.unitPrice };
                             setEditItems(newItems);
-                          }} className="w-16 px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]" />
+                          }} disabled={editStatus === "OnTheWay"}
+                            className="w-16 px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a] disabled:bg-[#f1f5f9] disabled:cursor-not-allowed" />
                           <span className="text-sm font-mono text-[#0e212c] w-20 text-right">₱{item.unitPrice.toLocaleString()}</span>
                           <span className="text-sm font-mono text-[#fd761a] font-semibold w-24 text-right">₱{item.totalPrice.toLocaleString()}</span>
                           <button onClick={() => setEditItems(editItems.filter((_, j) => j !== i))}
-                            className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded transition-all"><X className="h-3.5 w-3.5" /></button>
+                            disabled={editStatus === "OnTheWay"}
+                            className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"><X className="h-3.5 w-3.5" /></button>
                         </div>
                       ))}
                     </div>

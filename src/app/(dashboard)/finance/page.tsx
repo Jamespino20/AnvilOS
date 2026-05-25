@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getFinancialDashboard, getCashFlowTrend, getTopProductsByRevenue } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExportDialog } from "@/components/export-dialog";
-import { TrendingUp, TrendingDown, DollarSign, Receipt, ArrowUpRight, ArrowDownRight, Calendar, ShoppingCart, RotateCcw, Ban, Wallet, BarChart3, PieChart, LineChart, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Receipt, ArrowUpRight, ArrowDownRight, Calendar, ShoppingCart, RotateCcw, Ban, Wallet, BarChart3, PieChart, LineChart, Download, ChevronLeft, ChevronRight, AlertTriangle, Package } from "lucide-react";
 import { CardSkeleton } from "@/components/ui/skeleton";
 
 const PERIODS = [
@@ -197,11 +197,15 @@ export default function FinancePage() {
                 ["Gross Revenue", `₱${fin.grossRevenue.toLocaleString()}`],
                 ["Net Revenue", `₱${fin.netRevenue.toLocaleString()}`],
                 ["Restocks Total", `₱${fin.restocksTotal.toLocaleString()}`],
+                ["Damages Total", `₱${fin.damagesTotal.toLocaleString()}`],
+                ["Adjustments Total", `₱${fin.adjustmentsTotal.toLocaleString()}`],
                 ["Profit", `₱${profit.toLocaleString()}`],
                 ["Loss", `₱${loss.toLocaleString()}`],
                 ["Sales Transactions", String(fin.salesCount)],
                 ["Returns", String(fin.returnCount)],
                 ["Restocks", String(fin.restockCount)],
+                ["Damages", String(fin.damageCount)],
+                ["Adjustments", String(fin.adjustmentCount)],
                 ["Cancelled", String(fin.cancelledCount)],
               ];
               if (fin.paymentBreakdown?.length > 0) {
@@ -232,7 +236,7 @@ export default function FinancePage() {
             {[
               { icon: TrendingUp, label: "Gross Revenue", value: `₱${fin.grossRevenue.toLocaleString()}`, change: fin.comparison.grossChange, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50" },
               { icon: DollarSign, label: "Net Revenue", value: `₱${fin.netRevenue.toLocaleString()}`, change: fin.comparison.netChange, color: "from-blue-500 to-indigo-600", bg: "bg-blue-50" },
-              { icon: ShoppingCart, label: "Expenses (Restocks)", value: `₱${fin.restocksTotal.toLocaleString()}`, color: "from-rose-500 to-pink-600", bg: "bg-rose-50" },
+              { icon: ShoppingCart, label: "Expenses (Restocks + Damages)", value: `₱${(fin.restocksTotal + fin.damagesTotal).toLocaleString()}`, color: "from-rose-500 to-pink-600", bg: "bg-rose-50" },
               { icon: TrendingUp, label: "Profit", value: `₱${profit.toLocaleString()}`, profit: profit > 0, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50" },
               { icon: TrendingDown, label: "Loss", value: `₱${loss.toLocaleString()}`, profit: loss === 0, color: "from-rose-500 to-pink-600", bg: "bg-rose-50" },
               { icon: Wallet, label: "Profit / Loss", value: `₱${fin.profitLoss.toLocaleString()}`, profit: fin.profitLoss >= 0, color: "from-violet-500 to-purple-600", bg: "bg-violet-50" },
@@ -261,6 +265,8 @@ export default function FinancePage() {
               { icon: Receipt, label: "Sales Transactions", value: fin.salesCount, color: "bg-emerald-50 text-emerald-600" },
               { icon: RotateCcw, label: "Returns", value: fin.returnCount, color: "bg-amber-50 text-amber-600" },
               { icon: ShoppingCart, label: "Restocks", value: fin.restockCount, color: "bg-blue-50 text-blue-600" },
+              { icon: AlertTriangle, label: "Damages", value: fin.damageCount, color: "bg-rose-50 text-rose-600" },
+              { icon: Package, label: "Adjustments", value: fin.adjustmentCount, color: "bg-violet-50 text-violet-600" },
               { icon: Ban, label: "Cancelled", value: fin.cancelledCount, color: "bg-rose-50 text-rose-600" },
             ].map((card, i) => (
               <div key={i} className="col-span-6 sm:col-span-3 lg:col-span-3 bg-white rounded-xl border border-[#e2e8f0] p-4 flex items-center gap-4 hover:shadow-md transition-all">
