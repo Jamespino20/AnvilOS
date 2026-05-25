@@ -14,6 +14,7 @@ import {
   getProducts,
   updateTransactionStatus,
   updateTransaction,
+  getDeliverers,
 } from "@/actions";
 import {
   Search,
@@ -62,6 +63,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<TxnWithItems[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [deliverers, setDeliverers] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [deliveryFilter, setDeliveryFilter] = useState("");
@@ -75,6 +77,7 @@ export default function OrdersPage() {
   // Delivery tracking fields
   const [deliveryRef, setDeliveryRef] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
+  const [delivererName, setDelivererName] = useState("");
 
   // Confirm action modal
   const [confirmAction, setConfirmAction] = useState<{
@@ -92,6 +95,7 @@ export default function OrdersPage() {
   const [editContact, setEditContact] = useState("");
   const [editDeliveryRef, setEditDeliveryRef] = useState("");
   const [editDeliveryNotes, setEditDeliveryNotes] = useState("");
+  const [editDelivererName, setEditDelivererName] = useState("");
   const [editItems, setEditItems] = useState<
     {
       productId: number;
@@ -106,10 +110,12 @@ export default function OrdersPage() {
     Promise.all([
       getTransactions({ statusIn: ["Ongoing", "Processing", "OnTheWay"], type: "SalePO" }),
       getProducts({ status: "available" }),
-    ]).then(([txns, prods]) => {
+      getDeliverers(),
+    ]).then(([txns, prods, delivs]) => {
       const all = txns as TxnWithItems[];
       setOrders(all);
       setTotal(all.length);
+      setDeliverers(delivs);
       setLoading(false);
     });
   }
@@ -118,9 +124,10 @@ export default function OrdersPage() {
     loadOrders();
   }, []);
 
-  function productLabel(id: number) {
-    const p = products.find((p) => p.id === id);
-    return p ? p.productName : `Product #${id}`;
+  function displayName(item: TransactionItem) {
+    if (item.productName) return item.productName;
+    const p = products.find((x) => x.id === item.productId);
+    return p ? p.productName : `Product #${item.productId}`;
   }
 
   function openEdit(t: TxnWithItems) {
@@ -131,6 +138,7 @@ export default function OrdersPage() {
     setEditContact(t.buyerContact || "");
     setEditDeliveryRef(t.deliveryRef || "");
     setEditDeliveryNotes(t.deliveryNotes || "");
+    setEditDelivererName(t.delivererName || "");
     setEditItems(
       t.items.map((i) => ({
         productId: i.productId!,
@@ -151,6 +159,7 @@ export default function OrdersPage() {
         buyerContact: editContact,
         deliveryRef: editDeliveryRef,
         deliveryNotes: editDeliveryNotes,
+        delivererName: editDelivererName,
         transactionStatus: editStatus,
         items: editItems,
       });
@@ -176,7 +185,7 @@ export default function OrdersPage() {
     if (!next) return;
     setProcessingId(id);
     try {
-    await updateTransactionStatus(id, next, { deliveryRef, deliveryNotes });
+    await updateTransactionStatus(id, next, { deliveryRef, deliveryNotes, delivererName });
     loadOrders();
     toast.success("Order advanced");
   } catch (e: any) {
@@ -397,6 +406,7 @@ export default function OrdersPage() {
                       onClick={() => {
                         setDeliveryRef(order.deliveryRef || "");
                         setDeliveryNotes(order.deliveryNotes || "");
+                        setDelivererName(order.delivererName || "");
                         setConfirmAction({ id: order.id, type: "advance" });
                       }}
                       disabled={pending}
@@ -447,7 +457,7 @@ export default function OrdersPage() {
                     <tbody className="divide-y divide-[#e2e8f0]">
                       {order.items.map((item) => (
                         <tr key={item.id}>
-                          <td className="py-2 text-[#0e212c] font-medium">{productLabel(item.productId!)}</td>
+                          <td className="py-2 text-[#0e212c] font-medium">{displayName(item)}</td>
                           <td className="py-2 text-right text-[#64748b]">{item.quantity}</td>
                           <td className="py-2 text-right font-mono text-[#64748b]">₱{Number(item.unitPrice).toLocaleString()}</td>
                           <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">₱{Number(item.totalPrice).toLocaleString()}</td>
@@ -463,18 +473,24 @@ export default function OrdersPage() {
                   </div>
                   {(order.deliveryRef || order.deliveryNotes) && (
                     <div className="flex flex-wrap items-center gap-4 mt-2 pt-2 border-t border-[#e2e8f0]">
-                      {order.deliveryRef && (
-                        <>
-                          <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Delivery Ref:</span>
-                          <span className="text-sm text-[#64748b]">{order.deliveryRef}</span>
-                        </>
-                      )}
-                      {order.deliveryNotes && (
-                        <>
-                          <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Delivery Notes:</span>
-                          <span className="text-sm text-[#64748b]">{order.deliveryNotes}</span>
-                        </>
-                      )}
+                      {order.delivererName && (
+                    <>
+                      <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Deliverer:</span>
+                      <span className="text-sm text-[#64748b]">{order.delivererName}</span>
+                    </>
+                  )}
+                  {order.deliveryRef && (
+                    <>
+                      <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Delivery Ref:</span>
+                      <span className="text-sm text-[#64748b]">{order.deliveryRef}</span>
+                    </>
+                  )}
+                  {order.deliveryNotes && (
+                    <>
+                      <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Delivery Notes:</span>
+                      <span className="text-sm text-[#64748b]">{order.deliveryNotes}</span>
+                    </>
+                  )}
                     </div>
                   )}
                   {(order.deliveryMethod === "Delivery" || order.deliveryMethod === "COD" || order.deliveryMethod === "Pickup") && (
@@ -541,27 +557,38 @@ export default function OrdersPage() {
                         className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Status</label>
-                    <select value={editStatus} onChange={(e) => setEditStatus(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10">
-                      <option value="Ongoing">Placed</option>
-                      <option value="Processing">Processing</option>
-                      <option value="OnTheWay">On the Way</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Cancelled">Cancelled</option>
-                    </select>
-                    {editStatus === "Completed" && (
-                      <p className="text-xs text-emerald-600 mt-1.5 flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3" /> Stock will be deducted and earnings updated
-                      </p>
-                    )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Deliverer</label>
+                      <input type="text" value={editDelivererName} onChange={(e) => setEditDelivererName(e.target.value)}
+                        list="edit-deliverers"
+                        placeholder="Select or type deliverer name"
+                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+                      <datalist id="edit-deliverers">
+                        {deliverers.map((d) => (
+                          <option key={d} value={d} />
+                        ))}
+                      </datalist>
+                    </div>
+                    <div className="flex items-end pb-2">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${
+                        editStatus === "Completed" ? "bg-emerald-50 text-emerald-700"
+                          : editStatus === "OnTheWay" ? "bg-violet-50 text-violet-700"
+                            : editStatus === "Processing" ? "bg-sky-50 text-sky-700"
+                              : editStatus === "Cancelled" ? "bg-rose-50 text-rose-700"
+                                : "bg-amber-50 text-amber-700"
+                      }`}>
+                        {STAGE_LABELS[editStatus]}
+                      </span>
+                    </div>
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Line Items</label>
                       <button onClick={() => setEditItems([...editItems, { productId: 0, quantity: 1, unitPrice: 0, totalPrice: 0 }])}
-                        className="text-xs font-semibold text-[#fd761a] hover:text-[#e56600] transition-colors">+ Add Item</button>
+                        disabled={editStatus === "OnTheWay"}
+                        className="text-xs font-semibold text-[#fd761a] hover:text-[#e56600] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={editStatus === "OnTheWay" ? "Cannot add items once order is On the Way" : "Add Item"}>+ Add Item</button>
                     </div>
                     <div className="space-y-2">
                       {editItems.map((item, i) => (
@@ -690,6 +717,18 @@ export default function OrdersPage() {
           >
             {isAdvance && (
               <div className="space-y-3">
+                <div>
+                  <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Deliverer Name</label>
+                  <input type="text" value={delivererName} onChange={(e) => setDelivererName(e.target.value)}
+                    list="advance-deliverers"
+                    placeholder="Select or type deliverer name"
+                    className="w-full px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+                  <datalist id="advance-deliverers">
+                    {deliverers.map((d) => (
+                      <option key={d} value={d} />
+                    ))}
+                  </datalist>
+                </div>
                 <div>
                   <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Delivery Reference / Tracking #</label>
                   <input type="text" value={deliveryRef} onChange={(e) => setDeliveryRef(e.target.value)}

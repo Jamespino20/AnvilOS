@@ -636,10 +636,20 @@ export async function createTransaction(data: {
   return transaction;
 }
 
+export async function getDeliverers() {
+  const result = await prisma.transaction.findMany({
+    where: { delivererName: { not: null } },
+    select: { delivererName: true },
+    distinct: ["delivererName"],
+    orderBy: { delivererName: "asc" },
+  });
+  return result.map((r) => r.delivererName!);
+}
+
 export async function updateTransactionStatus(
   id: number,
   status: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled",
-  deliveryData?: { deliveryRef?: string; deliveryNotes?: string },
+  deliveryData?: { deliveryRef?: string; deliveryNotes?: string; delivererName?: string },
 ) {
   const txn = await prisma.transaction.findUniqueOrThrow({
     where: { id },
@@ -667,6 +677,7 @@ export async function updateTransactionStatus(
       transactionStatus: status,
       ...(deliveryData?.deliveryRef !== undefined && { deliveryRef: deliveryData.deliveryRef }),
       ...(deliveryData?.deliveryNotes !== undefined && { deliveryNotes: deliveryData.deliveryNotes }),
+      ...(deliveryData?.delivererName !== undefined && { delivererName: deliveryData.delivererName }),
     },
   });
   await logAudit(
@@ -687,6 +698,7 @@ export async function updateTransaction(
     buyerContact?: string;
     deliveryRef?: string;
     deliveryNotes?: string;
+    delivererName?: string;
     transactionStatus?: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled";
     items?: {
       id?: number;
@@ -712,6 +724,7 @@ export async function updateTransaction(
       buyerContact: data.buyerContact,
       deliveryRef: data.deliveryRef,
       deliveryNotes: data.deliveryNotes,
+      delivererName: data.delivererName,
       transactionStatus: data.transactionStatus,
     },
   });
@@ -1092,10 +1105,16 @@ export async function updatePassword(newPassword: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
   const bcrypt = await import("bcryptjs");
+  const currentUser = await prisma.user.findUniqueOrThrow({
+    where: { id: Number(session.user.id) },
+  });
   const passwordHash = await bcrypt.hash(newPassword, 10);
   const user = await prisma.user.update({
     where: { id: Number(session.user.id) },
-    data: { passwordHash },
+    data: {
+      oldPasswordHash: currentUser.passwordHash,
+      passwordHash,
+    },
   });
   await logAudit("Settings", "Change Password", "Password changed");
   revalidatePath("/settings");
