@@ -51,7 +51,7 @@ export async function downloadReceiptPdf(data: {
   doc.setFillColor(253, 118, 26);
   doc.rect(0, 0, pw, 3, "F");
 
-  // Logo
+  // Logo — maintain aspect ratio on 80mm receipt
   try {
     const resp = await fetch("/images/CWLHardware_Logo.png");
     const blob = await resp.blob();
@@ -60,8 +60,14 @@ export async function downloadReceiptPdf(data: {
       reader.onload = () => resolve(reader.result as string);
       reader.readAsDataURL(blob);
     });
-    doc.addImage(b64, "PNG", cx - 10, y, 20, 18);
-    y += 20;
+    const img = new Image();
+    img.src = b64;
+    await new Promise((resolve) => { img.onload = resolve; });
+    const aspect = img.naturalWidth / img.naturalHeight;
+    const logoH = 14;
+    const logoW = logoH * aspect;
+    doc.addImage(b64, "PNG", cx - logoW / 2, y, logoW, logoH);
+    y += logoH + 3;
   } catch {}
 
   doc.setTextColor(14, 33, 44);

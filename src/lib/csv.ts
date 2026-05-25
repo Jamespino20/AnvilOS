@@ -170,7 +170,7 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
   doc.setFillColor(...THEME_BLUE);
   doc.rect(0, 0, pw, 32, "F");
 
-  // Logo
+  // Logo — maintain aspect ratio
   try {
     const resp = await fetch("/images/CWLHardware_Logo.png");
     const blob = await resp.blob();
@@ -179,7 +179,13 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
       reader.onload = () => resolve(reader.result as string);
       reader.readAsDataURL(blob);
     });
-    doc.addImage(b64, "PNG", 10, 4, 22, 22);
+    const img = new Image();
+    img.src = b64;
+    await new Promise((resolve) => { img.onload = resolve; });
+    const aspect = img.naturalWidth / img.naturalHeight;
+    const logoH = 16;
+    const logoW = logoH * aspect;
+    doc.addImage(b64, "PNG", 10, 4, logoW, logoH);
   } catch {}
 
   doc.setTextColor(...THEME_WHITE);
@@ -213,15 +219,15 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
   const marginLeft = 14;
   const marginRight = 14;
   const usable = pw - marginLeft - marginRight;
-  const minColWidth = 15;
-  const maxColWidth = 60;
+  const minColWidth = 18;
+  const maxColWidth = 75;
 
   const colWidths = headers.map((h, i) => {
     const maxContent = Math.max(
       h.length,
       ...rows.map((r) => (r[i] || "").length),
     );
-    return Math.min(maxColWidth, Math.max(minColWidth, maxContent * 1.8));
+    return Math.min(maxColWidth, Math.max(minColWidth, maxContent * 2.5));
   });
   const totalWidth = colWidths.reduce((s, w) => s + w, 0);
   const scaled = colWidths.map((w) => (w / totalWidth) * usable);

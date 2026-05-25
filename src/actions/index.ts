@@ -1027,6 +1027,7 @@ export async function getDashboardKpis() {
         where: {
           transactionDate: { gte: today, lt: tomorrow },
           transactionStatus: "Completed",
+          transactionType: { in: ["SaleWalkIn", "SalePO"] },
         },
         _sum: { grandTotal: true },
         _count: true,

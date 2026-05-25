@@ -331,8 +331,8 @@ export default function RestocksPage() {
       {/* New Restock Modal - POS Cart Layout */}
       {showNew && (
         <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center" onClick={() => { setShowNew(false); setCart([]); setRestockSearch(""); }}>
-          <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-3xl mx-4 max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
+          <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-8 py-6 border-b border-[#e2e8f0]">
               <h2 className="text-lg font-bold text-[#0e212c] flex items-center gap-2">
                 <ArrowDownUp className="h-5 w-5 text-[#fd761a]" /> New Restock
               </h2>
@@ -340,14 +340,14 @@ export default function RestocksPage() {
             </div>
             <div className="flex flex-col lg:flex-row gap-0 flex-1 overflow-hidden">
               {/* Product selection area */}
-              <div className="lg:flex-[2] p-6 overflow-y-auto border-b lg:border-b-0 lg:border-r border-[#e2e8f0] space-y-3">
+              <div className="lg:flex-[2] p-8 overflow-y-auto border-b lg:border-b-0 lg:border-r border-[#e2e8f0] space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
                   <input type="text" value={restockSearch} onChange={(e) => setRestockSearch(e.target.value)}
                     placeholder="Search products..."
                     className="w-full pl-9 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
                 </div>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-3 gap-3">
                   {filteredProducts.map((p) => {
                     const inCart = cart.find((i) => i.productId === p.id);
                     const imgUrl = (p as any).imageUrl;
@@ -368,22 +368,22 @@ export default function RestocksPage() {
                     );
                   })}
                   {filteredProducts.length === 0 && (
-                    <div className="col-span-2 text-center py-8 text-[#94a3b8] text-sm">No products match your search</div>
+                    <div className="col-span-3 text-center py-8 text-[#94a3b8] text-sm">No products match your search</div>
                   )}
                 </div>
               </div>
 
               {/* Cart area */}
-              <div className="flex-1 p-6 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between mb-4">
+              <div className="flex-1 p-8 flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between mb-5">
                   <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2">
                     <ShoppingCart className="h-4 w-4 text-[#fd761a]" /> Cart
                   </h3>
                   {cart.length > 0 && <span className="text-xs text-[#fd761a] font-semibold">{totalItems} item{totalItems !== 1 ? "s" : ""}</span>}
                 </div>
-                <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+                <div className="flex-1 overflow-y-auto space-y-3 mb-5">
                   {cart.map((item) => (
-                    <div key={item.productId} className="flex items-center gap-2 bg-[#f8fafc] rounded-lg p-2.5 group hover:bg-[#f1f5f9] transition-colors">
+                    <div key={item.productId} className="flex items-center gap-3 bg-[#f8fafc] rounded-lg p-3 group hover:bg-[#f1f5f9] transition-colors">
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-[#0e212c] truncate">{item.productName}</p>
                         <p className="text-[10px] text-[#64748b] mt-0.5">₱{(item.costPrice * item.quantity).toLocaleString()} total</p>
