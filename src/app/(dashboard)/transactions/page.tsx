@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 "use client";
@@ -69,7 +69,14 @@ function getDateScopeStart(scope: string): string | undefined {
   }
 }
 
-const STATUS_OPTIONS = ["", "Completed", "Ongoing", "Processing", "OnTheWay", "Cancelled"];
+const STATUS_OPTIONS = [
+  "",
+  "Completed",
+  "Ongoing",
+  "Processing",
+  "OnTheWay",
+  "Cancelled",
+];
 const TYPE_OPTIONS = [
   "",
   "SaleWalkIn",
@@ -131,36 +138,36 @@ export default function TransactionsPage() {
     });
   }, [statusFilter, typeFilter, search, page, dateScope]);
 
-async function quickStatusChange(
-  id: number,
-  status: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled",
-) {
-  try {
-    await updateTransactionStatus(id, status);
-    toast.success("Status updated to " + status);
-    const startDate = getDateScopeStart(dateScope);
-    const [data, count] = await Promise.all([
-      getTransactions({
-        status: statusFilter || undefined,
-        type: typeFilter || undefined,
-        search: search || undefined,
-        startDate,
-        page,
-        perPage,
-      }),
-      getTransactionsCount({
-        status: statusFilter || undefined,
-        type: typeFilter || undefined,
-        search: search || undefined,
-        startDate,
-      }),
-    ]);
-    setTransactions(data as TxnWithItems[]);
-    setTotal(count);
-  } catch (e: any) {
-    toast.error(e.message || "Failed to update status");
+  async function quickStatusChange(
+    id: number,
+    status: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled",
+  ) {
+    try {
+      await updateTransactionStatus(id, status);
+      toast.success("Status updated to " + status);
+      const startDate = getDateScopeStart(dateScope);
+      const [data, count] = await Promise.all([
+        getTransactions({
+          status: statusFilter || undefined,
+          type: typeFilter || undefined,
+          search: search || undefined,
+          startDate,
+          page,
+          perPage,
+        }),
+        getTransactionsCount({
+          status: statusFilter || undefined,
+          type: typeFilter || undefined,
+          search: search || undefined,
+          startDate,
+        }),
+      ]);
+      setTransactions(data as TxnWithItems[]);
+      setTotal(count);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update status");
+    }
   }
-}
 
   const totalPages = Math.ceil(total / perPage);
 
@@ -251,18 +258,25 @@ async function quickStatusChange(
               { key: "grandTotal", label: "Total" },
               { key: "transactionStatus", label: "Status" },
             ]}
-            fetchRows={async (selectedColumns) => transactions.map((t) =>
-              selectedColumns.map((key) => {
-                if (key === "receiptNumber") return String(t.receiptNumber);
-                if (key === "buyerName") return t.buyerName;
-                if (key === "transactionType") return t.transactionType.replace(/([A-Z])/g, " $1").trim();
-                if (key === "transactionDate") return new Date(t.transactionDate).toLocaleDateString("en-PH");
-                if (key === "paymentMethod") return t.paymentMethod || "—";
-                if (key === "grandTotal") return `${Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                if (key === "transactionStatus") return t.transactionStatus;
-                return "";
-              })
-            )}
+            fetchRows={async (selectedColumns) =>
+              transactions.map((t) =>
+                selectedColumns.map((key) => {
+                  if (key === "receiptNumber") return String(t.receiptNumber);
+                  if (key === "buyerName") return t.buyerName;
+                  if (key === "transactionType")
+                    return t.transactionType.replace(/([A-Z])/g, " $1").trim();
+                  if (key === "transactionDate")
+                    return new Date(t.transactionDate).toLocaleDateString(
+                      "en-PH",
+                    );
+                  if (key === "paymentMethod") return t.paymentMethod || "—";
+                  if (key === "grandTotal")
+                    return `${Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                  if (key === "transactionStatus") return t.transactionStatus;
+                  return "";
+                }),
+              )
+            }
             label="Export"
             title="Export transactions"
           />
@@ -343,7 +357,10 @@ async function quickStatusChange(
                       {t.paymentMethod || "—"}
                     </td>
                     <td className="p-4 text-right font-mono text-[#0e212c] font-semibold">
-                      {Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {Number(t.grandTotal || 0).toLocaleString("en-PH", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </td>
                     <td className="p-4 text-center">
                       <span
@@ -426,7 +443,8 @@ async function quickStatusChange(
                             </button>
                           </>
                         )}
-                        {(t.transactionStatus === "Completed" || t.transactionStatus === "Cancelled") && (
+                        {(t.transactionStatus === "Completed" ||
+                          t.transactionStatus === "Cancelled") && (
                           <span className="w-7" />
                         )}
                         <button
@@ -470,10 +488,22 @@ async function quickStatusChange(
                                     {item.quantity}
                                   </td>
                                   <td className="py-1.5 text-right font-mono text-[#64748b]">
-                                    {Number(item.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    {Number(item.unitPrice).toLocaleString(
+                                      "en-PH",
+                                      {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      },
+                                    )}
                                   </td>
                                   <td className="py-1.5 text-right font-mono text-[#0e212c] font-semibold">
-                                    {Number(item.totalPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    {Number(item.totalPrice).toLocaleString(
+                                      "en-PH",
+                                      {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      },
+                                    )}
                                   </td>
                                 </tr>
                               ))}
@@ -484,7 +514,12 @@ async function quickStatusChange(
                             <span>Payment: {t.paymentMethod || "—"}</span>
                             {t.returnForReceiptNumber && (
                               <span>
-                                {t.transactionType === "Return" ? "Return of" : t.transactionType === "Damage" ? "Damage ref" : "Adjustment ref"}: #{t.returnForReceiptNumber}
+                                {t.transactionType === "Return"
+                                  ? "Return of"
+                                  : t.transactionType === "Damage"
+                                    ? "Damage ref"
+                                    : "Adjustment ref"}
+                                : #{t.returnForReceiptNumber}
                               </span>
                             )}
                           </div>
@@ -506,54 +541,72 @@ async function quickStatusChange(
         </div>
       </div>
 
-        <div className="border-t border-[#e2e8f0] p-4 flex items-center justify-between text-sm text-[#64748b]">
-          <span>
-            Showing {transactions.length} of {total} items
-          </span>
-          {totalPages > 1 && (
-            <div className="flex items-center gap-1">
-              <button disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              {(() => {
-                const pages: React.ReactNode[] = [];
-                if (totalPages <= 7) {
-                  for (let i = 1; i <= totalPages; i++) {
-                    pages.push(
-                      <button key={i} onClick={() => setPage(i)}
-                        className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
-                        {i}
-                      </button>
-                    );
-                  }
-                } else {
-                  let start = Math.max(1, page - 3);
-                  let end = Math.min(totalPages, page + 3);
-                  if (start > 1) pages.push(<span key="s" className="px-1 text-[#94a3b8] text-xs">...</span>);
-                  for (let i = start; i <= end; i++) {
-                    pages.push(
-                      <button key={i} onClick={() => setPage(i)}
-                        className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
-                        {i}
-                      </button>
-                    );
-                  }
-                  if (end < totalPages) pages.push(<span key="e" className="px-1 text-[#94a3b8] text-xs">...</span>);
+      <div className="border-t border-[#e2e8f0] p-4 flex items-center justify-between text-sm text-[#64748b]">
+        <span>
+          Showing {transactions.length} of {total} items
+        </span>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            {(() => {
+              const pages: React.ReactNode[] = [];
+              if (totalPages <= 7) {
+                for (let i = 1; i <= totalPages; i++) {
+                  pages.push(
+                    <button
+                      key={i}
+                      onClick={() => setPage(i)}
+                      className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}
+                    >
+                      {i}
+                    </button>,
+                  );
                 }
-                return pages;
-              })()}
-              <button disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-        </div>
+              } else {
+                let start = Math.max(1, page - 3);
+                let end = Math.min(totalPages, page + 3);
+                if (start > 1)
+                  pages.push(
+                    <span key="s" className="px-1 text-[#94a3b8] text-xs">
+                      ...
+                    </span>,
+                  );
+                for (let i = start; i <= end; i++) {
+                  pages.push(
+                    <button
+                      key={i}
+                      onClick={() => setPage(i)}
+                      className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}
+                    >
+                      {i}
+                    </button>,
+                  );
+                }
+                if (end < totalPages)
+                  pages.push(
+                    <span key="e" className="px-1 text-[#94a3b8] text-xs">
+                      ...
+                    </span>,
+                  );
+              }
+              return pages;
+            })()}
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-
-
-
-

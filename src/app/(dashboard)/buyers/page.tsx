@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 "use client";
@@ -41,7 +41,10 @@ import { ImportButton } from "@/components/import-button";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 import { toast } from "sonner";
 
-type TxnWithItems = Transaction & { items: TransactionItem[]; buyer?: { email?: string | null } | null };
+type TxnWithItems = Transaction & {
+  items: TransactionItem[];
+  buyer?: { email?: string | null } | null;
+};
 
 interface Buyer {
   buyerName: string;
@@ -74,7 +77,10 @@ export default function BuyersPage() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([getBuyers(buyerType === "all" ? undefined : buyerType), getProducts({})]).then(([data, prods]) => {
+    Promise.all([
+      getBuyers(buyerType === "all" ? undefined : buyerType),
+      getProducts({}),
+    ]).then(([data, prods]) => {
       setBuyers(data as Buyer[]);
       setProducts(prods as Product[]);
       setLoading(false);
@@ -127,13 +133,19 @@ export default function BuyersPage() {
       [],
       ["Summary"],
       [`Total Orders,${history.length}`],
-      [`Total Spent,${totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+      [
+        `Total Spent,${totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      ],
     ];
     const allHeaders = ["Receipt #", "Type", "Date", "Total", "Status"];
     const allRows = [...metaRows, allHeaders, ...dataRows, ...summaryRows];
 
     if (format === "csv") {
-      const csv = "data:text/csv;charset=utf-8," + allRows.map((r) => `"${(Array.isArray(r) ? r : [r]).join('","')}"`).join("\n");
+      const csv =
+        "data:text/csv;charset=utf-8," +
+        allRows
+          .map((r) => `"${(Array.isArray(r) ? r : [r]).join('","')}"`)
+          .join("\n");
       const a = document.createElement("a");
       a.href = encodeURI(csv);
       a.download = `buyer-report-${selectedBuyer.replace(/\s+/g, "-")}.csv`;
@@ -241,13 +253,22 @@ export default function BuyersPage() {
                 </button>
                 {showExportDropdown && (
                   <div className="absolute right-0 top-full mt-1 bg-white border border-[#e2e8f0] rounded-lg shadow-xl z-50 min-w-[140px] py-1">
-                    <button onClick={() => exportBuyerReport("csv")} className="w-full px-4 py-2 text-left text-sm text-[#0e212c] hover:bg-[#f8fafc] transition-colors flex items-center gap-2">
+                    <button
+                      onClick={() => exportBuyerReport("csv")}
+                      className="w-full px-4 py-2 text-left text-sm text-[#0e212c] hover:bg-[#f8fafc] transition-colors flex items-center gap-2"
+                    >
                       <Download className="h-3.5 w-3.5 text-[#94a3b8]" /> CSV
                     </button>
-                    <button onClick={() => exportBuyerReport("xlsx")} className="w-full px-4 py-2 text-left text-sm text-[#0e212c] hover:bg-[#f8fafc] transition-colors flex items-center gap-2">
+                    <button
+                      onClick={() => exportBuyerReport("xlsx")}
+                      className="w-full px-4 py-2 text-left text-sm text-[#0e212c] hover:bg-[#f8fafc] transition-colors flex items-center gap-2"
+                    >
                       <Download className="h-3.5 w-3.5 text-[#94a3b8]" /> XLSX
                     </button>
-                    <button onClick={() => exportBuyerReport("pdf")} className="w-full px-4 py-2 text-left text-sm text-[#0e212c] hover:bg-[#f8fafc] transition-colors flex items-center gap-2">
+                    <button
+                      onClick={() => exportBuyerReport("pdf")}
+                      className="w-full px-4 py-2 text-left text-sm text-[#0e212c] hover:bg-[#f8fafc] transition-colors flex items-center gap-2"
+                    >
                       <Download className="h-3.5 w-3.5 text-[#94a3b8]" /> PDF
                     </button>
                   </div>
@@ -258,10 +279,12 @@ export default function BuyersPage() {
                   Total Spent
                 </p>
                 <p className="text-xl font-bold text-[#fd761a]">
-                  
                   {history
                     .reduce((s, t) => s + Number(t.grandTotal || 0), 0)
-                    .toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    .toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                 </p>
               </div>
             </div>
@@ -328,7 +351,10 @@ export default function BuyersPage() {
                           Total
                         </p>
                         <p className="font-mono text-[#0e212c] font-semibold mt-0.5">
-                          {Number(txn.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {Number(txn.grandTotal || 0).toLocaleString("en-PH", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </p>
                       </div>
                     </div>
@@ -380,10 +406,22 @@ export default function BuyersPage() {
                                 {item.quantity}
                               </td>
                               <td className="py-2 text-right font-mono text-[#64748b]">
-                                {Number(item.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {Number(item.unitPrice).toLocaleString(
+                                  "en-PH",
+                                  {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  },
+                                )}
                               </td>
                               <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">
-                                {Number(item.totalPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {Number(item.totalPrice).toLocaleString(
+                                  "en-PH",
+                                  {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  },
+                                )}
                               </td>
                             </tr>
                           ))}
@@ -414,9 +452,7 @@ export default function BuyersPage() {
                   </button>
                   <button
                     onClick={() =>
-                      setDetailPage(
-                        Math.min(detailTotalPages, detailPage + 1),
-                      )
+                      setDetailPage(Math.min(detailTotalPages, detailPage + 1))
                     }
                     disabled={detailPage === detailTotalPages}
                     className="px-3 py-1.5 border border-[#e2e8f0] rounded-lg text-xs text-[#64748b] hover:bg-white disabled:opacity-50 transition-all"
@@ -574,7 +610,9 @@ export default function BuyersPage() {
         </div>
         <div className="flex gap-2 w-full lg:w-auto flex-wrap items-center">
           <div className="flex items-center gap-2 text-sm text-[#64748b]">
-            <span className="text-[10px] font-semibold uppercase">Min Orders</span>
+            <span className="text-[10px] font-semibold uppercase">
+              Min Orders
+            </span>
             <input
               type="number"
               min={0}
@@ -597,17 +635,23 @@ export default function BuyersPage() {
               { key: "buyerContact", label: "Contact" },
               { key: "lastOrder", label: "Last Order" },
             ]}
-            fetchRows={async (selectedColumns) => filtered.map((b) =>
-              selectedColumns.map((key) => {
-                if (key === "buyerName") return b.buyerName;
-                if (key === "totalOrders") return String(b.totalOrders);
-                if (key === "totalSpent") return `${b.totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                if (key === "buyerAddress") return b.buyerAddress || "";
-                if (key === "buyerContact") return b.buyerContact || "";
-                if (key === "lastOrder") return b.lastOrder ? new Date(b.lastOrder).toLocaleDateString("en-PH") : "";
-                return "";
-              })
-            )}
+            fetchRows={async (selectedColumns) =>
+              filtered.map((b) =>
+                selectedColumns.map((key) => {
+                  if (key === "buyerName") return b.buyerName;
+                  if (key === "totalOrders") return String(b.totalOrders);
+                  if (key === "totalSpent")
+                    return `${b.totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                  if (key === "buyerAddress") return b.buyerAddress || "";
+                  if (key === "buyerContact") return b.buyerContact || "";
+                  if (key === "lastOrder")
+                    return b.lastOrder
+                      ? new Date(b.lastOrder).toLocaleDateString("en-PH")
+                      : "";
+                  return "";
+                }),
+              )
+            }
             label="Export"
             title="Export buyers list"
           />
@@ -674,7 +718,10 @@ export default function BuyersPage() {
                     {buyer.totalOrders}
                   </td>
                   <td className="p-4 text-right font-mono font-semibold text-[#fd761a]">
-                    {buyer.totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {buyer.totalSpent.toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </td>
                   <td className="p-4 text-right text-[#64748b]">
                     {buyer.lastOrder
@@ -719,8 +766,11 @@ export default function BuyersPage() {
           </span>
           {totalPages > 1 && (
             <div className="flex items-center gap-1">
-              <button disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               {(() => {
@@ -728,34 +778,59 @@ export default function BuyersPage() {
                 if (totalPages <= 7) {
                   for (let i = 1; i <= totalPages; i++) {
                     pages.push(
-                      <button key={i} onClick={() => setPage(i)}
-                        className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
+                      <button
+                        key={i}
+                        onClick={() => setPage(i)}
+                        className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}
+                      >
                         {i}
-                      </button>
+                      </button>,
                     );
                   }
                 } else {
                   let start = Math.max(1, page - 3);
                   let end = Math.min(totalPages, page + 3);
-                  if (start > 1) pages.push(<span key="s" className="px-1 text-[#94a3b8] text-xs">...</span>);
+                  if (start > 1)
+                    pages.push(
+                      <span key="s" className="px-1 text-[#94a3b8] text-xs">
+                        ...
+                      </span>,
+                    );
                   for (let i = start; i <= end; i++) {
                     pages.push(
-                      <button key={i} onClick={() => setPage(i)}
-                        className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
+                      <button
+                        key={i}
+                        onClick={() => setPage(i)}
+                        className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${i === page ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}
+                      >
                         {i}
-                      </button>
+                      </button>,
                     );
                   }
-                  if (end < totalPages) pages.push(<span key="e" className="px-1 text-[#94a3b8] text-xs">...</span>);
+                  if (end < totalPages)
+                    pages.push(
+                      <span key="e" className="px-1 text-[#94a3b8] text-xs">
+                        ...
+                      </span>,
+                    );
                 }
                 return pages;
               })()}
-              <button disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+              <button
+                disabled={page === totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
                 <ChevronRight className="h-4 w-4" />
               </button>
-              <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
-                className="ml-2 px-2 py-1.5 border border-[#e2e8f0] rounded text-xs text-[#64748b] bg-white">
+              <select
+                value={perPage}
+                onChange={(e) => {
+                  setPerPage(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="ml-2 px-2 py-1.5 border border-[#e2e8f0] rounded text-xs text-[#64748b] bg-white"
+              >
                 <option value={10}>10 / page</option>
                 <option value={20}>20 / page</option>
                 <option value={50}>50 / page</option>
@@ -767,7 +842,3 @@ export default function BuyersPage() {
     </div>
   );
 }
-
-
-
-

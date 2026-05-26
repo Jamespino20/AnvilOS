@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 "use client";
@@ -241,16 +241,18 @@ export default function SuppliersPage() {
               { key: "email", label: "Email" },
               { key: "address", label: "Address" },
             ]}
-            fetchRows={async (selectedColumns) => suppliers.map((s) =>
-              selectedColumns.map((key) => {
-                if (key === "supplierName") return s.supplierName;
-                if (key === "contactName") return s.contactName || "";
-                if (key === "contactNumber") return s.contactNumber || "";
-                if (key === "email") return s.email || "";
-                if (key === "address") return s.address || "";
-                return "";
-              })
-            )}
+            fetchRows={async (selectedColumns) =>
+              suppliers.map((s) =>
+                selectedColumns.map((key) => {
+                  if (key === "supplierName") return s.supplierName;
+                  if (key === "contactName") return s.contactName || "";
+                  if (key === "contactNumber") return s.contactNumber || "";
+                  if (key === "email") return s.email || "";
+                  if (key === "address") return s.address || "";
+                  return "";
+                }),
+              )
+            }
             label="Export"
             title="Export suppliers"
           />
@@ -629,7 +631,3 @@ export default function SuppliersPage() {
     </div>
   );
 }
-
-
-
-

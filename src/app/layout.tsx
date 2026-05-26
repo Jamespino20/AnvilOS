@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 import type { Metadata } from "next";
@@ -60,7 +60,10 @@ export default function RootLayout({
       )}
     >
       <head>
-        <meta httpEquiv="cache-control" content="no-cache, no-store, must-revalidate" />
+        <meta
+          httpEquiv="cache-control"
+          content="no-cache, no-store, must-revalidate"
+        />
         <meta httpEquiv="pragma" content="no-cache" />
         <meta httpEquiv="expires" content="0" />
       </head>
@@ -72,7 +75,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-
-
-

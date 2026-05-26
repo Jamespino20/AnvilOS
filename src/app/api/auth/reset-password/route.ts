@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 import { prisma } from "@/lib/prisma";
@@ -15,15 +15,23 @@ export async function POST(req: Request) {
   try {
     const { token, code, password } = await req.json();
     if (!token || !code || !password) {
-      return NextResponse.json({ error: "Token, code, and password are required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Token, code, and password are required" },
+        { status: 400 },
+      );
     }
 
     const record = await consumeEmailToken("PasswordReset", token, code);
     if (!record) {
-      return NextResponse.json({ error: "Invalid or expired reset" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid or expired reset" },
+        { status: 400 },
+      );
     }
 
-    const user = await prisma.user.findUniqueOrThrow({ where: { id: record.userId } });
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { id: record.userId },
+    });
     const passwordHash = await bcrypt.hash(password, 10);
     await prisma.user.update({
       where: { id: user.id },
@@ -48,7 +56,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-
-
-

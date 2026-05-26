@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 import { prisma } from "@/lib/prisma";
@@ -14,12 +14,7 @@ import { sendMail } from "@/lib/mail";
 
 export async function POST(req: Request) {
   try {
-    const {
-      sellerName,
-      username,
-      email,
-      password,
-    } = await req.json();
+    const { sellerName, username, email, password } = await req.json();
 
     if (!password || !email) {
       return NextResponse.json(
@@ -95,7 +90,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Registration failed" }, { status: 500 });
   }
 }
-
-
-
-

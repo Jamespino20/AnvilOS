@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 "use client";
@@ -103,7 +103,3 @@ export function FAQ() {
     </section>
   );
 }
-
-
-
-

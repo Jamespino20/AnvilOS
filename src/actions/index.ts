@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 "use server";
@@ -326,7 +326,11 @@ export async function deleteSupplier(id: number) {
     throw new Error("Cannot delete supplier with associated products");
   }
   await prisma.supplier.delete({ where: { id } });
-  await logAudit("SupplierPanel", "Delete Supplier", `${supplier.supplierName} deleted`);
+  await logAudit(
+    "SupplierPanel",
+    "Delete Supplier",
+    `${supplier.supplierName} deleted`,
+  );
   revalidatePath("/suppliers");
 }
 
@@ -472,7 +476,12 @@ export async function createTransaction(data: {
     | "Adjustment"
     | "Return"
     | "Damage";
-  transactionStatus: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled";
+  transactionStatus:
+    | "Ongoing"
+    | "Processing"
+    | "OnTheWay"
+    | "Completed"
+    | "Cancelled";
   grandTotal: number;
   paymentMethod?: string;
   deliveryMethod?: "WalkIn" | "Pickup" | "Delivery" | "COD";
@@ -687,7 +696,11 @@ export async function getReturnTransaction(receiptNumber: number) {
 export async function updateTransactionStatus(
   id: number,
   status: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled",
-  deliveryData?: { deliveryRef?: string; deliveryNotes?: string; delivererName?: string },
+  deliveryData?: {
+    deliveryRef?: string;
+    deliveryNotes?: string;
+    delivererName?: string;
+  },
 ) {
   await requireAdmin();
   const txn = await prisma.transaction.findUniqueOrThrow({
@@ -714,9 +727,15 @@ export async function updateTransactionStatus(
     where: { id },
     data: {
       transactionStatus: status,
-      ...(deliveryData?.deliveryRef !== undefined && { deliveryRef: deliveryData.deliveryRef }),
-      ...(deliveryData?.deliveryNotes !== undefined && { deliveryNotes: deliveryData.deliveryNotes }),
-      ...(deliveryData?.delivererName !== undefined && { delivererName: deliveryData.delivererName }),
+      ...(deliveryData?.deliveryRef !== undefined && {
+        deliveryRef: deliveryData.deliveryRef,
+      }),
+      ...(deliveryData?.deliveryNotes !== undefined && {
+        deliveryNotes: deliveryData.deliveryNotes,
+      }),
+      ...(deliveryData?.delivererName !== undefined && {
+        delivererName: deliveryData.delivererName,
+      }),
     },
   });
   await logAudit(
@@ -738,7 +757,12 @@ export async function updateTransaction(
     deliveryRef?: string;
     deliveryNotes?: string;
     delivererName?: string;
-    transactionStatus?: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled";
+    transactionStatus?:
+      | "Ongoing"
+      | "Processing"
+      | "OnTheWay"
+      | "Completed"
+      | "Cancelled";
     items?: {
       id?: number;
       productId: number;
@@ -940,11 +964,17 @@ export async function getBuyers(type?: "WalkIn" | "PO") {
   const nameFilter =
     type === "WalkIn"
       ? await prisma.transaction
-          .groupBy({ by: ["buyerName"], where: { transactionType: "SaleWalkIn" } })
+          .groupBy({
+            by: ["buyerName"],
+            where: { transactionType: "SaleWalkIn" },
+          })
           .then((r) => r.map((x) => x.buyerName))
       : type === "PO"
         ? await prisma.transaction
-            .groupBy({ by: ["buyerName"], where: { transactionType: "SalePO" } })
+            .groupBy({
+              by: ["buyerName"],
+              where: { transactionType: "SalePO" },
+            })
             .then((r) => r.map((x) => x.buyerName))
         : null;
 
@@ -978,7 +1008,11 @@ export async function getBuyers(type?: "WalkIn" | "PO") {
   // Include legacy buyers from transactions not yet in Buyer table
   const existingNames = new Set(buyerRecords.map((b) => b.name));
   const legacyWhere: any = { buyerName: { notIn: Array.from(existingNames) } };
-  if (nameFilter) legacyWhere.buyerName = { in: nameFilter, notIn: Array.from(existingNames) };
+  if (nameFilter)
+    legacyWhere.buyerName = {
+      in: nameFilter,
+      notIn: Array.from(existingNames),
+    };
   if (existingNames.size > 0 && !(nameFilter && nameFilter.length === 0)) {
     const legacyBuyers = await prisma.transaction.groupBy({
       by: ["buyerName"],
@@ -1027,7 +1061,11 @@ export async function getBuyerTransactions(buyerName: string) {
   return prisma.transaction.findMany({
     where: { buyerName },
     orderBy: { transactionDate: "desc" },
-    include: { items: true, seller: { select: { sellerName: true } }, buyer: true },
+    include: {
+      items: true,
+      seller: { select: { sellerName: true } },
+      buyer: true,
+    },
   });
 }
 
@@ -1275,73 +1313,83 @@ export async function getFinancialDashboard(period?: {
   prevEnd.setDate(prevEnd.getDate() - 1);
 
   async function periodStats(s: Date, e: Date) {
-    const [sales, returns, restocksRaw, damages, adjustments, cancelled, paymentByMethod] =
-      await Promise.all([
-        prisma.transaction.aggregate({
-          where: {
-            transactionDate: { gte: s, lte: e },
-            transactionStatus: "Completed",
-            transactionType: { in: ["SaleWalkIn", "SalePO"] },
-          },
-          _sum: { grandTotal: true },
-          _count: true,
-        }),
-        prisma.transaction.aggregate({
-          where: {
-            transactionDate: { gte: s, lte: e },
-            transactionStatus: "Completed",
-            transactionType: "Return",
-          },
-          _sum: { grandTotal: true },
-          _count: true,
-        }),
-        prisma.transaction.findMany({
-          where: {
-            transactionDate: { gte: s, lte: e },
-            transactionStatus: "Completed",
-            transactionType: "Restock",
-          },
-          select: { id: true, grandTotal: true },
-        }),
-        prisma.transaction.aggregate({
-          where: {
-            transactionDate: { gte: s, lte: e },
-            transactionStatus: "Completed",
-            transactionType: "Damage",
-          },
-          _sum: { grandTotal: true },
-          _count: true,
-        }),
-        prisma.transaction.aggregate({
-          where: {
-            transactionDate: { gte: s, lte: e },
-            transactionStatus: "Completed",
-            transactionType: "Adjustment",
-          },
-          _sum: { grandTotal: true },
-          _count: true,
-        }),
-        prisma.transaction.aggregate({
-          where: {
-            transactionDate: { gte: s, lte: e },
-            transactionStatus: "Cancelled",
-          },
-          _count: true,
-        }),
-        prisma.transaction.groupBy({
-          by: ["paymentMethod"],
-          where: {
-            transactionDate: { gte: s, lte: e },
-            transactionStatus: "Completed",
-            transactionType: { in: ["SaleWalkIn", "SalePO"] },
-          },
-          _sum: { grandTotal: true },
-          _count: true,
-        }),
-      ]);
+    const [
+      sales,
+      returns,
+      restocksRaw,
+      damages,
+      adjustments,
+      cancelled,
+      paymentByMethod,
+    ] = await Promise.all([
+      prisma.transaction.aggregate({
+        where: {
+          transactionDate: { gte: s, lte: e },
+          transactionStatus: "Completed",
+          transactionType: { in: ["SaleWalkIn", "SalePO"] },
+        },
+        _sum: { grandTotal: true },
+        _count: true,
+      }),
+      prisma.transaction.aggregate({
+        where: {
+          transactionDate: { gte: s, lte: e },
+          transactionStatus: "Completed",
+          transactionType: "Return",
+        },
+        _sum: { grandTotal: true },
+        _count: true,
+      }),
+      prisma.transaction.findMany({
+        where: {
+          transactionDate: { gte: s, lte: e },
+          transactionStatus: "Completed",
+          transactionType: "Restock",
+        },
+        select: { id: true, grandTotal: true },
+      }),
+      prisma.transaction.aggregate({
+        where: {
+          transactionDate: { gte: s, lte: e },
+          transactionStatus: "Completed",
+          transactionType: "Damage",
+        },
+        _sum: { grandTotal: true },
+        _count: true,
+      }),
+      prisma.transaction.aggregate({
+        where: {
+          transactionDate: { gte: s, lte: e },
+          transactionStatus: "Completed",
+          transactionType: "Adjustment",
+        },
+        _sum: { grandTotal: true },
+        _count: true,
+      }),
+      prisma.transaction.aggregate({
+        where: {
+          transactionDate: { gte: s, lte: e },
+          transactionStatus: "Cancelled",
+        },
+        _count: true,
+      }),
+      prisma.transaction.groupBy({
+        by: ["paymentMethod"],
+        where: {
+          transactionDate: { gte: s, lte: e },
+          transactionStatus: "Completed",
+          transactionType: { in: ["SaleWalkIn", "SalePO"] },
+        },
+        _sum: { grandTotal: true },
+        _count: true,
+      }),
+    ]);
 
     // Calculate restock cost from items if grandTotal is 0 (old data)
-    let restocksTotal = restocksRaw.reduce((sum, r) => sum + Number(r.grandTotal || 0), 0);
+    let restocksTotal = restocksRaw.reduce(
+      (sum, r) => sum + Number(r.grandTotal || 0),
+      0,
+    );
     const restocksCount = restocksRaw.length;
     if (restocksTotal === 0 && restocksCount > 0) {
       const itemIds = restocksRaw.map((r) => r.id);
@@ -1349,10 +1397,23 @@ export async function getFinancialDashboard(period?: {
         where: { transactionId: { in: itemIds } },
         select: { costPrice: true, unitPrice: true, quantity: true },
       });
-      restocksTotal = items.reduce((sum, i) => sum + Number(i.costPrice || i.unitPrice || 0) * (i.quantity || 0), 0);
+      restocksTotal = items.reduce(
+        (sum, i) =>
+          sum + Number(i.costPrice || i.unitPrice || 0) * (i.quantity || 0),
+        0,
+      );
     }
 
-    return { sales, returns, restocksTotal, restocksCount, damages, adjustments, cancelled, paymentByMethod };
+    return {
+      sales,
+      returns,
+      restocksTotal,
+      restocksCount,
+      damages,
+      adjustments,
+      cancelled,
+      paymentByMethod,
+    };
   }
 
   const [cur, prev] = await Promise.all([
@@ -1483,11 +1544,23 @@ export async function getTopProductsByRevenue(
         transactionType: { in: ["SaleWalkIn", "SalePO"] },
       },
     },
-    select: { productName: true, productId: true, quantity: true, totalPrice: true },
+    select: {
+      productName: true,
+      productId: true,
+      quantity: true,
+      totalPrice: true,
+    },
   });
 
   // Build a lookup of product names for any null productNames
-  const missingIds = [...new Set(items.filter((i) => !i.productName).map((i) => i.productId).filter((id): id is number => id !== null))];
+  const missingIds = [
+    ...new Set(
+      items
+        .filter((i) => !i.productName)
+        .map((i) => i.productId)
+        .filter((id): id is number => id !== null),
+    ),
+  ];
   const productLookup = new Map<number, string>();
   if (missingIds.length > 0) {
     const prods = await prisma.product.findMany({
@@ -1499,7 +1572,10 @@ export async function getTopProductsByRevenue(
 
   const map = new Map<string, { qty: number; total: number }>();
   for (const item of items) {
-    const name = item.productName || (item.productId ? productLookup.get(item.productId) : null) || "Deleted Product";
+    const name =
+      item.productName ||
+      (item.productId ? productLookup.get(item.productId) : null) ||
+      "Deleted Product";
     const existing = map.get(name) || { qty: 0, total: 0 };
     existing.qty += item.quantity || 0;
     existing.total += Number(item.totalPrice || 0);
@@ -1745,8 +1821,3 @@ export async function importData(
   revalidatePath(`/${table}`);
   return { imported: count };
 }
-
-
-
-
-

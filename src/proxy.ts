@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 import { auth } from "@/lib/auth";
@@ -41,13 +41,9 @@ export const proxy = auth((request: NextAuthRequest, event: NextFetchEvent) => {
     for (const { name } of accumulatedCookies) {
       response.headers.append(
         "Set-Cookie",
-        `${name}=; Max-Age=0; Path=/; Secure; SameSite=Lax`
+        `${name}=; Max-Age=0; Path=/; Secure; SameSite=Lax`,
       );
     }
     return response;
   }
 });
-
-
-
-

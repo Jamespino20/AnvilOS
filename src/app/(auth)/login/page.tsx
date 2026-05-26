@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 "use client";
@@ -178,7 +178,9 @@ export default function LoginPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-[#fd761a]" />
-                <h3 className="text-lg font-semibold text-[#0e212c]">Authenticator Required</h3>
+                <h3 className="text-lg font-semibold text-[#0e212c]">
+                  Authenticator Required
+                </h3>
               </div>
               <button
                 type="button"
@@ -189,7 +191,8 @@ export default function LoginPage() {
               </button>
             </div>
             <p className="text-sm text-[#64748b]">
-              Enter the six-digit code from your authenticator app to complete sign-in.
+              Enter the six-digit code from your authenticator app to complete
+              sign-in.
             </p>
             <input
               type="text"
@@ -232,7 +235,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-
-
-

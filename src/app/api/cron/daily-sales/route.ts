@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 import { NextResponse } from "next/server";
@@ -26,7 +26,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-
-
-
-

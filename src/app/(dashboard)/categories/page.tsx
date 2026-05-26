@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 "use client";
@@ -70,14 +70,11 @@ export default function CategoriesPage() {
     });
   }, []);
 
-  const filtered = categories.filter((c) =>
-    !search || c.name.toLowerCase().includes(search.toLowerCase())
+  const filtered = categories.filter(
+    (c) => !search || c.name.toLowerCase().includes(search.toLowerCase()),
   );
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paginated = filtered.slice(
-    (page - 1) * PER_PAGE,
-    page * PER_PAGE,
-  );
+  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   useEffect(() => {
     if (page > totalPages && totalPages > 0) setPage(totalPages);
@@ -245,16 +242,19 @@ export default function CategoriesPage() {
             }
           />
           {isAdmin && <ImportButton table="categories" onImported={refetch} />}
-          {isAdmin && <button
-            onClick={() => {
-              setShowAdd(true);
-              setError("");
-              setCatName("");
-            }}
-            className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
-          >
-            <Plus className="h-4 w-4" /> <span className="sm:inline">Add Category</span>
-          </button>}
+          {isAdmin && (
+            <button
+              onClick={() => {
+                setShowAdd(true);
+                setError("");
+                setCatName("");
+              }}
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
+            >
+              <Plus className="h-4 w-4" />{" "}
+              <span className="sm:inline">Add Category</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -310,32 +310,37 @@ export default function CategoriesPage() {
                         })
                       : "—"}
                   </td>
-                  {isAdmin && <td className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <button
-                        onClick={() => openEdit(cat)}
-                        className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all"
-                        title="Edit Category"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setDeleteTarget(cat.id);
-                          setDeleteError("");
-                        }}
-                        className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all"
-                        title="Delete Category"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>}
+                  {isAdmin && (
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => openEdit(cat)}
+                          className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all"
+                          title="Edit Category"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDeleteTarget(cat.id);
+                            setDeleteError("");
+                          }}
+                          className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all"
+                          title="Delete Category"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
               {paginated.length === 0 && (
                 <tr>
-                  <td colSpan={isAdmin ? 4 : 3} className="p-8 text-center text-[#94a3b8]">
+                  <td
+                    colSpan={isAdmin ? 4 : 3}
+                    className="p-8 text-center text-[#94a3b8]"
+                  >
                     No categories found. Click "Add Category" to create one.
                   </td>
                 </tr>
@@ -553,7 +558,3 @@ export default function CategoriesPage() {
     </div>
   );
 }
-
-
-
-

@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 "use server";
@@ -26,14 +26,21 @@ export async function getNotifPrefs() {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { notifLowStock: true, notifDailySales: true, notifTransaction: true, email: true },
+    select: {
+      notifLowStock: true,
+      notifDailySales: true,
+      notifTransaction: true,
+      email: true,
+    },
   });
   return user;
 }
 
-export async function updateNotifPrefs(
-  prefs: { notifLowStock?: boolean; notifDailySales?: boolean; notifTransaction?: boolean },
-) {
+export async function updateNotifPrefs(prefs: {
+  notifLowStock?: boolean;
+  notifDailySales?: boolean;
+  notifTransaction?: boolean;
+}) {
   const session = await auth();
   const userId = getUserId(session);
   if (!userId) throw new Error("Unauthorized");
@@ -41,18 +48,34 @@ export async function updateNotifPrefs(
   const user = await prisma.user.update({
     where: { id: userId },
     data: {
-      ...(prefs.notifLowStock !== undefined && { notifLowStock: prefs.notifLowStock }),
-      ...(prefs.notifDailySales !== undefined && { notifDailySales: prefs.notifDailySales }),
-      ...(prefs.notifTransaction !== undefined && { notifTransaction: prefs.notifTransaction }),
+      ...(prefs.notifLowStock !== undefined && {
+        notifLowStock: prefs.notifLowStock,
+      }),
+      ...(prefs.notifDailySales !== undefined && {
+        notifDailySales: prefs.notifDailySales,
+      }),
+      ...(prefs.notifTransaction !== undefined && {
+        notifTransaction: prefs.notifTransaction,
+      }),
     },
   });
-  await logAudit("Settings", "Update Notification Preferences", `User #${userId}`);
+  await logAudit(
+    "Settings",
+    "Update Notification Preferences",
+    `User #${userId}`,
+  );
   revalidatePath("/settings");
   return user;
 }
 
 /** Send low-stock alert emails to all users who have opted in */
-export async function sendLowStockAlerts(lowStockProducts: { productName: string; quantity: number; minThreshold: number }[]) {
+export async function sendLowStockAlerts(
+  lowStockProducts: {
+    productName: string;
+    quantity: number;
+    minThreshold: number;
+  }[],
+) {
   if (lowStockProducts.length === 0) return;
 
   const recipients = await prisma.user.findMany({
@@ -63,7 +86,10 @@ export async function sendLowStockAlerts(lowStockProducts: { productName: string
   if (emails.length === 0) return;
 
   const productRows = lowStockProducts
-    .map((p) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0">${p.productName}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${p.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${p.minThreshold}</td></tr>`)
+    .map(
+      (p) =>
+        `<tr><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0">${p.productName}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${p.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${p.minThreshold}</td></tr>`,
+    )
     .join("");
 
   await sendMail({
@@ -88,7 +114,11 @@ export async function sendLowStockAlerts(lowStockProducts: { productName: string
     </div>`,
   });
 
-  await logAudit("Inventory", "Low Stock Alert Sent", `${lowStockProducts.length} products`);
+  await logAudit(
+    "Inventory",
+    "Low Stock Alert Sent",
+    `${lowStockProducts.length} products`,
+  );
 }
 
 /** Send a transaction receipt email to a buyer */
@@ -96,12 +126,20 @@ export async function sendTransactionReceipt(
   receiptNumber: number,
   buyerName: string,
   buyerEmail: string,
-  items: { productName: string; quantity: number; unitPrice: number; totalPrice: number }[],
+  items: {
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }[],
   grandTotal: number,
   actorFingerprint?: string,
 ) {
   const itemRows = items
-    .map((i) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0">${i.productName}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${i.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">${formatMoney(i.unitPrice)}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">${formatMoney(i.totalPrice)}</td></tr>`)
+    .map(
+      (i) =>
+        `<tr><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0">${i.productName}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${i.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">${formatMoney(i.unitPrice)}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">${formatMoney(i.totalPrice)}</td></tr>`,
+    )
     .join("");
 
   await sendMail({
@@ -134,7 +172,11 @@ export async function sendTransactionReceipt(
     </div>`,
   });
 
-  await logAudit("POSPanel", "Receipt Email Sent", `#${receiptNumber} -> ${buyerEmail}`);
+  await logAudit(
+    "POSPanel",
+    "Receipt Email Sent",
+    `#${receiptNumber} -> ${buyerEmail}`,
+  );
 }
 
 /** Send daily sales summary to all users with dailySales enabled */
@@ -146,7 +188,10 @@ export async function sendDailySalesReport() {
 
   const [sales, recipients] = await Promise.all([
     prisma.transaction.aggregate({
-      where: { transactionDate: { gte: today, lt: tomorrow }, transactionStatus: "Completed" },
+      where: {
+        transactionDate: { gte: today, lt: tomorrow },
+        transactionStatus: "Completed",
+      },
       _sum: { grandTotal: true },
       _count: true,
     }),
@@ -186,7 +231,11 @@ export async function sendDailySalesReport() {
     </div>`,
   });
 
-  await logAudit("Dashboard", "Daily Sales Report Sent", `${formatMoney(totalSales)} (${txnCount} txns)`);
+  await logAudit(
+    "Dashboard",
+    "Daily Sales Report Sent",
+    `${formatMoney(totalSales)} (${txnCount} txns)`,
+  );
 }
 
 /** Check all products for low stock and send alerts if any found */
@@ -203,7 +252,3 @@ export async function checkAndAlertLowStock() {
     await sendLowStockAlerts(lowStockProducts);
   }
 }
-
-
-
-

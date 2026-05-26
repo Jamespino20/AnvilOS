@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 "use client";
@@ -17,7 +17,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("cwl-theme") as "light" | "dark" | null;
-    const next = stored || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const next =
+      stored ||
+      (window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light");
     setTheme(next);
     document.documentElement.classList.toggle("dark", next === "dark");
   }, []);
@@ -40,7 +44,3 @@ export function Providers({ children }: { children: React.ReactNode }) {
     </SessionProvider>
   );
 }
-
-
-
-

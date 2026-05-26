@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -23,12 +23,8 @@ export async function GET(request: NextRequest) {
   for (const { name } of cookiesToClear) {
     response.headers.append(
       "Set-Cookie",
-      `${name}=; Max-Age=0; Path=/; Secure; SameSite=Lax`
+      `${name}=; Max-Age=0; Path=/; Secure; SameSite=Lax`,
     );
   }
   return response;
 }
-
-
-
-

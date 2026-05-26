@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 import {
@@ -57,7 +57,10 @@ export default async function DashboardPage() {
           {
             icon: TrendingUp,
             label: "Gross Sales (Today)",
-            value: kpis.dailySales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            value: kpis.dailySales.toLocaleString("en-PH", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }),
             sub: `▲ Daily txn: ${kpis.transactionCount}`,
             color: "from-emerald-500 to-teal-600",
             bg: "bg-emerald-50",
@@ -150,7 +153,11 @@ export default async function DashboardPage() {
                     {t.buyerName}
                   </p>
                   <p className="text-[11px] text-[#94a3b8]">
-                    {t.transactionType.replace("Sale", "Sale ")} · {Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {t.transactionType.replace("Sale", "Sale ")} ·{" "}
+                    {Number(t.grandTotal || 0).toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </p>
                 </div>
                 <span className="text-[11px] text-[#94a3b8] font-medium text-right leading-tight">
@@ -201,7 +208,10 @@ export default async function DashboardPage() {
             {[
               {
                 label: "Today's Sales",
-                value: kpis.dailySales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                value: kpis.dailySales.toLocaleString("en-PH", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }),
                 color: "bg-emerald-500",
               },
               {
@@ -234,7 +244,3 @@ export default async function DashboardPage() {
     </div>
   );
 }
-
-
-
-

@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 import * as React from "react";
@@ -25,7 +25,3 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
 }
 
 export { Input };
-
-
-
-

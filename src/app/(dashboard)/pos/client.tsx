@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 24, 2026
+Last Update Date: May 26, 2026
 */
 
 "use client";
@@ -119,12 +119,18 @@ export function POSClient({ products, buyers }: Props) {
     setCart((prev) => {
       const existing = prev.find((c) => c.product.id === product.id);
       if (existing) {
-        const maxQty = txnType === "Return" ? (existing.originalQty || product.quantity) : product.quantity;
+        const maxQty =
+          txnType === "Return"
+            ? existing.originalQty || product.quantity
+            : product.quantity;
         return prev.map((c) =>
-          c.product.id === product.id ? { ...c, quantity: Math.min(c.quantity + 1, maxQty) } : c,
+          c.product.id === product.id
+            ? { ...c, quantity: Math.min(c.quantity + 1, maxQty) }
+            : c,
         );
       }
-      const maxInit = txnType === "Return" ? 0 : Math.min(1, product.quantity || 0) || 1;
+      const maxInit =
+        txnType === "Return" ? 0 : Math.min(1, product.quantity || 0) || 1;
       return [...prev, { product, quantity: maxInit }];
     });
   }
@@ -133,9 +139,15 @@ export function POSClient({ products, buyers }: Props) {
     setCart((prev) =>
       prev
         .map((c) => {
-          const maxQty = txnType === "Return" ? (c.originalQty || c.product.quantity) : c.product.quantity;
+          const maxQty =
+            txnType === "Return"
+              ? c.originalQty || c.product.quantity
+              : c.product.quantity;
           return c.product.id === productId
-            ? { ...c, quantity: Math.min(Math.max(0, c.quantity + delta), maxQty) }
+            ? {
+                ...c,
+                quantity: Math.min(Math.max(0, c.quantity + delta), maxQty),
+              }
             : c;
         })
         .filter((c) => c.quantity > 0),
@@ -150,7 +162,10 @@ export function POSClient({ products, buyers }: Props) {
     setCart((prev) =>
       prev.map((c) => {
         if (c.product.id !== productId) return c;
-        const maxQty = txnType === "Return" ? (c.originalQty || c.product.quantity) : c.product.quantity;
+        const maxQty =
+          txnType === "Return"
+            ? c.originalQty || c.product.quantity
+            : c.product.quantity;
         const minQty = txnType === "Return" ? 0 : 1;
         return { ...c, quantity: Math.min(Math.max(minQty, qty), maxQty) };
       }),
@@ -180,7 +195,8 @@ export function POSClient({ products, buyers }: Props) {
   );
 
   async function handleCheckout() {
-    const hasItems = txnType === "Return" ? cart.some((c) => c.quantity > 0) : cart.length > 0;
+    const hasItems =
+      txnType === "Return" ? cart.some((c) => c.quantity > 0) : cart.length > 0;
     if (!hasItems || !buyerName) return;
     setError("");
     setCheckingOut(true);
@@ -208,14 +224,17 @@ export function POSClient({ products, buyers }: Props) {
         items: cart
           .filter((c) => !(txnType === "Return" && c.quantity === 0))
           .map((c) => ({
-          productId: c.product.id,
-          quantity: c.quantity,
-          unitPrice: Number(c.product.unitPrice),
-          totalPrice: Number(c.product.unitPrice) * c.quantity,
-        })),
+            productId: c.product.id,
+            quantity: c.quantity,
+            unitPrice: Number(c.product.unitPrice),
+            totalPrice: Number(c.product.unitPrice) * c.quantity,
+          })),
         returnForReceiptNumber:
-          (txnType === "Return" || txnType === "Damage" || txnType === "Adjustment")
-            ? Number(returnReceipt) || undefined : undefined,
+          txnType === "Return" ||
+          txnType === "Damage" ||
+          txnType === "Adjustment"
+            ? Number(returnReceipt) || undefined
+            : undefined,
       });
       const receiptData = {
         receiptNumber: result.receiptNumber,
@@ -228,11 +247,11 @@ export function POSClient({ products, buyers }: Props) {
         items: cart
           .filter((c) => !(txnType === "Return" && c.quantity === 0))
           .map((c) => ({
-          productName: c.product.productName,
-          quantity: c.quantity,
-          unitPrice: Number(c.product.unitPrice),
-          totalPrice: Number(c.product.unitPrice) * c.quantity,
-        })),
+            productName: c.product.productName,
+            quantity: c.quantity,
+            unitPrice: Number(c.product.unitPrice),
+            totalPrice: Number(c.product.unitPrice) * c.quantity,
+          })),
         paymentMethod,
         transactionType: txnType,
       };
@@ -280,7 +299,11 @@ export function POSClient({ products, buyers }: Props) {
           .map((i) => {
             const prod = products.find((p) => p.id === i.productId);
             if (!prod) return null;
-            return { product: prod, quantity: 0, originalQty: i.quantity ?? 0 } as CartItem;
+            return {
+              product: prod,
+              quantity: 0,
+              originalQty: i.quantity ?? 0,
+            } as CartItem;
           })
           .filter((x): x is CartItem => x !== null);
         setCart(autoItems);
@@ -336,7 +359,10 @@ export function POSClient({ products, buyers }: Props) {
                 </span>
                 <span className="flex items-center gap-2">
                   <span className="text-lg font-black">
-                    {grandTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {grandTotal.toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </span>
                   <svg
                     className="h-4 w-4"
@@ -413,7 +439,10 @@ export function POSClient({ products, buyers }: Props) {
                 </p>
                 <div className="flex items-baseline justify-between mt-1 gap-1">
                   <p className="text-base sm:text-lg font-bold text-[#fd761a]">
-                    {Number(product.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {Number(product.unitPrice).toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </p>
                   <p
                     className={`text-[10px] ${product.quantity <= product.minThreshold && product.quantity > 0 ? "text-rose-500 font-bold" : "text-[#94a3b8]"}`}
@@ -485,7 +514,9 @@ export function POSClient({ products, buyers }: Props) {
                 </select>
               </div>
 
-              {(txnType === "Return" || txnType === "Damage" || txnType === "Adjustment") && (
+              {(txnType === "Return" ||
+                txnType === "Damage" ||
+                txnType === "Adjustment") && (
                 <div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-2 flex-1 min-w-0">
                   {loadingReturn ? (
                     <Loader2 className="h-3.5 w-3.5 text-amber-600 shrink-0 animate-spin" />
@@ -496,7 +527,11 @@ export function POSClient({ products, buyers }: Props) {
                     type="number"
                     value={returnReceipt}
                     onChange={(e) => setReturnReceipt(e.target.value)}
-                    placeholder={txnType === "Return" ? "Original Receipt #" : "Reference Receipt #"}
+                    placeholder={
+                      txnType === "Return"
+                        ? "Original Receipt #"
+                        : "Reference Receipt #"
+                    }
                     className="w-full min-w-0 bg-transparent text-xs text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                   />
                 </div>
@@ -621,9 +656,14 @@ export function POSClient({ products, buyers }: Props) {
                     {item.product.productName}
                   </p>
                   <p className="text-[10px] text-[#94a3b8] font-mono">
-                    {Number(item.product.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {Number(item.product.unitPrice).toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                     {item.originalQty !== undefined && (
-                      <span className="ml-2 text-[#94a3b8]">Orig: {item.originalQty}</span>
+                      <span className="ml-2 text-[#94a3b8]">
+                        Orig: {item.originalQty}
+                      </span>
                     )}
                   </p>
                 </div>
@@ -693,8 +733,13 @@ export function POSClient({ products, buyers }: Props) {
             {cart.length > 0 && (
               <div className="border-t border-[#e2e8f0] mt-3 pt-3">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">Live Receipt</p>
-                  <span className="text-[10px] font-semibold text-[#64748b]">{cart.reduce((s, c) => s + c.quantity, 0)} unit{cart.reduce((s, c) => s + c.quantity, 0) !== 1 ? "s" : ""}</span>
+                  <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
+                    Live Receipt
+                  </p>
+                  <span className="text-[10px] font-semibold text-[#64748b]">
+                    {cart.reduce((s, c) => s + c.quantity, 0)} unit
+                    {cart.reduce((s, c) => s + c.quantity, 0) !== 1 ? "s" : ""}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider pb-1 border-b border-[#e2e8f0]">
                   <span className="flex-1">Item</span>
@@ -704,11 +749,33 @@ export function POSClient({ products, buyers }: Props) {
                 </div>
                 <div className="space-y-0.5 mt-1">
                   {cart.map((item) => (
-                    <div key={item.product.id} className="flex justify-between items-center text-[11px] py-0.5">
-                      <span className="flex-1 text-[#0e212c] font-medium truncate pr-1">{item.product.productName}</span>
-                      <span className="w-10 text-center text-[#64748b]">{item.quantity}</span>
-                      <span className="w-[72px] text-right font-mono text-[#64748b]">{Number(item.product.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      <span className="w-[72px] text-right font-mono text-[#0e212c] font-semibold">{(Number(item.product.unitPrice) * item.quantity).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <div
+                      key={item.product.id}
+                      className="flex justify-between items-center text-[11px] py-0.5"
+                    >
+                      <span className="flex-1 text-[#0e212c] font-medium truncate pr-1">
+                        {item.product.productName}
+                      </span>
+                      <span className="w-10 text-center text-[#64748b]">
+                        {item.quantity}
+                      </span>
+                      <span className="w-[72px] text-right font-mono text-[#64748b]">
+                        {Number(item.product.unitPrice).toLocaleString(
+                          "en-PH",
+                          {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          },
+                        )}
+                      </span>
+                      <span className="w-[72px] text-right font-mono text-[#0e212c] font-semibold">
+                        {(
+                          Number(item.product.unitPrice) * item.quantity
+                        ).toLocaleString("en-PH", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -720,7 +787,10 @@ export function POSClient({ products, buyers }: Props) {
             <div className="flex justify-between items-center">
               <span className="text-sm font-bold text-[#0e212c]">Total</span>
               <span className="text-xl font-black text-[#fd761a]">
-                {grandTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {grandTotal.toLocaleString("en-PH", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </span>
             </div>
 
@@ -778,7 +848,3 @@ export function POSClient({ products, buyers }: Props) {
     </div>
   );
 }
-
-
-
-
