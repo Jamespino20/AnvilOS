@@ -11,11 +11,21 @@ Last Update Date: May 26, 2026
 import { useEffect, useState } from "react";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
+import { usePathname } from "next/navigation";
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isAuthPage = ["/login", "/register", "/forgot-password"].includes(
+    pathname,
+  );
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
+    if (isAuthPage) {
+      document.documentElement.classList.remove("dark");
+      setTheme("light");
+      return;
+    }
     const stored = localStorage.getItem("cwl-theme") as "light" | "dark" | null;
     const next =
       stored ||
@@ -24,7 +34,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         : "light");
     setTheme(next);
     document.documentElement.classList.toggle("dark", next === "dark");
-  }, []);
+  }, [isAuthPage]);
 
   return (
     <SessionProvider>

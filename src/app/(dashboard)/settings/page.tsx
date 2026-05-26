@@ -58,9 +58,13 @@ export default function SettingsPage() {
   } | null>(null);
   const [totpSecret, setTotpSecret] = useState("");
   const [totpCode, setTotpCode] = useState("");
-  const [totpEnabled, setTotpEnabled] = useState(
-    (session?.user as any)?.totpEnabled ?? false,
-  );
+  const [totpEnabled, setTotpEnabled] = useState(false);
+
+  useEffect(() => {
+    if (session?.user) {
+      setTotpEnabled((session.user as any)?.totpEnabled ?? false);
+    }
+  }, [session]);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
 
   useEffect(() => {

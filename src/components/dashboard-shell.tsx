@@ -35,7 +35,7 @@ export function DashboardShell({ children, user, unreadCount }: Props) {
       <DashboardSidebar collapsed={!sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} role={user.role} />
       <div className={cn(
         "flex-1 flex flex-col min-h-screen transition-all duration-300",
-        sidebarOpen ? "md:ml-[260px]" : "ml-0"
+        sidebarOpen ? "md:ml-[260px]" : "md:ml-[64px]"
       )}>
         <DashboardTopbar user={user} unreadCount={unreadCount} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         <main className="flex-1 p-6 overflow-auto">
