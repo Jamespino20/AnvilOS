@@ -226,7 +226,7 @@ model Notification {
   systemNotification String   @map("SYSTEM_NOTIFICATIONS")
   message            String   @map("MESSAGE")
   isRead             Boolean  @default(false) @map("IS_READ")
-  createdAt          DateTime @map("CREATED_AT")
+  createdAt          DateTime @default(now()) @map("CREATED_AT")
 
   @@map("notifications")
 }

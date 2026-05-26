@@ -93,9 +93,6 @@ export default function LoginPage() {
             src="/images/CWLHardware_Logo.png"
             alt="CWL Hardware"
             className="h-10 w-auto mx-auto"
-            style={{
-              filter: "brightness(0) sepia(1) hue-rotate(190deg) saturate(3)",
-            }}
           />
           <p className="text-on-surface-variant mt-2 text-sm">
             Hardware & Supply

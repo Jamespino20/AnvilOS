@@ -1,4 +1,4 @@
-﻿/*
+/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -635,26 +635,36 @@ export async function createTransaction(data: {
 
   // Fire-and-forget email alerts (non-blocking)
   if (data.transactionStatus === "Completed") {
-    Promise.all([
-      import("@/actions/email").then((m) => m.checkAndAlertLowStock()),
-      buyer?.email
-        ? import("@/actions/email").then((m) =>
-            m.sendTransactionReceipt(
-              receiptNumber,
-              data.buyerName,
-              buyer.email!,
-              itemsWithNames.map((i) => ({
-                productName: i.productName,
-                quantity: i.quantity,
-                unitPrice: i.unitPrice,
-                totalPrice: i.totalPrice,
-              })),
-              data.grandTotal,
-              actionFingerprint(session),
-            ),
-          )
-        : Promise.resolve(),
-    ]);
+    const actor = actionFingerprint(session);
+    import("@/actions/email").then((m) => {
+      // 1. Check stock alerts
+      m.checkAndAlertLowStock().catch((e) => console.error("Low stock alert failed:", e));
+
+      // 2. Alert staff (systemwide)
+      m.sendSystemTransactionAlert(
+        receiptNumber,
+        data.buyerName,
+        data.grandTotal,
+        actor
+      ).catch((e) => console.error("System transaction alert failed:", e));
+
+      // 3. Email buyer (receipt)
+      if (buyer?.email) {
+        m.sendTransactionReceipt(
+          receiptNumber,
+          data.buyerName,
+          buyer.email,
+          itemsWithNames.map((i) => ({
+            productName: i.productName,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+            totalPrice: i.totalPrice,
+          })),
+          data.grandTotal,
+          actor
+        ).catch((e) => console.error("Buyer receipt email failed:", e));
+      }
+    }).catch((e) => console.error("Failed to load email actions:", e));
   }
 
   revalidatePath("/transactions");
@@ -745,6 +755,14 @@ export async function updateTransactionStatus(
   );
   revalidatePath("/transactions");
   revalidatePath("/pos");
+
+  // Trigger alerts if now completed
+  if (status === "Completed") {
+    import("@/actions/email")
+      .then((m) => m.checkAndAlertLowStock())
+      .catch((e) => console.error("Low stock alert failed:", e));
+  }
+
   return updated;
 }
 
@@ -1820,4 +1838,123 @@ export async function importData(
   );
   revalidatePath(`/${table}`);
   return { imported: count };
+}
+
+// ─────────── User Management (Admin) ───────────
+
+export async function getUsers(opts?: {
+  search?: string;
+  page?: number;
+  perPage?: number;
+}) {
+  await requireAdmin();
+  const where: any = {};
+  if (opts?.search) {
+    where.OR = [
+      { sellerName: { contains: opts.search, mode: "insensitive" } },
+      { username: { contains: opts.search, mode: "insensitive" } },
+      { email: { contains: opts.search, mode: "insensitive" } },
+    ];
+  }
+  const take = opts?.perPage || 20;
+  const skip = ((opts?.page || 1) - 1) * take;
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: { sellerName: "asc" },
+      select: {
+        id: true,
+        sellerName: true,
+        username: true,
+        email: true,
+        role: true,
+        isActive: true,
+        emailVerified: true,
+        lastLogin: true,
+        registryDate: true,
+        _count: { select: { transactions: true } },
+      },
+      skip,
+      take,
+    }),
+    prisma.user.count({ where }),
+  ]);
+  return { users, total, page: opts?.page || 1, totalPages: Math.ceil(total / take) };
+}
+
+export async function createUser(data: {
+  sellerName: string;
+  username: string;
+  email: string;
+  password: string;
+  role: "ADMIN" | "STAFF";
+}) {
+  await requireAdmin();
+  const bcrypt = await import("bcryptjs");
+  const exists = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { username: { equals: data.username, mode: "insensitive" } },
+        { email: { equals: data.email, mode: "insensitive" } },
+      ],
+    },
+  });
+  if (exists) throw new Error("Username or email already exists");
+  const passwordHash = await bcrypt.hash(data.password, 10);
+  const user = await prisma.user.create({
+    data: {
+      sellerName: data.sellerName,
+      username: data.username,
+      email: data.email,
+      passwordHash,
+      role: data.role,
+      isActive: true,
+      registryDate: new Date(),
+      lastLogin: new Date(),
+    },
+  });
+  await logAudit("User Management", "Create User", `Created user ${user.sellerName} (${data.role})`);
+  revalidatePath("/users");
+  return { id: user.id };
+}
+
+export async function updateUser(
+  id: number,
+  data: {
+    sellerName?: string;
+    username?: string;
+    email?: string;
+    role?: "ADMIN" | "STAFF";
+    isActive?: boolean;
+    password?: string;
+  },
+) {
+  await requireAdmin();
+  const updateData: any = {};
+  if (data.sellerName !== undefined) updateData.sellerName = data.sellerName;
+  if (data.username !== undefined) updateData.username = data.username;
+  if (data.email !== undefined) updateData.email = data.email;
+  if (data.role !== undefined) updateData.role = data.role;
+  if (data.isActive !== undefined) updateData.isActive = data.isActive;
+  if (data.password) {
+    const bcrypt = await import("bcryptjs");
+    updateData.oldPasswordHash = null;
+    updateData.passwordHash = await bcrypt.hash(data.password, 10);
+  }
+  const user = await prisma.user.update({ where: { id }, data: updateData });
+  await logAudit("User Management", "Update User", `Updated user ${user.sellerName} (id=${id})`);
+  revalidatePath("/users");
+  return { id: user.id };
+}
+
+export async function deleteUser(id: number) {
+  await requireAdmin();
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new Error("User not found");
+  const txnCount = await prisma.transaction.count({ where: { sellerId: id } });
+  if (txnCount > 0) throw new Error("Cannot delete user with existing transactions. Deactivate instead.");
+  await prisma.user.delete({ where: { id } });
+  await logAudit("User Management", "Delete User", `Deleted user ${user.sellerName} (id=${id})`);
+  revalidatePath("/users");
+  return { success: true };
 }

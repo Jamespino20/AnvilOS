@@ -143,28 +143,34 @@
 }
 
 /* ─── Auth pages (login, register, forgot-password) — force light mode ─── */
-.auth-page.bg-\[\#f1f5f9\],
-.auth-page .bg-\[\#f1f5f9\] { background-color: #F1F5F9 !important; }
-.auth-page.bg-white\/90,
-.auth-page .bg-white\/90,
-.auth-page.bg-white,
-.auth-page .bg-white { background-color: #fff !important; }
-.auth-page.bg-white\/95,
-.auth-page .bg-white\/95 { background-color: rgba(255,255,255,0.95) !important; }
-.auth-page.bg-white\/80,
-.auth-page .bg-white\/80 { background-color: rgba(255,255,255,0.8) !important; }
-.auth-page.text-\[\#0e212c\],
-.auth-page .text-\[\#0e212c\] { color: #0e212c !important; }
-.auth-page.text-\[\#64748b\],
-.auth-page .text-\[\#64748b\] { color: #64748b !important; }
-.auth-page.text-\[\#94a3b8\],
-.auth-page .text-\[\#94a3b8\] { color: #94a3b8 !important; }
-.auth-page.border-\[\#e2e8f0\],
-.auth-page .border-\[\#e2e8f0\] { border-color: #e2e8f0 !important; }
-.auth-page.bg-\[\#f8fafc\],
-.auth-page .bg-\[\#f8fafc\] { background-color: #f8fafc !important; }
-.auth-page.bg-\[\#fafbfc\],
-.auth-page .bg-\[\#fafbfc\] { background-color: #fafbfc !important; }
+/* Reset ALL CSS variables to light-mode values so semantic classes keep light appearance */
+.auth-page,
+.auth-page * {
+  --background: oklch(1 0 0) !important;
+  --foreground: oklch(0.153 0.006 107.1) !important;
+  --card: oklch(1 0 0) !important;
+  --card-foreground: oklch(0.153 0.006 107.1) !important;
+  --popover: oklch(1 0 0) !important;
+  --popover-foreground: oklch(0.153 0.006 107.1) !important;
+  --primary: oklch(0.241 0.038 250) !important;
+  --primary-foreground: oklch(0.987 0.022 95.277) !important;
+  --secondary: oklch(0.967 0.001 286.375) !important;
+  --secondary-foreground: oklch(0.21 0.006 285.885) !important;
+  --muted: oklch(0.966 0.005 106.5) !important;
+  --muted-foreground: oklch(0.58 0.031 107.3) !important;
+  --accent: oklch(0.67 0.22 45) !important;
+  --accent-foreground: oklch(0.987 0.022 95.277) !important;
+  --destructive: oklch(0.577 0.245 27.325) !important;
+  --destructive-foreground: oklch(1 0 0) !important;
+  --border: oklch(0.93 0.007 106.5) !important;
+  --input: oklch(0.93 0.007 106.5) !important;
+  --ring: oklch(0.67 0.22 45) !important;
+  --color-emerald-50: oklch(0.95 0.05 160) !important;
+  --color-blue-50: oklch(0.93 0.04 250) !important;
+  --color-violet-50: oklch(0.94 0.03 280) !important;
+  --color-rose-50: oklch(0.94 0.03 350) !important;
+  --color-orange-50: oklch(0.95 0.06 40) !important;
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -278,6 +284,17 @@ select, input, textarea {
 }
 
 .dark select option {
+  color: #0e212c;
+  background: white;
+}
+
+/* Auth-page inputs must stay light even in dark mode */
+.auth-page input,
+.auth-page select,
+.auth-page textarea {
+  color: #0e212c !important;
+}
+.auth-page select option {
   color: #0e212c;
   background: white;
 }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 interface Notification {
   id: number;
+  systemNotification: string;
   message: string;
   isRead: boolean;
   createdAt: string;

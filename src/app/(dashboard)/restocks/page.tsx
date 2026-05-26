@@ -347,7 +347,7 @@ export default function RestocksPage() {
                     placeholder="Search products..."
                     className="w-full pl-9 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {filteredProducts.map((p) => {
                     const inCart = cart.find((i) => i.productId === p.id);
                     const imgUrl = (p as any).imageUrl;
@@ -361,9 +361,9 @@ export default function RestocksPage() {
                             <Package className="h-6 w-6 text-[#94a3b8]" />
                           </div>
                         )}
-                        <p className="text-xs font-medium text-[#0e212c] truncate">{p.productName}</p>
-                        <p className="text-[10px] text-[#94a3b8] mt-0.5">Stock: {p.quantity}</p>
-                        {inCart && <p className="text-[10px] text-[#fd761a] font-semibold mt-0.5">{inCart.quantity} in cart</p>}
+                        <p className="text-xs font-medium text-[#0e212c] leading-snug line-clamp-2">{p.productName}</p>
+                        <p className="text-[10px] text-[#94a3b8] mt-1">Stock: {p.quantity}</p>
+                        {inCart && <p className="text-[10px] text-[#fd761a] font-semibold mt-1">{inCart.quantity} in cart</p>}
                       </button>
                     );
                   })}
@@ -383,32 +383,37 @@ export default function RestocksPage() {
                 </div>
                 <div className="flex-1 overflow-y-auto space-y-3 mb-5">
                   {cart.map((item) => (
-                    <div key={item.productId} className="flex items-center gap-3 bg-[#f8fafc] rounded-lg p-3 group hover:bg-[#f1f5f9] transition-colors">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-[#0e212c] truncate">{item.productName}</p>
-                        <p className="text-[10px] text-[#64748b] mt-0.5">{(item.costPrice * item.quantity).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} total</p>
+                    <div key={item.productId} className="bg-[#f8fafc] rounded-lg p-3 space-y-2 hover:bg-[#f1f5f9] transition-colors group">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[13px] font-medium text-[#0e212c] leading-tight flex-1">{item.productName}</p>
+                        <button type="button" onClick={() => removeFromCart(item.productId)} className="w-7 h-7 flex items-center justify-center text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all shrink-0 opacity-0 group-hover:opacity-100"><X className="h-3.5 w-3.5" /></button>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Cost</span>
-                        <input type="number" min={0} step={0.01} value={item.costPrice} onChange={(e) => {
-                          const val = parseFloat(e.target.value) || 0;
-                          setCart((prev) => prev.map((i) => i.productId === item.productId ? { ...i, costPrice: val } : i));
-                        }} className="w-20 h-9 px-2 text-xs text-right font-mono border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#fd761a]" placeholder="0.00" />
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Per unit</span>
+                          <input type="number" min={0} step={0.01} value={item.costPrice} onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            setCart((prev) => prev.map((i) => i.productId === item.productId ? { ...i, costPrice: val } : i));
+                          }} className="w-24 h-8 px-2.5 text-xs text-right font-mono border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#fd761a]" placeholder="0.00" />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => updateCartQty(item.productId, -1)} className="w-8 h-8 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors" aria-label="Decrease quantity"><Minus className="h-3.5 w-3.5" /></button>
+                          {editingQty === item.productId ? (
+                            <input type="number" min={1} value={qtyInput} autoFocus
+                              onChange={(e) => setQtyInput(e.target.value)}
+                              onBlur={() => commitQtyEdit(item.productId)}
+                              onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur(); } if (e.key === "Escape") { setEditingQty(null); } }}
+                              className="w-12 h-8 text-center text-xs font-semibold text-[#0e212c] border border-[#fd761a] rounded-lg px-1 focus:outline-none" />
+                          ) : (
+                            <button type="button" onClick={() => startQtyEdit(item.productId, item.quantity)} className="min-w-[36px] h-8 text-center text-xs font-semibold text-[#0e212c] px-1.5 hover:bg-white rounded-lg transition-colors" aria-label="Edit quantity">{item.quantity}</button>
+                          )}
+                          <button type="button" onClick={() => updateCartQty(item.productId, 1)} className="w-8 h-8 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors" aria-label="Increase quantity"><Plus className="h-3.5 w-3.5" /></button>
+                        </div>
+                        <div className="ml-auto text-right">
+                          <p className="text-[11px] text-[#64748b]">Subtotal</p>
+                          <p className="text-xs font-bold text-[#0e212c]">{(item.costPrice * item.quantity).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button type="button" onClick={() => updateCartQty(item.productId, -1)} className="w-9 h-9 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors" aria-label="Decrease quantity"><Minus className="h-3.5 w-3.5" /></button>
-                        {editingQty === item.productId ? (
-                          <input type="number" min={1} value={qtyInput} autoFocus
-                            onChange={(e) => setQtyInput(e.target.value)}
-                            onBlur={() => commitQtyEdit(item.productId)}
-                            onKeyDown={(e) => { if (e.key === "Enter") { (e.target as HTMLInputElement).blur(); } if (e.key === "Escape") { setEditingQty(null); } }}
-                            className="w-14 h-9 text-center text-xs font-semibold text-[#0e212c] border border-[#fd761a] rounded-lg px-1 focus:outline-none" />
-                        ) : (
-                          <button type="button" onClick={() => startQtyEdit(item.productId, item.quantity)} className="min-w-[40px] h-9 text-center text-xs font-semibold text-[#0e212c] px-2 hover:bg-white rounded-lg transition-colors" aria-label="Edit quantity">{item.quantity}</button>
-                        )}
-                        <button type="button" onClick={() => updateCartQty(item.productId, 1)} className="w-9 h-9 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors" aria-label="Increase quantity"><Plus className="h-3.5 w-3.5" /></button>
-                      </div>
-                      <button type="button" onClick={() => removeFromCart(item.productId)} className="w-9 h-9 flex items-center justify-center text-rose-500 rounded-lg hover:bg-rose-50 transition-colors" aria-label="Remove item"><X className="h-3.5 w-3.5" /></button>
                     </div>
                   ))}
                   {cart.length === 0 && (

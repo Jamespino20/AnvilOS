@@ -22,7 +22,8 @@ type AuditPanel =
   | "Restocks"
   | "Data Import"
   | "Dashboard"
-  | "System";
+  | "System"
+  | "User Management";
 type AuditAction = string;
 
 export async function logAudit(

@@ -1,4 +1,4 @@
-﻿/*
+/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -114,6 +114,15 @@ export async function sendLowStockAlerts(
     </div>`,
   });
 
+  for (const p of lowStockProducts) {
+    await prisma.notification.create({
+      data: {
+        systemNotification: "Low Stock Alert",
+        message: `LOW STOCK: ${p.productName} quantity is ${p.quantity} (threshold: ${p.minThreshold})`,
+      },
+    });
+  }
+
   await logAudit(
     "Inventory",
     "Low Stock Alert Sent",
@@ -170,6 +179,13 @@ export async function sendTransactionReceipt(
         <p style="color:#94a3b8;font-size:12px;margin-top:8px">Need help? Contact us at <a href="mailto:${process.env.SMTP_USER || "support@cwlhardware.com"}" style="color:#fd761a">${process.env.SMTP_USER || "support@cwlhardware.com"}</a></p>
       </div>
     </div>`,
+  });
+
+  await prisma.notification.create({
+    data: {
+      systemNotification: "Receipt",
+      message: `Receipt #${receiptNumber} sent to ${buyerName} (${buyerEmail})`,
+    },
   });
 
   await logAudit(
@@ -238,17 +254,93 @@ export async function sendDailySalesReport() {
   );
 }
 
-/** Check all products for low stock and send alerts if any found */
-export async function checkAndAlertLowStock() {
-  const lowStockProducts = await prisma.product.findMany({
-    where: {
-      quantity: { lte: prisma.product.fields.minThreshold },
-      isAvailable: true,
-    },
-    select: { productName: true, quantity: true, minThreshold: true },
+/** Send transaction alert emails to all staff who have opted in */
+export async function sendSystemTransactionAlert(
+  receiptNumber: number,
+  buyerName: string,
+  grandTotal: number,
+  actorFingerprint?: string,
+) {
+  const recipients = await prisma.user.findMany({
+    where: { notifTransaction: true, email: { not: null } },
+    select: { email: true },
   });
+  const emails = recipients.map((r) => r.email).filter(Boolean) as string[];
+  if (emails.length === 0) return;
+
+  await sendMail({
+    to: emails,
+    subject: `System Alert: Transaction #${receiptNumber} Completed`,
+    html: `<div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto">
+      <div style="background:#0e212c;padding:24px;text-align:center;border-radius:8px 8px 0 0">
+        <h1 style="color:#fff;margin:0;font-size:20px">Transaction Alert</h1>
+      </div>
+      <div style="padding:24px;background:#fff;border:1px solid #e2e8f0;border-top:0;border-radius:0 0 8px 8px">
+        <p style="color:#0e212c;font-size:14px;margin:0 0 16px">A new transaction has been processed:</p>
+        <div style="background:#f8fafc;border-radius:8px;padding:16px;margin-bottom:16px">
+          <table style="width:100%;font-size:13px">
+            <tr><td style="color:#64748b;padding:4px 0">Receipt #</td><td style="color:#0e212c;font-weight:600;text-align:right">#${receiptNumber}</td></tr>
+            <tr><td style="color:#64748b;padding:4px 0">Buyer</td><td style="color:#0e212c;font-weight:600;text-align:right">${buyerName}</td></tr>
+            <tr><td style="color:#64748b;padding:4px 0">Total Amount</td><td style="color:#fd761a;font-weight:700;text-align:right">${formatMoney(grandTotal)}</td></tr>
+          </table>
+        </div>
+        <p style="color:#94a3b8;font-size:12px;margin:0 0 8px">Processed by: ${actorFingerprint || "System [SYSTEM #auto]"}</p>
+        <p style="color:#94a3b8;font-size:12px;margin:0"><a href="${process.env.NEXT_PUBLIC_APP_URL || ""}/transactions" style="color:#fd761a">View Transaction Details →</a></p>
+      </div>
+    </div>`,
+  });
+
+  await prisma.notification.create({
+    data: {
+      systemNotification: "Transaction Alert",
+      message: `Transaction #${receiptNumber} completed - ${buyerName} - ${formatMoney(grandTotal)}`,
+    },
+  });
+
+  await logAudit(
+    "System",
+    "Transaction Alert Sent",
+    `#${receiptNumber} alert sent to ${emails.length} staff`,
+  );
+}
+
+/** Check all products for low/out-of-stock and send alerts + create notifications */
+export async function checkAndAlertLowStock() {
+  const [lowStockProducts, outOfStockProducts] = await Promise.all([
+    prisma.$queryRaw<
+      { productName: string; quantity: number; minThreshold: number }[]
+    >`
+      SELECT "productName", "quantity", "minThreshold" 
+      FROM "products" 
+      WHERE "quantity" <= "minThreshold" AND "quantity" > 0 AND "isAvailable" = true
+    `,
+    prisma.$queryRaw<
+      { productName: string }[]
+    >`
+      SELECT "productName"
+      FROM "products"
+      WHERE "quantity" = 0 AND "isAvailable" = true
+    `,
+  ]);
 
   if (lowStockProducts.length > 0) {
     await sendLowStockAlerts(lowStockProducts);
+  }
+
+  for (const p of outOfStockProducts) {
+    await prisma.notification.create({
+      data: {
+        systemNotification: "Out of Stock Alert",
+        message: `OUT OF STOCK: ${p.productName} is no longer available`,
+      },
+    });
+  }
+
+  if (outOfStockProducts.length > 0) {
+    await logAudit(
+      "Inventory",
+      "Out of Stock Alert",
+      `${outOfStockProducts.length} product(s) out of stock`,
+    );
   }
 }
