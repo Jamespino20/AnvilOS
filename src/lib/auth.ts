@@ -6,11 +6,15 @@ URL: https://github.com/Jamespino20
 Last Update Date: May 24, 2026
 */
 
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { verifyTotp } from "@/lib/totp";
+
+class TotpRequired extends CredentialsSignin {
+  code = "TOTP_REQUIRED";
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   debug: process.env.NODE_ENV === "development",
@@ -67,8 +71,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           if (user.totpEnabled) {
             const code = String((credentials as any).totp || "");
             if (!user.totpSecret || !verifyTotp(user.totpSecret, code)) {
-              console.log("Invalid authenticator code for:", identifier);
-              return null;
+              console.log("TOTP required for:", identifier);
+              throw new TotpRequired();
             }
           }
 
@@ -121,10 +125,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           try {
             const u = await prisma.user.findUnique({
               where: { id: Number(token.sub) },
-              select: { imageUrl: true, role: true },
+              select: { imageUrl: true, role: true, totpEnabled: true },
             });
             (session.user as any).imageUrl = u?.imageUrl ?? null;
             (session.user as any).role = u?.role ?? token.role ?? "STAFF";
+            (session.user as any).totpEnabled = u?.totpEnabled ?? false;
           } catch {
             (session.user as any).imageUrl = null;
           }

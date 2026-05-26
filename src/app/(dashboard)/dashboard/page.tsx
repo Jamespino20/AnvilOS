@@ -153,10 +153,13 @@ export default async function DashboardPage() {
                     {t.transactionType.replace("Sale", "Sale ")} · {Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
-                <span className="text-[11px] text-[#94a3b8] font-medium">
-                  {new Date(t.transactionDate).toLocaleTimeString("en-US", {
+                <span className="text-[11px] text-[#94a3b8] font-medium text-right leading-tight">
+                  {new Date(t.transactionDate).toLocaleString("en-PH", {
+                    month: "short",
+                    day: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
+                    timeZone: "Asia/Manila",
                   })}
                 </span>
               </div>

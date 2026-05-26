@@ -142,6 +142,30 @@
   background-color: var(--accent) !important;
 }
 
+/* ─── Auth pages (login, register, forgot-password) — force light mode ─── */
+.auth-page.bg-\[\#f1f5f9\],
+.auth-page .bg-\[\#f1f5f9\] { background-color: #F1F5F9 !important; }
+.auth-page.bg-white\/90,
+.auth-page .bg-white\/90,
+.auth-page.bg-white,
+.auth-page .bg-white { background-color: #fff !important; }
+.auth-page.bg-white\/95,
+.auth-page .bg-white\/95 { background-color: rgba(255,255,255,0.95) !important; }
+.auth-page.bg-white\/80,
+.auth-page .bg-white\/80 { background-color: rgba(255,255,255,0.8) !important; }
+.auth-page.text-\[\#0e212c\],
+.auth-page .text-\[\#0e212c\] { color: #0e212c !important; }
+.auth-page.text-\[\#64748b\],
+.auth-page .text-\[\#64748b\] { color: #64748b !important; }
+.auth-page.text-\[\#94a3b8\],
+.auth-page .text-\[\#94a3b8\] { color: #94a3b8 !important; }
+.auth-page.border-\[\#e2e8f0\],
+.auth-page .border-\[\#e2e8f0\] { border-color: #e2e8f0 !important; }
+.auth-page.bg-\[\#f8fafc\],
+.auth-page .bg-\[\#f8fafc\] { background-color: #f8fafc !important; }
+.auth-page.bg-\[\#fafbfc\],
+.auth-page .bg-\[\#fafbfc\] { background-color: #fafbfc !important; }
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

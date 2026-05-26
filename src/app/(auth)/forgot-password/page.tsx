@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F1F5F9] py-12 px-4">
+    <div className="auth-page min-h-screen flex items-center justify-center bg-[#F1F5F9] py-12 px-4">
       <div className="w-full max-w-md bg-white rounded-xl p-8 shadow-lg border border-outline-variant">
         <h1 className="text-2xl font-bold text-center mb-2">Reset Password</h1>
         <p className="text-sm text-on-surface-variant text-center mb-6">

@@ -88,7 +88,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F1F5F9] py-12 px-4">
+    <div className="auth-page min-h-screen flex items-center justify-center bg-[#F1F5F9] py-12 px-4">
       <div className="w-full max-w-lg">
         <div className="text-center mb-6">
           <img src="/images/CWLHardware_Logo.png" alt="CWL Hardware" className="h-10 w-auto mx-auto" />

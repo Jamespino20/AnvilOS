@@ -41,7 +41,9 @@ export default function SettingsPage() {
   const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [totpSecret, setTotpSecret] = useState("");
   const [totpCode, setTotpCode] = useState("");
-  const [totpEnabled, setTotpEnabled] = useState(false);
+  const [totpEnabled, setTotpEnabled] = useState(
+    (session?.user as any)?.totpEnabled ?? false,
+  );
 
   // Appearance / theme
   const [theme, setTheme] = useState<"light" | "dark">("light");
