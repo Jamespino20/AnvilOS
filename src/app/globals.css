@@ -94,17 +94,23 @@
   /* Override common hardcoded Tailwind arbitrary-value colors in dark mode */
 }
 
-.dark main .bg-white {
+.dark .bg-white {
   background-color: var(--card) !important;
 }
-.dark main .bg-white\/80 {
+.dark .bg-white\/80 {
   background-color: var(--card) !important;
 }
-.dark main .bg-white\/90 {
+.dark .bg-white\/90 {
   background-color: var(--card) !important;
 }
-.dark main .bg-white\/95 {
+.dark .bg-white\/95 {
   background-color: var(--card) !important;
+}
+.dark .bg-\[\#fafbfc\] {
+  background-color: var(--muted) !important;
+}
+.dark .bg-\[\#e2e8f0\] {
+  background-color: var(--border) !important;
 }
 .dark .text-\[\#0e212c\] {
   color: var(--foreground) !important;
@@ -116,6 +122,9 @@
   color: var(--muted-foreground) !important;
 }
 .dark .border-\[\#e2e8f0\] {
+  border-color: var(--border) !important;
+}
+.dark .divide-\[\#e2e8f0\] {
   border-color: var(--border) !important;
 }
 .dark .bg-\[\#f8fafc\] {
