@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -114,20 +114,20 @@ export default function BuyersPage() {
       `#${t.receiptNumber}`,
       t.transactionType.replace(/([A-Z])/g, " $1").trim(),
       new Date(t.transactionDate).toLocaleDateString("en-PH"),
-      `₱${Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      `${Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       t.transactionStatus,
     ]);
     const metaRows = [
       [`Buyer Report: ${selectedBuyer}`],
-      [`Address: ${history[0]?.buyerAddress || "—"}`],
-      [`Contact: ${history[0]?.buyerContact || "—"}`],
+      [`Address: ${history[0]?.buyerAddress || "â€”"}`],
+      [`Contact: ${history[0]?.buyerContact || "â€”"}`],
       [],
     ];
     const summaryRows = [
       [],
       ["Summary"],
       [`Total Orders,${history.length}`],
-      [`Total Spent,₱${totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+      [`Total Spent,${totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
     ];
     const allHeaders = ["Receipt #", "Type", "Date", "Total", "Status"];
     const allRows = [...metaRows, allHeaders, ...dataRows, ...summaryRows];
@@ -258,7 +258,7 @@ export default function BuyersPage() {
                   Total Spent
                 </p>
                 <p className="text-xl font-bold text-[#fd761a]">
-                  ₱
+                  
                   {history
                     .reduce((s, t) => s + Number(t.grandTotal || 0), 0)
                     .toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -328,7 +328,7 @@ export default function BuyersPage() {
                           Total
                         </p>
                         <p className="font-mono text-[#0e212c] font-semibold mt-0.5">
-                          ₱{Number(txn.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {Number(txn.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
                     </div>
@@ -380,10 +380,10 @@ export default function BuyersPage() {
                                 {item.quantity}
                               </td>
                               <td className="py-2 text-right font-mono text-[#64748b]">
-                                ₱{Number(item.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {Number(item.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </td>
                               <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">
-                                ₱{Number(item.totalPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {Number(item.totalPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </td>
                             </tr>
                           ))}
@@ -541,7 +541,7 @@ export default function BuyersPage() {
     <div className="space-y-5">
       <PageHeader
         title="Buyers"
-        subtitle={`${filtered.length} buyer${filtered.length !== 1 ? "s" : ""} found — view customer purchase histories and contact details.`}
+        subtitle={`${filtered.length} buyer${filtered.length !== 1 ? "s" : ""} found â€” view customer purchase histories and contact details.`}
       />
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
         <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
@@ -601,7 +601,7 @@ export default function BuyersPage() {
               selectedColumns.map((key) => {
                 if (key === "buyerName") return b.buyerName;
                 if (key === "totalOrders") return String(b.totalOrders);
-                if (key === "totalSpent") return `₱${b.totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                if (key === "totalSpent") return `${b.totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 if (key === "buyerAddress") return b.buyerAddress || "";
                 if (key === "buyerContact") return b.buyerContact || "";
                 if (key === "lastOrder") return b.lastOrder ? new Date(b.lastOrder).toLocaleDateString("en-PH") : "";
@@ -665,16 +665,16 @@ export default function BuyersPage() {
                     </div>
                   </td>
                   <td className="p-4 text-[#64748b]">
-                    {buyer.buyerContact || "—"}
+                    {buyer.buyerContact || "â€”"}
                   </td>
                   <td className="p-4 text-[#64748b] max-w-[200px] truncate">
-                    {buyer.buyerAddress || "—"}
+                    {buyer.buyerAddress || "â€”"}
                   </td>
                   <td className="p-4 text-right font-medium text-[#0e212c]">
                     {buyer.totalOrders}
                   </td>
                   <td className="p-4 text-right font-mono font-semibold text-[#fd761a]">
-                    ₱{buyer.totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {buyer.totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                   <td className="p-4 text-right text-[#64748b]">
                     {buyer.lastOrder
@@ -683,7 +683,7 @@ export default function BuyersPage() {
                           day: "numeric",
                           year: "numeric",
                         })
-                      : "—"}
+                      : "â€”"}
                   </td>
                   <td className="p-4 text-center">
                     <button
@@ -767,3 +767,7 @@ export default function BuyersPage() {
     </div>
   );
 }
+
+
+
+

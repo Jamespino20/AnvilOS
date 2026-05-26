@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -147,7 +147,7 @@ export function AuthModal({
                     CWL<span className="text-[#fd761a]">Hardware</span>
                   </h2>
                   <p className="text-[10px] text-white/50 font-bold uppercase tracking-[0.2em]">
-                    Industrial Gateway • Secure Access v2.5
+                    Industrial Gateway â€¢ Secure Access v2.5
                   </p>
                 </motion.div>
 
@@ -222,7 +222,7 @@ export function AuthModal({
                             id="login-pass"
                             type="password"
                             required
-                            placeholder="••••••••"
+                            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                             value={formData.password}
                             onChange={(e) =>
                               updateField("password", e.target.value)
@@ -239,7 +239,7 @@ export function AuthModal({
                           {isLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <>Proceed to Dashboard →</>
+                            <>Proceed to Dashboard â†’</>
                           )}
                         </Button>
                       </form>
@@ -313,7 +313,7 @@ export function AuthModal({
                           {isLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <>Forge New Profile →</>
+                            <>Forge New Profile â†’</>
                           )}
                         </Button>
                       </form>
@@ -343,3 +343,7 @@ export function AuthModal({
     </>
   );
 }
+
+
+
+

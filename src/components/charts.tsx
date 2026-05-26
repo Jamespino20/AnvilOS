@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, PointElement, LineElement } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
@@ -9,7 +9,7 @@ const barOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: { legend: { display: false }, tooltip: { backgroundColor: "#0e212c", titleFont: { size: 11 }, bodyFont: { size: 12 }, padding: 10, cornerRadius: 6 } },
-  scales: { x: { grid: { display: false }, ticks: { color: "#94a3b8", font: { size: 11 } } }, y: { grid: { color: "#e2e8f0" }, ticks: { color: "#94a3b8", font: { size: 11 }, callback: (v: any) => "₱" + v.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) } } },
+  scales: { x: { grid: { display: false }, ticks: { color: "#94a3b8", font: { size: 11 } } }, y: { grid: { color: "#e2e8f0" }, ticks: { color: "#94a3b8", font: { size: 11 }, callback: (v: any) => "" + v.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) } } },
 };
 
 const doughnutOptions = {
@@ -74,3 +74,7 @@ export function StockChart({ data }: { data: { inStock: number; lowStock: number
 export function chartColors() {
   return { COLORS, STATUS_COLORS };
 }
+
+
+
+

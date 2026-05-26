@@ -1,4 +1,4 @@
-export function Skeleton({ className = "" }: { className?: string }) {
+﻿export function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-[#e2e8f0] rounded-lg ${className}`} />;
 }
 
@@ -44,3 +44,7 @@ export function CardSkeleton({ count = 4 }: { count?: number }) {
     </div>
   );
 }
+
+
+
+

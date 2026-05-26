@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -257,8 +257,8 @@ async function quickStatusChange(
                 if (key === "buyerName") return t.buyerName;
                 if (key === "transactionType") return t.transactionType.replace(/([A-Z])/g, " $1").trim();
                 if (key === "transactionDate") return new Date(t.transactionDate).toLocaleDateString("en-PH");
-                if (key === "paymentMethod") return t.paymentMethod || "—";
-                if (key === "grandTotal") return `₱${Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                if (key === "paymentMethod") return t.paymentMethod || "â€”";
+                if (key === "grandTotal") return `${Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 if (key === "transactionStatus") return t.transactionStatus;
                 return "";
               })
@@ -340,10 +340,10 @@ async function quickStatusChange(
                       })}
                     </td>
                     <td className="p-4 text-[#64748b]">
-                      {t.paymentMethod || "—"}
+                      {t.paymentMethod || "â€”"}
                     </td>
                     <td className="p-4 text-right font-mono text-[#0e212c] font-semibold">
-                      ₱{Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="p-4 text-center">
                       <span
@@ -470,10 +470,10 @@ async function quickStatusChange(
                                     {item.quantity}
                                   </td>
                                   <td className="py-1.5 text-right font-mono text-[#64748b]">
-                                    ₱{Number(item.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    {Number(item.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </td>
                                   <td className="py-1.5 text-right font-mono text-[#0e212c] font-semibold">
-                                    ₱{Number(item.totalPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    {Number(item.totalPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </td>
                                 </tr>
                               ))}
@@ -481,7 +481,7 @@ async function quickStatusChange(
                           </table>
                           <div className="flex gap-4 mt-3 text-xs text-[#94a3b8]">
                             <span>Delivery: {t.deliveryMethod}</span>
-                            <span>Payment: {t.paymentMethod || "—"}</span>
+                            <span>Payment: {t.paymentMethod || "â€”"}</span>
                             {t.returnForReceiptNumber && (
                               <span>
                                 {t.transactionType === "Return" ? "Return of" : t.transactionType === "Damage" ? "Damage ref" : "Adjustment ref"}: #{t.returnForReceiptNumber}
@@ -553,3 +553,7 @@ async function quickStatusChange(
     </div>
   );
 }
+
+
+
+

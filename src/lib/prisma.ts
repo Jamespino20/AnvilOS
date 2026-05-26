@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -49,3 +49,7 @@ export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
+
+
+
+

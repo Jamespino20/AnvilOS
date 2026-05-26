@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -14,11 +14,15 @@ import { logAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
 import { withTimeout } from "@/lib/timeout";
 import { IMPORT_CONFIGS } from "@/lib/import-configs";
+import { actionFingerprint } from "@/lib/access";
+import { requireAdmin, requireUser } from "@/lib/server-access";
+import { formatMoney } from "@/lib/format";
+import { createTotpSecret, verifyTotp } from "@/lib/totp";
 import type { Prisma } from "@prisma/client";
 
 const DB_TIMEOUT = 20000;
 
-// ─────────── Products ───────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Products â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getProducts(opts?: {
   categoryId?: number;
@@ -68,6 +72,7 @@ export async function createProduct(data: {
   minThreshold: number;
   imageUrl?: string;
 }) {
+  await requireAdmin();
   const fn = async () => {
     const product = await prisma.product.create({
       data: { ...data, isAvailable: true },
@@ -109,6 +114,7 @@ export async function updateProduct(
     imageUrl: string;
   }>,
 ) {
+  await requireAdmin();
   const product = await prisma.product.update({ where: { id }, data });
   await logAudit(
     "InventoryPanel",
@@ -120,6 +126,7 @@ export async function updateProduct(
 }
 
 export async function adjustStock(productId: number, newQuantity: number) {
+  await requireAdmin();
   const product = await prisma.product.findUniqueOrThrow({
     where: { id: productId },
   });
@@ -133,13 +140,14 @@ export async function adjustStock(productId: number, newQuantity: number) {
   await logAudit(
     "InventoryPanel",
     "Adjust Stock",
-    `${product.productName}: ${product.quantity} → ${newQuantity}`,
+    `${product.productName}: ${product.quantity} â†’ ${newQuantity}`,
   );
   revalidatePath("/inventory");
   return updated;
 }
 
 export async function setProductAvailability(id: number, isAvailable: boolean) {
+  await requireAdmin();
   const product = await prisma.product.findUniqueOrThrow({ where: { id } });
   const updated = await prisma.product.update({
     where: { id },
@@ -155,6 +163,7 @@ export async function setProductAvailability(id: number, isAvailable: boolean) {
 }
 
 export async function deleteProduct(id: number) {
+  await requireAdmin();
   const product = await prisma.product.findUniqueOrThrow({ where: { id } });
   await prisma.product.delete({ where: { id } });
   await logAudit(
@@ -165,7 +174,7 @@ export async function deleteProduct(id: number) {
   revalidatePath("/inventory");
 }
 
-// ─────────── Categories ───────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Categories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getCategories() {
   return prisma.category.findMany({
@@ -175,6 +184,7 @@ export async function getCategories() {
 }
 
 export async function createCategory(name: string) {
+  await requireAdmin();
   try {
     const cat = await prisma.category.create({
       data: { name },
@@ -192,6 +202,7 @@ export async function createCategory(name: string) {
 }
 
 export async function editCategory(id: number, name: string) {
+  await requireAdmin();
   try {
     const cat = await prisma.category.update({
       where: { id },
@@ -214,6 +225,7 @@ export async function editCategory(id: number, name: string) {
 }
 
 export async function deleteCategory(id: number) {
+  await requireAdmin();
   const linked = await prisma.product.count({ where: { categoryId: id } });
   if (linked > 0) {
     throw new Error(
@@ -231,7 +243,7 @@ export async function deleteCategory(id: number) {
   revalidatePath("/categories");
 }
 
-// ─────────── Suppliers ───────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Suppliers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getSuppliers() {
   return prisma.supplier.findMany({
@@ -254,6 +266,7 @@ export async function createSupplier(data: {
   email?: string;
   address?: string;
 }) {
+  await requireAdmin();
   const fn = async () => {
     const s = await prisma.supplier.create({
       data: { ...data, isAvailable: true },
@@ -291,18 +304,20 @@ export async function updateSupplier(
     isAvailable: boolean;
   }>,
 ) {
+  await requireAdmin();
   const before = await prisma.supplier.findUniqueOrThrow({ where: { id } });
   const s = await prisma.supplier.update({ where: { id }, data });
   await logAudit(
     "SupplierPanel",
     "Edit Supplier",
-    `${before.supplierName} → ${s.supplierName}`,
+    `${before.supplierName} â†’ ${s.supplierName}`,
   );
   revalidatePath("/suppliers");
   return s;
 }
 
 export async function deleteSupplier(id: number) {
+  await requireAdmin();
   const supplier = await prisma.supplier.findUniqueOrThrow({
     where: { id },
     include: { _count: { select: { products: true } } },
@@ -315,7 +330,7 @@ export async function deleteSupplier(id: number) {
   revalidatePath("/suppliers");
 }
 
-// ─────────── Transactions ───────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Transactions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getTransactions(opts?: {
   status?: string;
@@ -606,7 +621,7 @@ export async function createTransaction(data: {
   await logAudit(
     "POSPanel",
     "Complete Transaction",
-    `${data.transactionType} #${receiptNumber} — ${data.buyerName} — ₱${data.grandTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    `${data.transactionType} #${receiptNumber} - ${data.buyerName} - ${formatMoney(data.grandTotal)}`,
   );
 
   // Fire-and-forget email alerts (non-blocking)
@@ -626,6 +641,7 @@ export async function createTransaction(data: {
                 totalPrice: i.totalPrice,
               })),
               data.grandTotal,
+              actionFingerprint(session),
             ),
           )
         : Promise.resolve(),
@@ -673,6 +689,7 @@ export async function updateTransactionStatus(
   status: "Ongoing" | "Processing" | "OnTheWay" | "Completed" | "Cancelled",
   deliveryData?: { deliveryRef?: string; deliveryNotes?: string; delivererName?: string },
 ) {
+  await requireAdmin();
   const txn = await prisma.transaction.findUniqueOrThrow({
     where: { id },
     include: { items: true },
@@ -705,7 +722,7 @@ export async function updateTransactionStatus(
   await logAudit(
     "EditTransactionDialog",
     "Update Status",
-    `#${txn.receiptNumber}: ${txn.transactionStatus} → ${status}`,
+    `#${txn.receiptNumber}: ${txn.transactionStatus} â†’ ${status}`,
   );
   revalidatePath("/transactions");
   revalidatePath("/pos");
@@ -731,6 +748,7 @@ export async function updateTransaction(
     }[];
   },
 ) {
+  await requireAdmin();
   const txn = await prisma.transaction.findUniqueOrThrow({
     where: { id },
     include: { items: true },
@@ -809,7 +827,7 @@ export async function updateTransaction(
       await logAudit(
         "EditTransactionDialog",
         txn.transactionType,
-        `${product.productName} (#${txn.receiptNumber}): ${oldQty}→${newItem.quantity} (delta:${delta})`,
+        `${product.productName} (#${txn.receiptNumber}): ${oldQty}â†’${newItem.quantity} (delta:${delta})`,
       );
     }
   }
@@ -823,7 +841,7 @@ export async function updateTransaction(
   return updated;
 }
 
-// ─────────── Stock KPIs ───────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Stock KPIs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getDailySales(date?: string) {
   const start = date ? new Date(date) : new Date();
@@ -858,7 +876,7 @@ export async function getRevenueTrend(days: number = 7) {
   return data;
 }
 
-// ─────────── Audit Logs ───────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Audit Logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getAuditLogs(opts?: {
   startDate?: string;
@@ -888,7 +906,7 @@ export async function getAuditLogs(opts?: {
   });
 }
 
-// ─────────── Notifications ───────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getNotifications() {
   return prisma.notification.findMany({
@@ -916,7 +934,7 @@ export async function getUnreadNotificationCount() {
   return prisma.notification.count({ where: { isRead: false } });
 }
 
-// ─────────── Buyers ───────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Buyers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getBuyers(type?: "WalkIn" | "PO") {
   const nameFilter =
@@ -1013,7 +1031,7 @@ export async function getBuyerTransactions(buyerName: string) {
   });
 }
 
-// ─────────── Dashboard KPIs ───────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Dashboard KPIs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getDashboardKpis() {
   const today = new Date();
@@ -1094,36 +1112,6 @@ export async function updateProfile(data: { name: string; imageUrl?: string }) {
   return user;
 }
 
-export async function updateSecurityQuestions(data: {
-  question1: string;
-  answer1: string;
-  question2: string;
-  answer2: string;
-  question3: string;
-  answer3: string;
-}) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  const user = await prisma.user.update({
-    where: { id: Number(session.user.id) },
-    data: {
-      securityQuestion1: data.question1,
-      securityAnswer1: data.answer1,
-      securityQuestion2: data.question2,
-      securityAnswer2: data.answer2,
-      securityQuestion3: data.question3,
-      securityAnswer3: data.answer3,
-    },
-  });
-  await logAudit(
-    "Settings",
-    "Update Security Questions",
-    "Security questions updated",
-  );
-  revalidatePath("/settings");
-  return user;
-}
-
 export async function updatePassword(newPassword: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
@@ -1144,7 +1132,49 @@ export async function updatePassword(newPassword: string) {
   return user;
 }
 
+export async function startTotpSetup() {
+  const session = await requireUser();
+  const userId = Number((session.user as any).id);
+  const secret = createTotpSecret();
+  await prisma.user.update({
+    where: { id: userId },
+    data: { totpSecret: secret, totpEnabled: false },
+  });
+  await logAudit("Settings", "Start TOTP Setup", "Authenticator setup started");
+  return { secret };
+}
+
+export async function confirmTotpSetup(code: string) {
+  const session = await requireUser();
+  const userId = Number((session.user as any).id);
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { totpSecret: true },
+  });
+  if (!user.totpSecret || !verifyTotp(user.totpSecret, code)) {
+    throw new Error("Invalid authenticator code");
+  }
+  await prisma.user.update({
+    where: { id: userId },
+    data: { totpEnabled: true },
+  });
+  await logAudit("Settings", "Enable TOTP", "Authenticator app enabled");
+  return { success: true };
+}
+
+export async function disableTotp() {
+  const session = await requireUser();
+  const userId = Number((session.user as any).id);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { totpEnabled: false, totpSecret: null },
+  });
+  await logAudit("Settings", "Disable TOTP", "Authenticator app disabled");
+  return { success: true };
+}
+
 export async function processRestock(transactionId: number) {
+  await requireAdmin();
   const txn = await prisma.transaction.findUniqueOrThrow({
     where: { id: transactionId },
     include: { items: true },
@@ -1186,6 +1216,7 @@ export async function updateBuyerInfo(
   buyerName: string,
   data: { buyerAddress?: string; buyerContact?: string; buyerEmail?: string },
 ) {
+  await requireAdmin();
   const session = await auth();
   if (!session?.user?.email) throw new Error("Unauthorized");
   const txns = await prisma.transaction.updateMany({
@@ -1220,7 +1251,7 @@ export async function updateBuyerInfo(
   return txns;
 }
 
-// ─────────── Financial Dashboard ───────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Financial Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getFinancialDashboard(period?: {
   start: string;
@@ -1343,7 +1374,7 @@ export async function getFinancialDashboard(period?: {
     period: {
       start: start.toISOString(),
       end: end.toISOString(),
-      label: `${start.toLocaleDateString("en-PH", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`,
+      label: `${start.toLocaleDateString("en-PH", { month: "short", day: "numeric" })} â€“ ${end.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`,
     },
     grossSales: gross,
     returnsTotal,
@@ -1484,7 +1515,7 @@ export async function getTopProductsByRevenue(
     .slice(0, limit);
 }
 
-// ─────────── Paginated Audit Logs ───────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Paginated Audit Logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getAuditLogCount(opts?: {
   startDate?: string;
@@ -1540,7 +1571,7 @@ export async function getPaginatedAuditLogs(
   return { logs, total, page, perPage, totalPages: Math.ceil(total / perPage) };
 }
 
-// ─────────── Data Import ───────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Data Import â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type ValidationError = { row: number; column: string; message: string };
 
@@ -1622,6 +1653,7 @@ export async function importData(
   table: string,
   rows: Record<string, string>[],
 ) {
+  await requireAdmin();
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -1713,3 +1745,8 @@ export async function importData(
   revalidatePath(`/${table}`);
   return { imported: count };
 }
+
+
+
+
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { getDashboardKpis, getTransactionsCount } from "@/actions";
@@ -25,3 +25,7 @@ export function useSidebarBadges() {
 
   return { lowStockCount, pendingRestockCount };
 }
+
+
+
+

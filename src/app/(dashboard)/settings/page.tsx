@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Bell, Shield, User, Palette, Save, Loader2, CheckCircle } from "lucide-react";
 import { getNotifPrefs, updateNotifPrefs } from "@/actions/email";
-import { updatePassword } from "@/actions";
+import { confirmTotpSetup, disableTotp, startTotpSetup, updatePassword } from "@/actions";
 import { toast } from "sonner";
 
 const sections = [
@@ -39,6 +39,9 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [totpSecret, setTotpSecret] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+  const [totpEnabled, setTotpEnabled] = useState(false);
 
   // Appearance / theme
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -101,6 +104,49 @@ export default function SettingsPage() {
     } catch (e: any) {
       setPasswordMsg({ type: "error", text: e.message || "Failed to change password" });
       toast.error(e.message || "Failed to change password");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleStartTotp() {
+    setSaving(true);
+    try {
+      const result = await startTotpSetup();
+      setTotpSecret(result.secret);
+      toast.success("Authenticator setup started");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to start authenticator setup");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConfirmTotp() {
+    setSaving(true);
+    try {
+      await confirmTotpSetup(totpCode);
+      setTotpEnabled(true);
+      setTotpSecret("");
+      setTotpCode("");
+      toast.success("Authenticator enabled");
+    } catch (e: any) {
+      toast.error(e.message || "Invalid authenticator code");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDisableTotp() {
+    setSaving(true);
+    try {
+      await disableTotp();
+      setTotpEnabled(false);
+      setTotpSecret("");
+      setTotpCode("");
+      toast.success("Authenticator disabled");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to disable authenticator");
     } finally {
       setSaving(false);
     }
@@ -203,6 +249,38 @@ export default function SettingsPage() {
                     {passwordMsg.text}
                   </p>
                 )}
+                <div className="pt-4 border-t border-[#e2e8f0] space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-[#0e212c]">Authenticator App</p>
+                    <p className="text-xs text-[#94a3b8]">Use a six-digit TOTP code during sign in.</p>
+                  </div>
+                  {totpSecret && (
+                    <div className="rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-3 space-y-3">
+                      <p className="text-xs text-[#64748b]">Secret</p>
+                      <p className="font-mono text-sm break-all text-[#0e212c]">{totpSecret}</p>
+                      <input type="text" inputMode="numeric" value={totpCode} onChange={(e) => setTotpCode(e.target.value)}
+                        placeholder="Enter six-digit code"
+                        className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10 transition-all" />
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    {!totpSecret && !totpEnabled && (
+                      <button type="button" onClick={handleStartTotp} disabled={saving} className="px-4 py-2 border border-[#e2e8f0] rounded-lg text-sm font-semibold text-[#0e212c] hover:bg-[#f8fafc]">
+                        Set Up Authenticator
+                      </button>
+                    )}
+                    {totpSecret && (
+                      <button type="button" onClick={handleConfirmTotp} disabled={saving || !totpCode} className="px-4 py-2 bg-[#fd761a] rounded-lg text-sm font-semibold text-white disabled:opacity-50">
+                        Confirm Code
+                      </button>
+                    )}
+                    {totpEnabled && (
+                      <button type="button" onClick={handleDisableTotp} disabled={saving} className="px-4 py-2 border border-rose-200 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50">
+                        Disable Authenticator
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </>
           )}
@@ -249,3 +327,7 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+
+
+

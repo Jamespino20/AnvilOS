@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { DashboardSidebar } from "@/components/sidebar";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 interface Props {
   children: React.ReactNode;
-  user: { name?: string | null; email?: string | null; imageUrl?: string | null };
+  user: { name?: string | null; email?: string | null; imageUrl?: string | null; role?: string | null };
   unreadCount: number;
 }
 
@@ -32,7 +32,7 @@ export function DashboardShell({ children, user, unreadCount }: Props) {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#e2e8f0]">
-      <DashboardSidebar collapsed={!sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      <DashboardSidebar collapsed={!sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} role={user.role} />
       <div className={cn(
         "flex-1 flex flex-col min-h-screen transition-all duration-300",
         sidebarOpen ? "md:ml-[260px]" : "ml-0"
@@ -46,4 +46,7 @@ export function DashboardShell({ children, user, unreadCount }: Props) {
     </div>
   );
 }
+
+
+
 

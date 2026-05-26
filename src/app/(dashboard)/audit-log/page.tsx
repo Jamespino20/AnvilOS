@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { getPaginatedAuditLogs, getAuditLogCount } from "@/actions";
@@ -21,12 +21,12 @@ interface AuditEntry {
 function parseDetails(details: string | null): { text: string; deltas: { before: string; after: string }[] } {
   if (!details) return { text: "", deltas: [] };
   const deltas: { before: string; after: string }[] = [];
-  const arrowRegex = /([^→]+)\s*→\s*([^,;\n]+)/g;
+  const arrowRegex = /([^â†’]+)\s*â†’\s*([^,;\n]+)/g;
   let match;
   let text = details;
   while ((match = arrowRegex.exec(details)) !== null) {
     deltas.push({ before: match[1].trim(), after: match[2].trim() });
-    text = text.replace(match[0], `${match[1].trim()} → ${match[2].trim()}`);
+    text = text.replace(match[0], `${match[1].trim()} â†’ ${match[2].trim()}`);
   }
   return { text, deltas };
 }
@@ -157,9 +157,9 @@ export default function AuditLogPage() {
                       })}
                     </td>
                     <td className="p-4 font-medium text-[#0e212c]">{log.seller?.sellerName || "System"}</td>
-                    <td className="p-4 text-[#64748b]">{log.panel || "—"}</td>
-                    <td className="p-4 text-[#0e212c]">{log.action || "—"}</td>
-                    <td className="p-4 text-[#64748b] max-w-xs truncate">{log.details || "—"}</td>
+                    <td className="p-4 text-[#64748b]">{log.panel || "â€”"}</td>
+                    <td className="p-4 text-[#0e212c]">{log.action || "â€”"}</td>
+                    <td className="p-4 text-[#64748b] max-w-xs truncate">{log.details || "â€”"}</td>
                     <td className="p-4 text-center">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
                         log.successStatus ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-700 border border-rose-200"
@@ -181,14 +181,14 @@ export default function AuditLogPage() {
                     <tr className="bg-[#f8fafc]">
                       <td colSpan={7} className="p-4 border-t border-[#e2e8f0]">
                         <div className="space-y-3">
-                          <p className="text-sm text-[#64748b] leading-relaxed">{log.details || "—"}</p>
+                          <p className="text-sm text-[#64748b] leading-relaxed">{log.details || "â€”"}</p>
                           {deltas.length > 0 && (
                             <div className="space-y-2">
                               <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">Changes</p>
                               {deltas.map((d, i) => (
                                 <div key={i} className="flex items-center gap-3 text-sm">
                                   <span className="px-2.5 py-1 rounded bg-rose-50 text-rose-700 line-through font-mono text-xs">{d.before}</span>
-                                  <span className="text-[#94a3b8]">→</span>
+                                  <span className="text-[#94a3b8]">â†’</span>
                                   <span className="px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 font-mono text-xs">{d.after}</span>
                                 </div>
                               ))}
@@ -249,3 +249,7 @@ export default function AuditLogPage() {
     </div>
   );
 }
+
+
+
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef } from "react";
 import { Upload, X, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
@@ -83,7 +83,7 @@ export function CSVImportButton({ table, onImported, title }: Props) {
         <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center" onClick={() => setOpen(false)}>
           <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
-              <h2 className="text-lg font-bold text-[#0e212c]">{config?.label || table} — Import CSV</h2>
+              <h2 className="text-lg font-bold text-[#0e212c]">{config?.label || table} â€” Import CSV</h2>
               <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"><X className="h-5 w-5" /></button>
             </div>
 
@@ -128,7 +128,7 @@ export function CSVImportButton({ table, onImported, title }: Props) {
                     <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 space-y-1">
                       <p className="text-xs font-bold text-rose-700 flex items-center gap-1.5"><AlertTriangle className="h-3.5 w-3.5" /> {errors.length} Validation Error{errors.length !== 1 ? "s" : ""}</p>
                       {errors.slice(0, 10).map((e, i) => (
-                        <p key={i} className="text-xs text-rose-600">Row {e.row}: {e.column ? `"${e.column}" — ` : ""}{e.message}</p>
+                        <p key={i} className="text-xs text-rose-600">Row {e.row}: {e.column ? `"${e.column}" â€” ` : ""}{e.message}</p>
                       ))}
                       {errors.length > 10 && <p className="text-xs text-rose-500">...and {errors.length - 10} more</p>}
                     </div>
@@ -141,7 +141,7 @@ export function CSVImportButton({ table, onImported, title }: Props) {
                         <table className="w-full text-xs">
                           <thead><tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">{config.columns.map((c: any) => <th key={c.key} className="text-left p-2 font-semibold text-[#64748b]">{c.label}</th>)}</tr></thead>
                           <tbody className="divide-y divide-[#e2e8f0]">{preview.slice(0, 5).map((row, i) => (
-                            <tr key={i}>{config.columns.map((c: any) => <td key={c.key} className="p-2 text-[#0e212c] max-w-[150px] truncate">{row[c.key] || "—"}</td>)}</tr>
+                            <tr key={i}>{config.columns.map((c: any) => <td key={c.key} className="p-2 text-[#0e212c] max-w-[150px] truncate">{row[c.key] || "â€”"}</td>)}</tr>
                           ))}</tbody>
                         </table>
                         {preview.length > 5 && <p className="text-xs text-[#94a3b8] text-center py-2 border-t border-[#e2e8f0]">...and {preview.length - 5} more rows</p>}
@@ -179,3 +179,7 @@ export function CSVImportButton({ table, onImported, title }: Props) {
     </>
   );
 }
+
+
+
+

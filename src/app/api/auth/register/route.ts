@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -9,6 +9,8 @@ Last Update Date: May 24, 2026
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { issueEmailToken } from "@/lib/email-token";
+import { sendMail } from "@/lib/mail";
 
 export async function POST(req: Request) {
   try {
@@ -17,18 +19,11 @@ export async function POST(req: Request) {
       username,
       email,
       password,
-      passwordHash: clientHash,
-      securityQ1,
-      securityA1,
-      securityQ2,
-      securityA2,
-      securityQ3,
-      securityA3,
     } = await req.json();
 
-    if (!password) {
+    if (!password || !email) {
       return NextResponse.json(
-        { error: "Password is required" },
+        { error: "Email and password are required" },
         { status: 400 },
       );
     }
@@ -53,24 +48,35 @@ export async function POST(req: Request) {
       );
     }
 
-    const passwordHash = clientHash || (await bcrypt.hash(password, 10));
+    const passwordHash = await bcrypt.hash(password, 10);
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         sellerName: sellerName || username,
         username,
         email: email || null,
         passwordHash,
+        role: "STAFF",
         registryDate: new Date(),
         lastLogin: new Date(),
-        isActive: true,
-        securityQuestion1: securityQ1 || "What is your factory location?",
-        securityAnswer1: securityA1 || "",
-        securityQuestion2: securityQ2 || "What was your first tool?",
-        securityAnswer2: securityA2 || "",
-        securityQuestion3: securityQ3 || "Who is your main supplier?",
-        securityAnswer3: securityA3 || "",
+        isActive: false,
       },
+    });
+
+    const issued = await issueEmailToken(user.id, "EmailVerification", 60);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+    const verifyUrl = `${appUrl}/register?verifyToken=${issued.token}`;
+    await sendMail({
+      to: email,
+      subject: "Verify your CWL Hardware account",
+      html: `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto">
+        <h1 style="color:#0e212c;font-size:20px">Verify your account</h1>
+        <p style="color:#334155;font-size:14px">Use this code to activate your CWL Hardware account:</p>
+        <p style="font-size:28px;letter-spacing:6px;font-weight:700;color:#fd761a">${issued.code}</p>
+        <p style="color:#334155;font-size:14px">Then open this secure link:</p>
+        <p><a href="${verifyUrl}" style="color:#fd761a">${verifyUrl}</a></p>
+        <p style="color:#64748b;font-size:12px">This verification expires in 60 minutes.</p>
+      </div>`,
     });
 
     await prisma.auditLog.create({
@@ -79,13 +85,17 @@ export async function POST(req: Request) {
         successStatus: true,
         panel: "Register",
         action: "User Registration",
-        details: `New user registered: ${username}`,
+        details: `New staff user registered pending email verification: ${username}`,
       },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, verifyToken: issued.token });
   } catch (error) {
     console.error("Registration error:", error);
     return NextResponse.json({ error: "Registration failed" }, { status: 500 });
   }
 }
+
+
+
+

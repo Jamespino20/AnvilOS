@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -122,7 +122,7 @@ export function FeaturesGrid() {
                     {f.description}
                   </p>
                   <span className="text-xs font-bold text-safety-orange flex items-center gap-1 group-hover:translate-x-1 transition-transform duration-300 uppercase tracking-widest">
-                    Manual <span className="text-lg">→</span>
+                    Manual <span className="text-lg">â†’</span>
                   </span>
                 </div>
               </div>
@@ -133,3 +133,7 @@ export function FeaturesGrid() {
     </section>
   );
 }
+
+
+
+

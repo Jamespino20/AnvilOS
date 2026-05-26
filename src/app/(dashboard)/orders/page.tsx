@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -294,7 +294,7 @@ export default function OrdersPage() {
     <div className="space-y-5">
       <PageHeader
         title="Purchase Orders"
-        subtitle={`${filtered.length} active purchase order${filtered.length !== 1 ? "s" : ""} — manage purchase orders, update items, and track delivery status.`}
+        subtitle={`${filtered.length} active purchase order${filtered.length !== 1 ? "s" : ""} â€” manage purchase orders, update items, and track delivery status.`}
       />
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
@@ -335,7 +335,7 @@ export default function OrdersPage() {
                 if (key === "receiptNumber") return String(order.receiptNumber);
                 if (key === "buyerName") return order.buyerName;
                 if (key === "items") return String(order.items.length);
-                if (key === "grandTotal") return `₱${Number(order.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                if (key === "grandTotal") return `${Number(order.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 if (key === "transactionDate") return new Date(order.transactionDate).toLocaleDateString("en-PH");
                 if (key === "deliveryMethod") return order.deliveryMethod || "WalkIn";
                 if (key === "transactionStatus") return STAGE_LABELS[order.transactionStatus] || order.transactionStatus;
@@ -374,7 +374,7 @@ export default function OrdersPage() {
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Total</p>
-                    <p className="font-mono text-[#0e212c] font-semibold mt-0.5">₱{Number(order.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p className="font-mono text-[#0e212c] font-semibold mt-0.5">{Number(order.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Delivery</p>
@@ -459,8 +459,8 @@ export default function OrdersPage() {
                         <tr key={item.id}>
                           <td className="py-2 text-[#0e212c] font-medium">{displayName(item)}</td>
                           <td className="py-2 text-right text-[#64748b]">{item.quantity}</td>
-                          <td className="py-2 text-right font-mono text-[#64748b]">₱{Number(item.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                          <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">₱{Number(item.totalPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="py-2 text-right font-mono text-[#64748b]">{Number(item.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">{Number(item.totalPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -509,7 +509,7 @@ export default function OrdersPage() {
                               <div className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold shrink-0 ${
                                 isActive ? "bg-emerald-100 text-emerald-700" : "bg-[#f1f5f9] text-[#94a3b8]"
                               } ${isCurrent ? "ring-2 ring-emerald-300" : ""}`}>
-                                {isActive ? "✓" : i + 1}
+                                {isActive ? "âœ“" : i + 1}
                               </div>
                               <span className={`mx-1 text-[9px] whitespace-nowrap ${isActive ? "text-[#0e212c] font-medium" : "text-[#94a3b8]"}`}>{stage}</span>
                               {i < statusMap.length - 1 && <div className={`w-6 h-px ${isActive && i < currentIdx ? "bg-emerald-300" : "bg-[#e2e8f0]"}`} />}
@@ -602,7 +602,7 @@ export default function OrdersPage() {
                           }} className="flex-1 min-w-[180px] px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]">
                             <option value="">Select product</option>
                             {products.map((p) => (
-                              <option key={p.id} value={p.id}>{p.productName}{(p as any).imageUrl ? " 📷" : ""}</option>
+                              <option key={p.id} value={p.id}>{p.productName}{(p as any).imageUrl ? " ðŸ“·" : ""}</option>
                             ))}
                           </select>
                           <label className="text-[10px] font-semibold text-[#94a3b8] uppercase shrink-0">Qty</label>
@@ -613,8 +613,8 @@ export default function OrdersPage() {
                             setEditItems(newItems);
                           }} disabled={editStatus === "OnTheWay"}
                             className="w-16 px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a] disabled:bg-[#f1f5f9] disabled:cursor-not-allowed" />
-                          <span className="text-sm font-mono text-[#0e212c] w-20 text-right">₱{item.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          <span className="text-sm font-mono text-[#fd761a] font-semibold w-24 text-right">₱{item.totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="text-sm font-mono text-[#0e212c] w-20 text-right">{item.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="text-sm font-mono text-[#fd761a] font-semibold w-24 text-right">{item.totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           <button onClick={() => setEditItems(editItems.filter((_, j) => j !== i))}
                             disabled={editStatus === "OnTheWay"}
                             className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"><X className="h-3.5 w-3.5" /></button>
@@ -752,3 +752,7 @@ export default function OrdersPage() {
     </div>
   );
 }
+
+
+
+

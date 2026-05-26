@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -22,6 +22,7 @@ export default function LoginPage() {
   }, []);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [totp, setTotp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,6 +35,7 @@ export default function LoginPage() {
     const result = await signIn("credentials", {
       username,
       password,
+      totp,
       redirect: false,
     });
 
@@ -113,6 +115,19 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-on-surface">
+              Authenticator Code
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={totp}
+              onChange={(e) => setTotp(e.target.value)}
+              className="w-full rounded-lg border border-outline px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              placeholder="Required when enabled"
+            />
+          </div>
           <button
             type="submit"
             disabled={loading}
@@ -136,3 +151,7 @@ export default function LoginPage() {
     </div>
   );
 }
+
+
+
+

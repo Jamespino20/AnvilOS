@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -10,6 +10,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
+import { verifyTotp } from "@/lib/totp";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   debug: process.env.NODE_ENV === "development",
@@ -21,6 +22,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
+        totp: { label: "Authenticator Code", type: "text" },
       },
       async authorize(credentials) {
         console.log("Auth attempt for:", credentials?.username);
@@ -62,6 +64,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return null;
           }
 
+          if (user.totpEnabled) {
+            const code = String((credentials as any).totp || "");
+            if (!user.totpSecret || !verifyTotp(user.totpSecret, code)) {
+              console.log("Invalid authenticator code for:", identifier);
+              return null;
+            }
+          }
+
           await prisma.user.update({
             where: { id: user.id },
             data: { lastLogin: new Date() },
@@ -72,6 +82,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             name: user.sellerName,
             email: user.email,
             username: user.username,
+            role: user.role,
           };
         } catch (error) {
           console.error("Database error during authorize:", error);
@@ -89,6 +100,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.email = user.email;
           token.username = (user as any).username;
           token.sellerId = Number(user.id);
+          token.role = (user as any).role || "STAFF";
         }
         if (trigger === "update" && session) {
           if (session.name) token.name = session.name;
@@ -105,12 +117,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           session.user.id = token.sub as string;
           (session.user as any).username = token.username as string;
           (session.user as any).sellerId = token.sellerId as number;
+          (session.user as any).role = token.role as string;
           try {
             const u = await prisma.user.findUnique({
               where: { id: Number(token.sub) },
-              select: { imageUrl: true },
+              select: { imageUrl: true, role: true },
             });
             (session.user as any).imageUrl = u?.imageUrl ?? null;
+            (session.user as any).role = u?.role ?? token.role ?? "STAFF";
           } catch {
             (session.user as any).imageUrl = null;
           }
@@ -127,3 +141,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   session: { strategy: "jwt" },
 });
+
+
+
+

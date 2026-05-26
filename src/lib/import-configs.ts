@@ -1,4 +1,4 @@
-export const IMPORT_CONFIGS: Record<string, { label: string; columns: { key: string; label: string; type: "string" | "number" | "date" | "boolean"; required?: boolean; enum?: string[] }[] }> = {
+﻿export const IMPORT_CONFIGS: Record<string, { label: string; columns: { key: string; label: string; type: "string" | "number" | "date" | "boolean"; required?: boolean; enum?: string[] }[] }> = {
   products: {
     label: "Products",
     columns: [
@@ -60,3 +60,7 @@ export const IMPORT_CONFIGS: Record<string, { label: string; columns: { key: str
 export function getImportConfig(table: string) {
   return IMPORT_CONFIGS[table] || null;
 }
+
+
+
+

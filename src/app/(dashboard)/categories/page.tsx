@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -35,11 +35,14 @@ import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
 import type { Category } from "@prisma/client";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 const PER_PAGE = 10;
 
 export default function CategoriesPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as any)?.role === "ADMIN";
   const [categories, setCategories] = useState<
     (Category & {
       childCategories: Category[];
@@ -167,7 +170,7 @@ export default function CategoriesPage() {
     return pages.map((p, i) =>
       p === "ellipsis" ? (
         <span key={`e${i}`} className="px-1 text-[#94a3b8] select-none">
-          …
+          â€¦
         </span>
       ) : (
         <button
@@ -197,7 +200,7 @@ export default function CategoriesPage() {
     <div className="space-y-5">
       <PageHeader
         title="Category Management"
-        subtitle="Organize your product catalog — add, edit, and remove categories."
+        subtitle="Organize your product catalog â€” add, edit, and remove categories."
       />
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
@@ -235,14 +238,14 @@ export default function CategoriesPage() {
                           month: "short",
                           day: "numeric",
                         })
-                      : "—";
+                      : "â€”";
                   return "";
                 }),
               )
             }
           />
-          <ImportButton table="categories" onImported={refetch} />
-          <button
+          {isAdmin && <ImportButton table="categories" onImported={refetch} />}
+          {isAdmin && <button
             onClick={() => {
               setShowAdd(true);
               setError("");
@@ -251,7 +254,7 @@ export default function CategoriesPage() {
             className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
           >
             <Plus className="h-4 w-4" /> <span className="sm:inline">Add Category</span>
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -269,9 +272,11 @@ export default function CategoriesPage() {
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Created
                 </th>
-                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-28">
-                  Actions
-                </th>
+                {isAdmin && (
+                  <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-28">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
@@ -303,9 +308,9 @@ export default function CategoriesPage() {
                           month: "short",
                           day: "numeric",
                         })
-                      : "—"}
+                      : "â€”"}
                   </td>
-                  <td className="p-4 text-center">
+                  {isAdmin && <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={() => openEdit(cat)}
@@ -325,12 +330,12 @@ export default function CategoriesPage() {
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                  </td>
+                  </td>}
                 </tr>
               ))}
               {paginated.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-8 text-center text-[#94a3b8]">
+                  <td colSpan={isAdmin ? 4 : 3} className="p-8 text-center text-[#94a3b8]">
                     No categories found. Click "Add Category" to create one.
                   </td>
                 </tr>
@@ -548,3 +553,7 @@ export default function CategoriesPage() {
     </div>
   );
 }
+
+
+
+

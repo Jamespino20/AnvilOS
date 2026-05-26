@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -23,6 +23,7 @@ import {
 import { signOut } from "next-auth/react";
 import { useState } from "react";
 import { useSidebarBadges } from "@/components/sidebar-badges";
+import { canAccessPath } from "@/lib/access";
 
 const groups = [
   {
@@ -61,9 +62,10 @@ import { motion, AnimatePresence } from "framer-motion";
 interface Props {
   collapsed: boolean;
   onToggle: () => void;
+  role?: string | null;
 }
 
-export function DashboardSidebar({ collapsed, onToggle }: Props) {
+export function DashboardSidebar({ collapsed, onToggle, role }: Props) {
   const pathname = usePathname();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const { lowStockCount, pendingRestockCount } = useSidebarBadges();
@@ -102,6 +104,8 @@ export function DashboardSidebar({ collapsed, onToggle }: Props) {
       </div>
       <div className="flex-1 overflow-y-auto py-4 space-y-4">
         {groups.map((group) => {
+          const items = group.items.filter((item) => canAccessPath(role, item.href));
+          if (items.length === 0) return null;
           const isOpen = openGroups[group.label] !== false;
           return (
             <div key={group.label}>
@@ -118,7 +122,7 @@ export function DashboardSidebar({ collapsed, onToggle }: Props) {
               </button>
               {isOpen && !collapsed && (
                 <div className="mt-0.5 space-y-0.5">
-                  {group.items.map((item) => {
+                  {items.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                       <Link
@@ -203,3 +207,7 @@ export function DashboardSidebar({ collapsed, onToggle }: Props) {
     </>
   );
 }
+
+
+
+

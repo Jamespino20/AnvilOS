@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -8,6 +8,7 @@ Last Update Date: May 24, 2026
 
 import { prisma } from "./prisma";
 import { auth } from "./auth";
+import { actionFingerprint } from "@/lib/access";
 
 type AuditPanel =
   | "POSPanel"
@@ -34,13 +35,16 @@ export async function logAudit(
   try {
     const session = await auth();
     const sellerId = sellerIdOverride ?? (Number(session?.user?.id) || 0);
+    const fingerprint = sellerId
+      ? actionFingerprint(session)
+      : `System [SYSTEM #${sellerIdOverride ?? "auto"}]`;
 
     await prisma.auditLog.create({
       data: {
-        sellerId,
+        sellerId: sellerId || null,
         panel,
         action,
-        details,
+        details: `${details} | Actor: ${fingerprint}`,
         successStatus,
         logTime: new Date(),
       },
@@ -49,3 +53,7 @@ export async function logAudit(
     console.error("Audit log failed:", e);
   }
 }
+
+
+
+

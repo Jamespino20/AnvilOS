@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -25,7 +25,7 @@ function Content() {
             </h1>
             <p className="text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
               From point-of-sale to inventory management, supplier sync to audit
-              trails — CWL Hardware is the complete operating system for
+              trails â€” CWL Hardware is the complete operating system for
               hardware and industrial supply businesses.
             </p>
           </RevealUp>
@@ -137,3 +137,7 @@ export default function Page() {
     </>
   );
 }
+
+
+
+

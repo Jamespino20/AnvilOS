@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,7 @@ import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
 import type { Product, Category, Supplier } from "@prisma/client";
 import { toast } from "sonner";
+import { formatMoney, formatReportMoney } from "@/lib/format";
 
 interface Props {
   products: (Product & {
@@ -36,12 +37,14 @@ interface Props {
     _count: { products: number };
   })[];
   suppliers: (Supplier & { _count: { products: number } })[];
+  role?: string | null;
 }
 
 export function InventoryClient({
   products: initialProducts,
   categories,
   suppliers,
+  role,
 }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -79,6 +82,7 @@ export function InventoryClient({
 
   const [page, setPage] = useState(1);
   const perPage = 15;
+  const isAdmin = role === "ADMIN";
 
 
   const filtered = initialProducts.filter((p) => {
@@ -246,7 +250,7 @@ export function InventoryClient({
     <div className="space-y-5">
       <PageHeader
         title="Inventory Management"
-        subtitle="Manage your product catalog — add, edit, and remove stock items. Track quantities and thresholds for each product."
+        subtitle="Manage your product catalog â€” add, edit, and remove stock items. Track quantities and thresholds for each product."
       />
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-3 items-center">
@@ -308,7 +312,7 @@ export function InventoryClient({
                 if (key === "productName") return p.productName;
                 if (key === "category") return p.category;
                 if (key === "supplierName") return p.supplierName;
-                if (key === "unitPrice") return `₱${Number(p.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                if (key === "unitPrice") return formatReportMoney(p.unitPrice);
                 if (key === "quantity") return String(p.quantity);
                 if (key === "minThreshold") return String(p.minThreshold);
                 if (key === "isAvailable") return p.quantity === 0 ? "Out of Stock" : p.quantity <= p.minThreshold ? "Low Stock" : "In Stock";
@@ -318,14 +322,16 @@ export function InventoryClient({
             label="Export"
             title="Export inventory"
           />
-          <ImportButton table="inventory" onImported={() => window.location.reload()} title="Import products from CSV or XLSX" />
-          <button
-            onClick={() => setShowAdd(true)}
-            title="Add a new product"
-            className="h-10 flex items-center justify-center gap-2 px-5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all duration-200 active:scale-[0.98]"
-          >
-            <Plus className="h-4 w-4" /> Add Product
-          </button>
+          {isAdmin && <ImportButton table="inventory" onImported={() => window.location.reload()} title="Import products from CSV or XLSX" />}
+          {isAdmin && (
+            <button
+              onClick={() => setShowAdd(true)}
+              title="Add a new product"
+              className="h-10 flex items-center justify-center gap-2 px-5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all duration-200 active:scale-[0.98]"
+            >
+              <Plus className="h-4 w-4" /> Add Product
+            </button>
+          )}
         </div>
       </div>
 
@@ -362,9 +368,11 @@ export function InventoryClient({
                 <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Status
                 </th>
-                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-24">
-                  Actions
-                </th>
+                {isAdmin && (
+                  <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-24">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
@@ -397,7 +405,7 @@ export function InventoryClient({
                       {product.supplierName}
                     </td>
                     <td className="p-4 text-right font-mono text-[#0e212c]">
-                      ₱{Number(product.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatMoney(product.unitPrice)}
                     </td>
                     <td
                       className={`p-4 text-right font-mono ${product.quantity <= product.minThreshold ? "text-[#fd761a] font-bold" : "text-[#0e212c]"}`}
@@ -414,7 +422,7 @@ export function InventoryClient({
                         {badge.label}
                       </span>
                     </td>
-                    <td className="p-4 text-center">
+                    {isAdmin && <td className="p-4 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() => openEdit(product)}
@@ -431,13 +439,13 @@ export function InventoryClient({
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
-                    </td>
+                    </td>}
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-[#94a3b8]">
+                  <td colSpan={isAdmin ? 9 : 8} className="p-8 text-center text-[#94a3b8]">
                     No products found
                   </td>
                 </tr>
@@ -849,3 +857,7 @@ export function InventoryClient({
     </div>
   );
 }
+
+
+
+

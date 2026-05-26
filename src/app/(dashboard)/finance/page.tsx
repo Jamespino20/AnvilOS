@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { getFinancialDashboard, getCashFlowTrend, getTopProductsByRevenue } from "@/actions";
@@ -191,12 +191,12 @@ export default function FinancePage() {
               if (!fin) return [];
               const rows: string[][] = [
                 ["Period", fin.period?.label || ""],
-                ["Gross Sales", `₱${fin.grossSales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                ["Returns", `₱${fin.returnsTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                ["Gross Revenue", `₱${fin.grossRevenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                ["Restocks Cost", `₱${fin.restocksTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                ["Damages Loss", `₱${fin.damagesTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                ["Net Revenue", `₱${fin.netRevenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                ["Gross Sales", `${fin.grossSales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                ["Returns", `${fin.returnsTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                ["Gross Revenue", `${fin.grossRevenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                ["Restocks Cost", `${fin.restocksTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                ["Damages Loss", `${fin.damagesTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                ["Net Revenue", `${fin.netRevenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
                 ["Sales Transactions", String(fin.salesCount)],
                 ["Returns", String(fin.returnCount)],
                 ["Restocks", String(fin.restockCount)],
@@ -208,7 +208,7 @@ export default function FinancePage() {
                 rows.push([]);
                 rows.push(["Payment Method Breakdown"]);
                 for (const pm of fin.paymentBreakdown) {
-                  rows.push([pm.method, `₱${pm.total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${pm.count} txn)`]);
+                  rows.push([pm.method, `${pm.total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${pm.count} txn)`]);
                 }
               }
               return rows.map((r) => selectedColumns.map((key) => {
@@ -230,11 +230,11 @@ export default function FinancePage() {
           {/* KPI Cards */}
           <div className="grid grid-cols-12 gap-4">
             {[
-              { icon: TrendingUp, label: "Gross Sales", value: `₱${fin.grossSales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: fin.comparison.grossChange, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50" },
-              { icon: DollarSign, label: "Gross Revenue", value: `₱${fin.grossRevenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: fin.comparison.netChange, color: "from-blue-500 to-indigo-600", bg: "bg-blue-50" },
-              { icon: ShoppingCart, label: "Restocks Cost", value: `₱${fin.restocksTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "from-rose-500 to-pink-600", bg: "bg-rose-50" },
-              { icon: AlertTriangle, label: "Damages Loss", value: `₱${fin.damagesTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "from-orange-500 to-red-600", bg: "bg-orange-50" },
-              { icon: TrendingUp, label: "Net Revenue", value: `₱${fin.netRevenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, profit: fin.netRevenue >= 0, color: "from-violet-500 to-purple-600", bg: "bg-violet-50" },
+              { icon: TrendingUp, label: "Gross Sales", value: `${fin.grossSales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: fin.comparison.grossChange, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50" },
+              { icon: DollarSign, label: "Gross Revenue", value: `${fin.grossRevenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: fin.comparison.netChange, color: "from-blue-500 to-indigo-600", bg: "bg-blue-50" },
+              { icon: ShoppingCart, label: "Restocks Cost", value: `${fin.restocksTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "from-rose-500 to-pink-600", bg: "bg-rose-50" },
+              { icon: AlertTriangle, label: "Damages Loss", value: `${fin.damagesTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "from-orange-500 to-red-600", bg: "bg-orange-50" },
+              { icon: TrendingUp, label: "Net Revenue", value: `${fin.netRevenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, profit: fin.netRevenue >= 0, color: "from-violet-500 to-purple-600", bg: "bg-violet-50" },
             ].map((card, i) => (
               <div key={i} className="col-span-12 sm:col-span-6 lg:col-span-2 bg-white/90 backdrop-blur-sm rounded-xl border border-[#e2e8f0] p-5 hover:shadow-lg hover:shadow-black/5 hover:bg-white transition-all duration-300 hover:-translate-y-0.5 group">
                 <div className="flex justify-between items-start mb-4">
@@ -285,9 +285,9 @@ export default function FinancePage() {
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-[2px] group relative">
                       <div className="w-full flex flex-col items-center gap-[2px] justify-end" style={{ height: "200px" }}>
-                        <div className="w-full bg-emerald-400/40 rounded-t-sm transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px` }} title={`${d.date}: Revenue ₱${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                        <div className="w-full bg-rose-400/40 rounded-t-sm transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px` }} title={`${d.date}: Expenses ₱${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                        <div className={`w-full ${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-sm transition-all group-hover:opacity-80`} style={{ height: `${netH}px` }} title={`${d.date}: Net ₱${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                        <div className="w-full bg-emerald-400/40 rounded-t-sm transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                        <div className="w-full bg-rose-400/40 rounded-t-sm transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                        <div className={`w-full ${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-sm transition-all group-hover:opacity-80`} style={{ height: `${netH}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                       </div>
                       <span className="text-[8px] text-[#94a3b8] rotate-45 origin-left whitespace-nowrap mt-1">{d.date.split(" ")[0]}</span>
                     </div>
@@ -309,7 +309,7 @@ export default function FinancePage() {
                     const pct = fin.grossRevenue > 0 ? ((pm.total / fin.grossRevenue) * 100).toFixed(1) : 0;
                     return (
                       <div key={i}>
-                        <div className="flex justify-between text-sm mb-1"><span className="font-medium text-[#0e212c]">{pm.method}</span><span className="font-mono text-[#64748b]">₱{pm.total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({pct}%)</span></div>
+                        <div className="flex justify-between text-sm mb-1"><span className="font-medium text-[#0e212c]">{pm.method}</span><span className="font-mono text-[#64748b]">{pm.total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({pct}%)</span></div>
                         <div className="w-full h-2 bg-[#f1f5f9] rounded-full overflow-hidden">
                           <div className="h-full bg-gradient-to-r from-[#fd761a] to-[#e56600] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                         </div>
@@ -338,7 +338,7 @@ export default function FinancePage() {
                           <tr key={i} className="hover:bg-[#f8fafc] transition-colors">
                             <td className="py-3 font-medium text-[#0e212c]">{p.name}</td>
                             <td className="py-3 text-right text-[#64748b]">{p.quantity}</td>
-                            <td className="py-3 text-right font-mono font-semibold text-[#0e212c]">₱{p.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td className="py-3 text-right font-mono font-semibold text-[#0e212c]">{p.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             <td className="py-3 pl-4"><div className="h-2.5 bg-[#f1f5f9] rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-[#fd761a] to-[#e56600] rounded-full" style={{ width: `${barW}%` }} /></div></td>
                           </tr>
                         );
@@ -377,3 +377,7 @@ export default function FinancePage() {
     </div>
   );
 }
+
+
+
+

@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -34,7 +34,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CWL Hardware — POS & Inventory System",
+  title: "CWL Hardware â€” POS & Inventory System",
   description:
     "Complete point-of-sale, inventory, and supplier management system by CWL Hardware.",
   icons: {
@@ -72,3 +72,7 @@ export default function RootLayout({
     </html>
   );
 }
+
+
+
+

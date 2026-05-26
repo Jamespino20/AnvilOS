@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 export function Hero() {
   return (
@@ -76,3 +76,7 @@ export function Hero() {
     </section>
   );
 }
+
+
+
+

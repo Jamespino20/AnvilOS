@@ -3,6 +3,7 @@
  */
 
 import { jsPDF } from "jspdf";
+import { formatReportMoney } from "@/lib/format";
 
 const COMPANY = "CWL Hardware";
 const THEME_BLUE = "#0e212c";
@@ -64,8 +65,14 @@ export async function downloadReceiptPdf(data: {
     img.src = b64;
     await new Promise((resolve) => { img.onload = resolve; });
     const aspect = img.naturalWidth / img.naturalHeight;
-    const logoH = 14;
-    const logoW = logoH * aspect;
+    const maxLogoW = 32;
+    const maxLogoH = 14;
+    let logoW = maxLogoW;
+    let logoH = logoW / aspect;
+    if (logoH > maxLogoH) {
+      logoH = maxLogoH;
+      logoW = logoH * aspect;
+    }
     doc.addImage(b64, "PNG", cx - logoW / 2, y, logoW, logoH);
     y += logoH + 3;
   } catch {}
@@ -192,8 +199,8 @@ export async function downloadReceiptPdf(data: {
     doc.rect(l, y - 2, r - l, 4.5, "F");
     doc.text(name, l + 0.5, y);
     doc.text(String(item.quantity), 42, y, { align: "center" });
-    doc.text(`PHP${item.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 57, y, { align: "right" });
-    doc.text(`PHP${item.totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r, y, { align: "right" });
+    doc.text(formatReportMoney(item.unitPrice), 57, y, { align: "right" });
+    doc.text(formatReportMoney(item.totalPrice), r, y, { align: "right" });
     y += 4.5;
   }
 
@@ -207,7 +214,7 @@ export async function downloadReceiptPdf(data: {
   doc.setFontSize(10);
   doc.setTextColor(253, 118, 26);
   doc.text("GRAND TOTAL", l, y);
-  doc.text(`PHP${data.grandTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, r, y, { align: "right" });
+  doc.text(formatReportMoney(data.grandTotal), r, y, { align: "right" });
   y += 7;
 
   // --- Footer ---
@@ -233,3 +240,5 @@ export async function downloadReceiptPdf(data: {
 
   doc.save(`receipt-${data.receiptNumber}.pdf`);
 }
+
+

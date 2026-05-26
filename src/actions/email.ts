@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -13,6 +13,7 @@ import { sendMail } from "@/lib/mail";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
+import { formatMoney } from "@/lib/format";
 
 function getUserId(session: any) {
   return Number(session?.user?.id || session?.user?.sellerId || 0);
@@ -67,10 +68,10 @@ export async function sendLowStockAlerts(lowStockProducts: { productName: string
 
   await sendMail({
     to: emails,
-    subject: `⚠️ Low Stock Alert — ${lowStockProducts.length} product${lowStockProducts.length > 1 ? "s" : ""} below threshold`,
+    subject: `Low Stock Alert - ${lowStockProducts.length} product${lowStockProducts.length > 1 ? "s" : ""} below threshold`,
     html: `<div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto">
       <div style="background:#fd761a;padding:24px;text-align:center;border-radius:8px 8px 0 0">
-        <h1 style="color:#fff;margin:0;font-size:20px">⚠️ Low Stock Alert</h1>
+        <h1 style="color:#fff;margin:0;font-size:20px">Low Stock Alert</h1>
       </div>
       <div style="padding:24px;background:#fff;border:1px solid #e2e8f0;border-top:0;border-radius:0 0 8px 8px">
         <p style="color:#0e212c;font-size:14px;margin:0 0 16px">The following products are below their minimum stock threshold:</p>
@@ -82,7 +83,7 @@ export async function sendLowStockAlerts(lowStockProducts: { productName: string
           </tr></thead>
           <tbody>${productRows}</tbody>
         </table>
-        <p style="color:#94a3b8;font-size:12px;margin-top:16px"><a href="${process.env.NEXT_PUBLIC_APP_URL || ""}/inventory" style="color:#fd761a">View Inventory →</a></p>
+        <p style="color:#94a3b8;font-size:12px;margin-top:16px"><a href="${process.env.NEXT_PUBLIC_APP_URL || ""}/inventory" style="color:#fd761a">View Inventory â†’</a></p>
       </div>
     </div>`,
   });
@@ -97,14 +98,15 @@ export async function sendTransactionReceipt(
   buyerEmail: string,
   items: { productName: string; quantity: number; unitPrice: number; totalPrice: number }[],
   grandTotal: number,
+  actorFingerprint?: string,
 ) {
   const itemRows = items
-    .map((i) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0">${i.productName}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${i.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">₱${i.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">₱${i.totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>`)
+    .map((i) => `<tr><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0">${i.productName}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${i.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">${formatMoney(i.unitPrice)}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">${formatMoney(i.totalPrice)}</td></tr>`)
     .join("");
 
   await sendMail({
     to: buyerEmail,
-    subject: `🧾 Receipt #${receiptNumber} — CWL Hardware`,
+    subject: `Receipt #${receiptNumber} - CWL Hardware`,
     html: `<div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto">
       <div style="background:#0e212c;padding:24px;text-align:center;border-radius:8px 8px 0 0">
         <h1 style="color:#fff;margin:0;font-size:20px">CWL Hardware</h1>
@@ -123,15 +125,16 @@ export async function sendTransactionReceipt(
           <tbody>${itemRows}</tbody>
           <tfoot><tr>
             <td colspan="3" style="padding:12px;text-align:right;font-weight:700;font-size:15px">Grand Total</td>
-            <td style="padding:12px;text-align:right;font-weight:700;font-size:15px;color:#fd761a">₱${grandTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td style="padding:12px;text-align:right;font-weight:700;font-size:15px;color:#fd761a">${formatMoney(grandTotal)}</td>
           </tr></tfoot>
         </table>
-        <p style="color:#94a3b8;font-size:12px;margin-top:16px">Need help? Contact us at <a href="mailto:${process.env.SMTP_USER || "support@cwlhardware.com"}" style="color:#fd761a">${process.env.SMTP_USER || "support@cwlhardware.com"}</a></p>
+        <p style="color:#94a3b8;font-size:12px;margin-top:16px">Processed by: ${actorFingerprint || "System [SYSTEM #auto]"}</p>
+        <p style="color:#94a3b8;font-size:12px;margin-top:8px">Need help? Contact us at <a href="mailto:${process.env.SMTP_USER || "support@cwlhardware.com"}" style="color:#fd761a">${process.env.SMTP_USER || "support@cwlhardware.com"}</a></p>
       </div>
     </div>`,
   });
 
-  await logAudit("POSPanel", "Receipt Email Sent", `#${receiptNumber} → ${buyerEmail}`);
+  await logAudit("POSPanel", "Receipt Email Sent", `#${receiptNumber} -> ${buyerEmail}`);
 }
 
 /** Send daily sales summary to all users with dailySales enabled */
@@ -161,7 +164,7 @@ export async function sendDailySalesReport() {
 
   await sendMail({
     to: emails,
-    subject: `📊 Daily Sales Report — ${today.toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" })}`,
+    subject: `Daily Sales Report - ${today.toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" })}`,
     html: `<div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto">
       <div style="background:#0e212c;padding:24px;text-align:center;border-radius:8px 8px 0 0">
         <h1 style="color:#fff;margin:0;font-size:20px">Daily Sales Report</h1>
@@ -171,19 +174,19 @@ export async function sendDailySalesReport() {
         <div style="display:flex;gap:16px;margin-bottom:16px">
           <div style="flex:1;background:#f8fafc;border-radius:8px;padding:16px;text-align:center">
             <p style="color:#64748b;font-size:12px;margin:0 0 4px">Total Sales</p>
-            <p style="color:#0e212c;font-size:24px;font-weight:700;margin:0">₱${totalSales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p style="color:#0e212c;font-size:24px;font-weight:700;margin:0">${formatMoney(totalSales)}</p>
           </div>
           <div style="flex:1;background:#f8fafc;border-radius:8px;padding:16px;text-align:center">
             <p style="color:#64748b;font-size:12px;margin:0 0 4px">Transactions</p>
             <p style="color:#0e212c;font-size:24px;font-weight:700;margin:0">${txnCount}</p>
           </div>
         </div>
-        <p style="color:#94a3b8;font-size:12px;margin:0"><a href="${process.env.NEXT_PUBLIC_APP_URL || ""}/dashboard" style="color:#fd761a">View Full Dashboard →</a></p>
+        <p style="color:#94a3b8;font-size:12px;margin:0"><a href="${process.env.NEXT_PUBLIC_APP_URL || ""}/dashboard" style="color:#fd761a">View Full Dashboard â†’</a></p>
       </div>
     </div>`,
   });
 
-  await logAudit("Dashboard", "Daily Sales Report Sent", `₱${totalSales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${txnCount} txns)`);
+  await logAudit("Dashboard", "Daily Sales Report Sent", `${formatMoney(totalSales)} (${txnCount} txns)`);
 }
 
 /** Check all products for low stock and send alerts if any found */
@@ -200,3 +203,7 @@ export async function checkAndAlertLowStock() {
     await sendLowStockAlerts(lowStockProducts);
   }
 }
+
+
+
+

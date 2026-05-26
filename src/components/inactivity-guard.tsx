@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { Clock, LogOut } from "lucide-react";
@@ -65,3 +65,7 @@ export function InactivityGuard() {
     </div>
   );
 }
+
+
+
+

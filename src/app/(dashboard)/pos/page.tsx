@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -16,3 +16,7 @@ export default async function POSPage() {
   ]);
   return <POSClient products={products} buyers={buyers} />;
 }
+
+
+
+

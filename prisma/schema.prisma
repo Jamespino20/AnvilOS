@@ -48,6 +48,20 @@ enum TransactionStatus {
   @@map("transaction_status")
 }
 
+enum UserRole {
+  ADMIN
+  STAFF
+
+  @@map("user_role")
+}
+
+enum EmailTokenPurpose {
+  EmailVerification
+  PasswordReset
+
+  @@map("email_token_purpose")
+}
+
 // ────────────────────────────────────────────────────────────────────
 // Models
 // ────────────────────────────────────────────────────────────────────
@@ -61,16 +75,13 @@ model User {
   oldPasswordHash   String?  @map("OLD_PASSWORD_HASH")
   email             String?  @map("EMAIL")
   imageUrl          String?  @map("IMAGE_URL")
+  role              UserRole @default(ADMIN) @map("ROLE")
+  emailVerified     DateTime? @map("EMAIL_VERIFIED")
+  totpSecret        String?  @map("TOTP_SECRET")
+  totpEnabled       Boolean  @default(false) @map("TOTP_ENABLED")
   registryDate      DateTime @map("REGISTRY_DATE")
   lastLogin         DateTime @default(now()) @map("LAST_LOGIN")
   isActive          Boolean  @default(true) @map("IS_ACTIVE")
-  securityQuestion1 String   @map("SECURITY_QUESTION1")
-  securityAnswer1   String   @map("SECURITY_ANSWER1")
-  securityQuestion2 String   @map("SECURITY_QUESTION2")
-  securityAnswer2   String   @map("SECURITY_ANSWER2")
-  securityQuestion3 String   @map("SECURITY_QUESTION3")
-  securityAnswer3   String   @map("SECURITY_ANSWER3")
-
   notifLowStock         Boolean @default(true) @map("NOTIF_LOW_STOCK")
   notifDailySales       Boolean @default(true) @map("NOTIF_DAILY_SALES")
   notifTransaction      Boolean @default(true) @map("NOTIF_TRANSACTION")
@@ -78,8 +89,26 @@ model User {
   transactions Transaction[]
   buyers       Buyer[]
   auditLogs    AuditLog[]
+  emailTokens  EmailToken[]
 
   @@map("users")
+}
+
+model EmailToken {
+  id        Int               @id @default(autoincrement()) @map("TOKEN_ID")
+  userId    Int               @map("SELLER_ID")
+  purpose   EmailTokenPurpose @map("PURPOSE")
+  tokenHash String            @map("TOKEN_HASH")
+  codeHash  String            @map("CODE_HASH")
+  expiresAt DateTime          @map("EXPIRES_AT")
+  usedAt    DateTime?         @map("USED_AT")
+  createdAt DateTime          @default(now()) @map("CREATED_AT")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+  @@map("email_tokens")
 }
 
 /// Hierarchical product categories (self-referencing via parentCategoryId)

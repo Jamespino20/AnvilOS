@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -28,3 +28,7 @@ export async function GET(request: NextRequest) {
   }
   return response;
 }
+
+
+
+

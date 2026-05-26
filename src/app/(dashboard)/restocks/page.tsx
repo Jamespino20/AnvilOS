@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { getTransactions, getTransactionsCount, getProducts, processRestock, createTransaction } from "@/actions";
@@ -175,7 +175,7 @@ export default function RestocksPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Restocks" subtitle={`${total} restock record${total !== 1 ? "s" : ""} — track and process inventory replenishment.`} />
+      <PageHeader title="Restocks" subtitle={`${total} restock record${total !== 1 ? "s" : ""} â€” track and process inventory replenishment.`} />
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
         <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
@@ -207,7 +207,7 @@ export default function RestocksPage() {
                 if (key === "items") return String(r.items.length);
                 if (key === "grandTotal") {
                   const total = r.items.reduce((s, i) => s + Number(i.costPrice || i.unitPrice || 0) * (i.quantity || 0), 0);
-                  return `₱${total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                  return `${total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 }
                 if (key === "transactionDate") return new Date(r.transactionDate).toLocaleDateString("en-PH");
                 if (key === "transactionStatus") return r.transactionStatus;
@@ -283,9 +283,9 @@ export default function RestocksPage() {
                       {r.items.map((item) => (
                         <tr key={item.id}>
                           <td className="py-2 text-[#0e212c] font-medium">{products.find(p => p.id === item.productId)?.productName || `#${item.productId}`}</td>
-                          <td className="py-2 text-right text-[#64748b] font-mono">₱{Number(item.costPrice || item.unitPrice || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="py-2 text-right text-[#64748b] font-mono">{Number(item.costPrice || item.unitPrice || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           <td className="py-2 text-right text-[#64748b]">{item.quantity}</td>
-                          <td className="py-2 text-right text-[#0e212c] font-semibold font-mono">₱{((Number(item.costPrice || item.unitPrice || 0)) * (item.quantity || 0)).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="py-2 text-right text-[#0e212c] font-semibold font-mono">{((Number(item.costPrice || item.unitPrice || 0)) * (item.quantity || 0)).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -386,7 +386,7 @@ export default function RestocksPage() {
                     <div key={item.productId} className="flex items-center gap-3 bg-[#f8fafc] rounded-lg p-3 group hover:bg-[#f1f5f9] transition-colors">
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-[#0e212c] truncate">{item.productName}</p>
-                        <p className="text-[10px] text-[#64748b] mt-0.5">₱{(item.costPrice * item.quantity).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} total</p>
+                        <p className="text-[10px] text-[#64748b] mt-0.5">{(item.costPrice * item.quantity).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} total</p>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">Cost</span>
@@ -427,3 +427,7 @@ export default function RestocksPage() {
     </div>
   );
 }
+
+
+
+

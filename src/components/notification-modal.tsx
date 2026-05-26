@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { X, Bell, CheckCheck } from "lucide-react";
@@ -78,3 +78,7 @@ export function NotificationModal({ open, onClose }: Props) {
     </div>
   );
 }
+
+
+
+

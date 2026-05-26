@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { ExportButton } from "@/components/export-button";
 
@@ -19,7 +19,7 @@ export function DashboardExport({ data }: { data: Data }) {
         filename={`anvilos-dashboard-${now}.csv`}
         headers={["Metric", "Value"]}
         rows={[
-          ["Gross Sales (Today)", `₱${data.dailySales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+          ["Gross Sales (Today)", `${data.dailySales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
           ["Total Transactions", String(data.totalTransactions)],
           ["Active Products", String(data.totalProducts)],
           ["Low Stock Alerts", String(data.lowStockCount)],
@@ -33,7 +33,7 @@ export function DashboardExport({ data }: { data: Data }) {
           String(t.receiptNumber),
           t.buyerName,
           t.transactionType,
-          `₱${Number(t.grandTotal).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          `${Number(t.grandTotal).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           t.transactionStatus,
           new Date(t.transactionDate).toLocaleDateString("en-PH"),
         ])}
@@ -42,3 +42,7 @@ export function DashboardExport({ data }: { data: Data }) {
     </div>
   );
 }
+
+
+
+

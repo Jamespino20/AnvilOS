@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -47,7 +47,7 @@ function Content() {
             </h1>
             <p className="text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
               Connect with verified suppliers, browse millions of SKUs, and
-              streamline your procurement — all from within CWL Hardware.
+              streamline your procurement â€” all from within CWL Hardware.
             </p>
           </RevealUp>
         </div>
@@ -128,3 +128,7 @@ export default function Page() {
     </>
   );
 }
+
+
+
+

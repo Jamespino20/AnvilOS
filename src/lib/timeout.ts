@@ -1,4 +1,4 @@
-export async function withTimeout<T>(promise: Promise<T>, ms = 15000, context = "Request"): Promise<T> {
+﻿export async function withTimeout<T>(promise: Promise<T>, ms = 15000, context = "Request"): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
@@ -11,3 +11,7 @@ export function errorMessage(e: unknown, fallback = "Something went wrong"): str
   if (e instanceof Error) return e.message;
   return String(e) || fallback;
 }
+
+
+
+

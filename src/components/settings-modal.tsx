@@ -1,21 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { X, Settings as SettingsIcon, Save, Loader2, Upload, User, Moon, Sun, Key, Lock, Shield, Camera } from "lucide-react";
-import { updateProfile, updateSecurityQuestions, updatePassword } from "@/actions";
+import { X, Settings as SettingsIcon, Save, Loader2, User, Moon, Sun, Key, Lock, Camera } from "lucide-react";
+import { updateProfile, updatePassword } from "@/actions";
 import { toast } from "sonner";
-
-const SECURITY_QUESTIONS = [
-  "What is your mother's maiden name?",
-  "What was the name of your first pet?",
-  "What city were you born in?",
-  "What is your favorite book?",
-  "What was the make of your first car?",
-  "What elementary school did you attend?",
-  "What is your favorite food?",
-];
 
 interface Props {
   open: boolean;
@@ -28,17 +18,8 @@ export function SettingsModal({ open, onClose }: Props) {
   const [name, setName] = useState(session?.user?.name || "");
   const [saving, setSaving] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const [twoFactor, setTwoFactor] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [tab, setTab] = useState<"profile" | "security" | "password">("profile");
-
-  // Security questions
-  const [sq1, setSq1] = useState("");
-  const [sq2, setSq2] = useState("");
-  const [sq3, setSq3] = useState("");
-  const [sa1, setSa1] = useState("");
-  const [sa2, setSa2] = useState("");
-  const [sa3, setSa3] = useState("");
+  const [tab, setTab] = useState<"profile" | "password">("profile");
 
   // Password change
   const [newPassword, setNewPassword] = useState("");
@@ -49,7 +30,6 @@ export function SettingsModal({ open, onClose }: Props) {
   useEffect(() => {
     if (typeof document !== "undefined") {
       setDarkMode(document.documentElement.classList.contains("dark"));
-      setTwoFactor(localStorage.getItem("2fa_enabled") === "true");
       const sessionImg = (session?.user as any)?.imageUrl;
       if (sessionImg) {
         setProfileImage(sessionImg);
@@ -68,17 +48,11 @@ export function SettingsModal({ open, onClose }: Props) {
     setDarkMode(next);
     if (next) {
       document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
+      localStorage.setItem("cwl-theme", "dark");
     } else {
       document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
+      localStorage.setItem("cwl-theme", "light");
     }
-  }
-
-  function toggle2FA() {
-    const next = !twoFactor;
-    setTwoFactor(next);
-    localStorage.setItem("2fa_enabled", String(next));
   }
 
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -109,22 +83,6 @@ export function SettingsModal({ open, onClose }: Props) {
     }
   }
 
-  async function handleSaveSecurity() {
-    setSaving(true);
-    try {
-      await updateSecurityQuestions({
-        question1: sq1 || SECURITY_QUESTIONS[0], answer1: sa1,
-        question2: sq2 || SECURITY_QUESTIONS[1], answer2: sa2,
-        question3: sq3 || SECURITY_QUESTIONS[2], answer3: sa3,
-      });
-      router.refresh();
-    } catch (e) {
-      console.error("Failed to update security questions", e);
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     setPwError("");
@@ -149,7 +107,6 @@ export function SettingsModal({ open, onClose }: Props) {
 
   const tabs = [
     { id: "profile" as const, label: "Profile", icon: User },
-    { id: "security" as const, label: "Security", icon: Shield },
     { id: "password" as const, label: "Password", icon: Lock },
   ];
 
@@ -214,19 +171,6 @@ export function SettingsModal({ open, onClose }: Props) {
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${darkMode ? "translate-x-5" : ""}`} />
               </button>
             </div>
-            <div className="flex items-center justify-between p-4 rounded-lg border border-[#e2e8f0]">
-              <div className="flex items-center gap-3">
-                <Shield className="h-5 w-5 text-[#64748b]" />
-                <div>
-                  <p className="text-sm font-medium text-[#0e212c]">Two-Factor Auth</p>
-                  <p className="text-xs text-[#94a3b8]">Require code on login</p>
-                </div>
-              </div>
-              <button type="button" onClick={toggle2FA}
-                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${twoFactor ? "bg-[#fd761a]" : "bg-[#e2e8f0]"}`}>
-                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${twoFactor ? "translate-x-5" : ""}`} />
-              </button>
-            </div>
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={onClose}
                 className="flex-1 py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-[#f8fafc] transition-all">Close</button>
@@ -236,39 +180,6 @@ export function SettingsModal({ open, onClose }: Props) {
               </button>
             </div>
           </form>
-        )}
-
-        {tab === "security" && (
-          <div className="p-6 space-y-5">
-            <p className="text-sm text-[#64748b] mb-2">Security questions are used for password recovery.</p>
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="space-y-1.5">
-                <select value={i === 0 ? sq1 : i === 1 ? sq2 : sq3}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (i === 0) setSq1(v); else if (i === 1) setSq2(v); else setSq3(v);
-                  }}
-                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] bg-white focus:outline-none focus:border-[#fd761a]">
-                  {SECURITY_QUESTIONS.map((q) => <option key={q} value={q}>{q}</option>)}
-                </select>
-                <input type="text" value={i === 0 ? sa1 : i === 1 ? sa2 : sa3}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (i === 0) setSa1(v); else if (i === 1) setSa2(v); else setSa3(v);
-                  }}
-                  placeholder={`Answer ${i + 1}`}
-                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]" />
-              </div>
-            ))}
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose}
-                className="flex-1 py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-[#f8fafc] transition-all">Close</button>
-              <button onClick={handleSaveSecurity} disabled={saving}
-                className="flex-1 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <><Save className="h-4 w-4" /> Save</>}
-              </button>
-            </div>
-          </div>
         )}
 
         {tab === "password" && (
@@ -298,3 +209,7 @@ export function SettingsModal({ open, onClose }: Props) {
     </div>
   );
 }
+
+
+
+

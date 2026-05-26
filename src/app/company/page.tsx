@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -42,7 +42,7 @@ function Content() {
               </p>
               <p className="text-muted-foreground leading-relaxed">
                 We believe that great software should be accessible, reliable,
-                and purpose-built — not generic tools retrofitted for hardware
+                and purpose-built â€” not generic tools retrofitted for hardware
                 operations.
               </p>
             </RevealUp>
@@ -118,3 +118,7 @@ export default function Page() {
     </>
   );
 }
+
+
+
+

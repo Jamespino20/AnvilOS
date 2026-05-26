@@ -1,4 +1,4 @@
-export default async function SubPage({ params }: { params: Promise<{ slug: string[] }> }) {
+﻿export default async function SubPage({ params }: { params: Promise<{ slug: string[] }> }) {
   const resolved = await params;
   const segments = resolved?.slug || [];
   const title = segments.length
@@ -23,3 +23,6 @@ export default async function SubPage({ params }: { params: Promise<{ slug: stri
     </div>
   );
 }
+
+
+

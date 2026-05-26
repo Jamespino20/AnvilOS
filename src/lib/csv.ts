@@ -5,6 +5,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
+import { formatReportMoney } from "@/lib/format";
 
 function stripExt(name: string): string {
   return name.replace(/\.[^/.]+$/, "");
@@ -21,20 +22,33 @@ const COMPANY_TAGLINE = "Hardware & Supply";
 const THEME_BLUE = [14, 33, 44] as const;
 const THEME_ORANGE = [253, 118, 26] as const;
 const THEME_WHITE = [255, 255, 255] as const;
+const MONEY_HEADER_RE = /(price|total|sales|revenue|spent|cost|loss|returns|amount|gross|net)/i;
+
+function reportRows(headers: string[], rows: string[][]) {
+  return rows.map((row) =>
+    row.map((cell, index) => {
+      if (!MONEY_HEADER_RE.test(headers[index] || "")) return cell;
+      const cleaned = String(cell).replace(/[^\d.-]/g, "");
+      if (!cleaned || Number.isNaN(Number(cleaned))) return cell;
+      return formatReportMoney(Number(cleaned));
+    }),
+  );
+}
 
 export function exportCSV(filename: string, headers: string[], rows: string[][]) {
   const now = new Date();
+  const outputRows = reportRows(headers, rows);
   const meta = [
     `# ${COMPANY_NAME} — ${formatTitle(filename)}`,
     `# Generated: ${now.toLocaleString("en-PH")}`,
-    `# Columns: ${headers.length} | Rows: ${rows.length}`,
+    `# Columns: ${headers.length} | Rows: ${outputRows.length}`,
     `# File: ${stripExt(filename)}.csv`,
     "",
   ];
   const csv = [
     ...meta,
     headers.join(","),
-    ...rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")),
+    ...outputRows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")),
   ].join("\n");
   const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
   const a = document.createElement("a");
@@ -45,6 +59,7 @@ export function exportCSV(filename: string, headers: string[], rows: string[][])
 }
 
 export async function exportXLSX(filename: string, headers: string[], rows: string[][]) {
+  const outputRows = reportRows(headers, rows);
   const wb = new ExcelJS.Workbook();
   wb.creator = COMPANY_NAME;
   wb.title = formatTitle(filename);
@@ -83,7 +98,7 @@ export async function exportXLSX(filename: string, headers: string[], rows: stri
   // --- Metadata row ---
   ws.mergeCells(3, 1, 3, headers.length);
   const metaCell = ws.getCell("A3");
-  metaCell.value = `Generated: ${new Date().toLocaleString("en-PH")}  |  ${rows.length} rows`;
+  metaCell.value = `Generated: ${new Date().toLocaleString("en-PH")}  |  ${outputRows.length} rows`;
   metaCell.font = { name: "Calibri", size: 9, color: { argb: "FF64748B" } };
   metaCell.alignment = { horizontal: "left", vertical: "middle" };
   ws.getRow(3).height = 20;
@@ -106,7 +121,7 @@ export async function exportXLSX(filename: string, headers: string[], rows: stri
   });
 
   // --- Data rows ---
-  rows.forEach((row, ri) => {
+  outputRows.forEach((row, ri) => {
     const excelRow = ws.getRow(ri + 5);
     excelRow.height = 22;
     const isAlternate = ri % 2 === 1;
@@ -138,7 +153,7 @@ export async function exportXLSX(filename: string, headers: string[], rows: stri
 
   // --- Column widths ---
   headers.forEach((h, i) => {
-    const maxLen = Math.max(h.length, ...rows.map((r) => (r[i] || "").length));
+    const maxLen = Math.max(h.length, ...outputRows.map((r) => (r[i] || "").length));
     ws.getColumn(i + 1).width = Math.min(Math.max(maxLen + 4, 14), 55);
   });
 
@@ -159,6 +174,7 @@ export async function exportXLSX(filename: string, headers: string[], rows: stri
 }
 
 export async function exportPDF(filename: string, headers: string[], rows: string[][]) {
+  const outputRows = reportRows(headers, rows);
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pw = doc.internal.pageSize.getWidth();
   const ph = doc.internal.pageSize.getHeight();
@@ -169,6 +185,8 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
   // --- Header banner ---
   doc.setFillColor(...THEME_BLUE);
   doc.rect(0, 0, pw, 32, "F");
+  doc.setFillColor(...THEME_WHITE);
+  doc.roundedRect(10, 5, 24, 19, 2, 2, "F");
 
   // Logo — maintain aspect ratio
   try {
@@ -183,9 +201,15 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
     img.src = b64;
     await new Promise((resolve) => { img.onload = resolve; });
     const aspect = img.naturalWidth / img.naturalHeight;
-    const logoH = 16;
-    const logoW = logoH * aspect;
-    doc.addImage(b64, "PNG", 10, 4, logoW, logoH);
+    const maxLogoW = 20;
+    const maxLogoH = 15;
+    let logoW = maxLogoW;
+    let logoH = logoW / aspect;
+    if (logoH > maxLogoH) {
+      logoH = maxLogoH;
+      logoW = logoH * aspect;
+    }
+    doc.addImage(b64, "PNG", 12 + (maxLogoW - logoW) / 2, 7 + (maxLogoH - logoH) / 2, logoW, logoH);
   } catch {}
 
   doc.setTextColor(...THEME_WHITE);
@@ -195,11 +219,11 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
 
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.text(COMPANY_TAGLINE, 14, 19);
+  doc.text(COMPANY_TAGLINE, 40, 19);
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text(title, 14, 27);
+  doc.text(title, 14, 27, { maxWidth: pw - 28 });
 
   // --- Orange accent line ---
   doc.setFillColor(...THEME_ORANGE);
@@ -209,7 +233,7 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
   doc.setTextColor(...THEME_BLUE);
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  const meta = `Generated: ${now.toLocaleString("en-PH")}  |  ${headers.length} columns, ${rows.length} rows`;
+  const meta = `Generated: ${now.toLocaleString("en-PH")}  |  ${headers.length} columns, ${outputRows.length} rows`;
   doc.text(meta, 14, 39);
   doc.setDrawColor(...THEME_BLUE);
   doc.setLineWidth(0.3);
@@ -219,40 +243,44 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
   const marginLeft = 14;
   const marginRight = 14;
   const usable = pw - marginLeft - marginRight;
-  const minColWidth = 20;
-  const maxColWidth = 80;
+  const minColWidth = 18;
+  const maxColWidth = 62;
 
   const colWidths = headers.map((h, i) => {
     const maxContent = Math.max(
       h.length,
-      ...rows.map((r) => (r[i] || "").length),
+      ...outputRows.map((r) => (r[i] || "").length),
     );
-    return Math.min(maxColWidth, Math.max(minColWidth, maxContent * 3));
+    return Math.min(maxColWidth, Math.max(minColWidth, maxContent * 2.2));
   });
   const totalWidth = colWidths.reduce((s, w) => s + w, 0);
-  const scaled = colWidths.map((w) => (w / totalWidth) * usable);
+  const scaled = colWidths.map((w) => Math.max(14, (w / totalWidth) * usable));
 
   // --- Table with column-specific widths ---
   autoTable(doc, {
     head: [headers],
-    body: rows,
+    body: outputRows,
     startY: 46,
     styles: {
-      fontSize: 7.5,
-      cellPadding: 2.5,
+      fontSize: headers.length > 7 ? 6.4 : 7,
+      cellPadding: 1.8,
       lineColor: [226, 232, 240],
       lineWidth: 0.2,
       textColor: [14, 33, 44],
+      overflow: "linebreak",
+      valign: "middle",
+      minCellHeight: 7,
     },
     headStyles: {
       fillColor: [...THEME_BLUE],
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 8.5,
+      fontSize: headers.length > 7 ? 7 : 8,
       halign: "center",
+      overflow: "linebreak",
     },
     bodyStyles: {
-      fontSize: 7.5,
+      fontSize: headers.length > 7 ? 6.4 : 7,
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252],
@@ -260,7 +288,7 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
     columnStyles: Object.fromEntries(
       headers.map((_, i) => [
         String(i),
-        { halign: i === 0 ? "left" : "right", cellWidth: scaled[i] },
+        { halign: i === 0 ? "left" : "right", cellWidth: scaled[i], overflow: "linebreak" },
       ]),
     ),
     margin: { top: 46, right: marginRight, bottom: 20, left: marginLeft },
@@ -280,3 +308,5 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
 
   doc.save(stripExt(filename) + ".pdf");
 }
+
+

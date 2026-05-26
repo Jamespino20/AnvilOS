@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -7,6 +7,7 @@ Last Update Date: May 24, 2026
 */
 
 import { auth } from "@/lib/auth";
+import { canAccessPath } from "@/lib/access";
 import { NextResponse } from "next/server";
 import type { NextFetchEvent } from "next/server";
 import type { NextAuthRequest } from "next-auth";
@@ -18,6 +19,19 @@ export const config = {
 };
 
 export const proxy = auth((request: NextAuthRequest, event: NextFetchEvent) => {
+  if (!request.auth?.user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  const role = (request.auth.user as any).role;
+  if (!canAccessPath(role, request.nextUrl.pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
   const accumulatedCookies = request.cookies
     .getAll()
     .filter((c) => /authjs\.session-token/.test(c.name));
@@ -33,3 +47,7 @@ export const proxy = auth((request: NextAuthRequest, event: NextFetchEvent) => {
     return response;
   }
 });
+
+
+
+

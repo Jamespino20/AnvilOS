@@ -1,4 +1,4 @@
-/*
+﻿/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -79,3 +79,7 @@ export function Testimonials() {
     </section>
   );
 }
+
+
+
+

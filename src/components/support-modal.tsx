@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { X, HelpCircle, Mail, MessageCircle, BookOpen } from "lucide-react";
 
@@ -81,3 +81,7 @@ export function SupportModal({ open, onClose }: Props) {
     </div>
   );
 }
+
+
+
+
