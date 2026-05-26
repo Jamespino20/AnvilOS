@@ -88,9 +88,7 @@ export async function createProduct(data: {
     return await fn();
   } catch (e: any) {
     if (e?.code === "P2002") {
-      await prisma.$executeRawUnsafe(
-        `SELECT setval(pg_get_serial_sequence('products', 'PRODUCT_ID'), COALESCE((SELECT MAX("PRODUCT_ID") FROM "products"), 1))`,
-      );
+      await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('products', 'PRODUCT_ID'), COALESCE((SELECT MAX("PRODUCT_ID") FROM "products"), 1))`;
       const product = await fn();
       revalidatePath("/inventory");
       return product;
@@ -282,9 +280,7 @@ export async function createSupplier(data: {
     return await fn();
   } catch (e: any) {
     if (e?.code === "P2002") {
-      await prisma.$executeRawUnsafe(
-        `SELECT setval(pg_get_serial_sequence('suppliers', 'SUPPLIER_ID'), COALESCE((SELECT MAX("SUPPLIER_ID") FROM "suppliers"), 1))`,
-      );
+      await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('suppliers', 'SUPPLIER_ID'), COALESCE((SELECT MAX("SUPPLIER_ID") FROM "suppliers"), 1))`;
       const s = await fn();
       revalidatePath("/suppliers");
       return s;
@@ -636,35 +632,39 @@ export async function createTransaction(data: {
   // Fire-and-forget email alerts (non-blocking)
   if (data.transactionStatus === "Completed") {
     const actor = actionFingerprint(session);
-    import("@/actions/email").then((m) => {
-      // 1. Check stock alerts
-      m.checkAndAlertLowStock().catch((e) => console.error("Low stock alert failed:", e));
+    import("@/actions/email")
+      .then((m) => {
+        // 1. Check stock alerts
+        m.checkAndAlertLowStock().catch((e) =>
+          console.error("Low stock alert failed:", e),
+        );
 
-      // 2. Alert staff (systemwide)
-      m.sendSystemTransactionAlert(
-        receiptNumber,
-        data.buyerName,
-        data.grandTotal,
-        actor
-      ).catch((e) => console.error("System transaction alert failed:", e));
-
-      // 3. Email buyer (receipt)
-      if (buyer?.email) {
-        m.sendTransactionReceipt(
+        // 2. Alert staff (systemwide)
+        m.sendSystemTransactionAlert(
           receiptNumber,
           data.buyerName,
-          buyer.email,
-          itemsWithNames.map((i) => ({
-            productName: i.productName,
-            quantity: i.quantity,
-            unitPrice: i.unitPrice,
-            totalPrice: i.totalPrice,
-          })),
           data.grandTotal,
-          actor
-        ).catch((e) => console.error("Buyer receipt email failed:", e));
-      }
-    }).catch((e) => console.error("Failed to load email actions:", e));
+          actor,
+        ).catch((e) => console.error("System transaction alert failed:", e));
+
+        // 3. Email buyer (receipt)
+        if (buyer?.email) {
+          m.sendTransactionReceipt(
+            receiptNumber,
+            data.buyerName,
+            buyer.email,
+            itemsWithNames.map((i) => ({
+              productName: i.productName,
+              quantity: i.quantity,
+              unitPrice: i.unitPrice,
+              totalPrice: i.totalPrice,
+            })),
+            data.grandTotal,
+            actor,
+          ).catch((e) => console.error("Buyer receipt email failed:", e));
+        }
+      })
+      .catch((e) => console.error("Failed to load email actions:", e));
   }
 
   revalidatePath("/transactions");
@@ -950,30 +950,63 @@ export async function getAuditLogs(opts?: {
 
 // ─────────── Notifications ───────────
 
-export async function getNotifications() {
-  return prisma.notification.findMany({
+export async function getNotifications(userId: number) {
+  const notifications = await prisma.notification.findMany({
     orderBy: { createdAt: "desc" },
     take: 50,
   });
+  const readIds = await prisma.notificationRead.findMany({
+    where: { userId, notificationId: { in: notifications.map((n) => n.id) } },
+    select: { notificationId: true },
+  });
+  const readSet = new Set(
+    readIds.map((r: { notificationId: any }) => r.notificationId),
+  );
+  return notifications.map((n) => ({ ...n, isRead: readSet.has(n.id) }));
 }
 
-export async function markNotificationRead(id: number) {
-  await prisma.notification.update({ where: { id }, data: { isRead: true } });
+export async function markNotificationRead(userId: number, id: number) {
+  await prisma.notificationRead.upsert({
+    where: { notificationId_userId: { notificationId: id, userId } },
+    create: { notificationId: id, userId },
+    update: {},
+  });
   await logAudit(
     "System",
     "Mark Notification Read",
-    `Notification ${id} marked as read`,
+    `Notification ${id} marked as read by user ${userId}`,
   );
 }
 
-export async function markAllNotificationsRead() {
-  await prisma.notification.updateMany({ data: { isRead: true } });
-  await logAudit("System", "Mark All Read", "All notifications marked as read");
+export async function markAllNotificationsRead(userId: number) {
+  const allNotifs = await prisma.notification.findMany({
+    select: { id: true },
+  });
+  const existing = await prisma.notificationRead.findMany({
+    where: { userId },
+    select: { notificationId: true },
+  });
+  const existingIds = new Set(
+    existing.map((r: { notificationId: any }) => r.notificationId),
+  );
+  const toCreate = allNotifs
+    .filter((n) => !existingIds.has(n.id))
+    .map((n) => ({ notificationId: n.id, userId }));
+  if (toCreate.length > 0) {
+    await prisma.notificationRead.createMany({ data: toCreate });
+  }
+  await logAudit(
+    "System",
+    "Mark All Read",
+    `All notifications marked as read by user ${userId}`,
+  );
   revalidatePath("/notifications");
 }
 
-export async function getUnreadNotificationCount() {
-  return prisma.notification.count({ where: { isRead: false } });
+export async function getUnreadNotificationCount(userId: number) {
+  const total = await prisma.notification.count();
+  const read = await prisma.notificationRead.count({ where: { userId } });
+  return total - read;
 }
 
 // ─────────── Buyers ───────────
@@ -1879,7 +1912,12 @@ export async function getUsers(opts?: {
     }),
     prisma.user.count({ where }),
   ]);
-  return { users, total, page: opts?.page || 1, totalPages: Math.ceil(total / take) };
+  return {
+    users,
+    total,
+    page: opts?.page || 1,
+    totalPages: Math.ceil(total / take),
+  };
 }
 
 export async function createUser(data: {
@@ -1913,7 +1951,11 @@ export async function createUser(data: {
       lastLogin: new Date(),
     },
   });
-  await logAudit("User Management", "Create User", `Created user ${user.sellerName} (${data.role})`);
+  await logAudit(
+    "User Management",
+    "Create User",
+    `Created user ${user.sellerName} (${data.role})`,
+  );
   revalidatePath("/users");
   return { id: user.id };
 }
@@ -1942,7 +1984,11 @@ export async function updateUser(
     updateData.passwordHash = await bcrypt.hash(data.password, 10);
   }
   const user = await prisma.user.update({ where: { id }, data: updateData });
-  await logAudit("User Management", "Update User", `Updated user ${user.sellerName} (id=${id})`);
+  await logAudit(
+    "User Management",
+    "Update User",
+    `Updated user ${user.sellerName} (id=${id})`,
+  );
   revalidatePath("/users");
   return { id: user.id };
 }
@@ -1952,9 +1998,16 @@ export async function deleteUser(id: number) {
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new Error("User not found");
   const txnCount = await prisma.transaction.count({ where: { sellerId: id } });
-  if (txnCount > 0) throw new Error("Cannot delete user with existing transactions. Deactivate instead.");
+  if (txnCount > 0)
+    throw new Error(
+      "Cannot delete user with existing transactions. Deactivate instead.",
+    );
   await prisma.user.delete({ where: { id } });
-  await logAudit("User Management", "Delete User", `Deleted user ${user.sellerName} (id=${id})`);
+  await logAudit(
+    "User Management",
+    "Delete User",
+    `Deleted user ${user.sellerName} (id=${id})`,
+  );
   revalidatePath("/users");
   return { success: true };
 }

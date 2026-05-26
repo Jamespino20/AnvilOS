@@ -11,8 +11,8 @@ import { requireUser } from "@/lib/server-access";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  await requireUser();
-  const notifications = await getNotifications();
+  const session = await requireUser();
+  const notifications = await getNotifications(Number(session.user.id));
   return NextResponse.json(notifications);
 }
 

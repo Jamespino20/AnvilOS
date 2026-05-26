@@ -1,4 +1,4 @@
-﻿/*
+/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -28,12 +28,24 @@ export async function sendMail({
   html: string;
 }) {
   const recipients = Array.isArray(to) ? to : [to];
-  if (recipients.length === 0) return;
+  const uniqueRecipients = [...new Set(recipients.filter(Boolean))];
 
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM || "CWL Hardware <noreply@cwlhardware.com>",
-    to: recipients.join(", "),
-    subject,
-    html,
-  });
+  if (uniqueRecipients.length === 0) return;
+
+  const from =
+    process.env.SMTP_FROM || "CWL Hardware <noreply@cwlhardware.com>";
+
+  // Send individually so each recipient only sees "to me"
+  for (const recipient of uniqueRecipients) {
+    try {
+      await transporter.sendMail({
+        from,
+        to: recipient,
+        subject,
+        html,
+      });
+    } catch (error) {
+      console.error(`Failed to send email to ${recipient}:`, error);
+    }
+  }
 }

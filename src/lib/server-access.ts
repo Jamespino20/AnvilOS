@@ -19,7 +19,7 @@ export async function requireAdmin() {
 export async function requireUser() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  return session;
+  return session as { user: { id: string; name?: string | null; email?: string | null; role?: string | null; imageUrl?: string | null } };
 }
 
 

@@ -9,6 +9,7 @@ Last Update Date: May 26, 2026
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import {
   getNotifications,
   markNotificationRead,
@@ -16,33 +17,43 @@ import {
 } from "@/actions";
 import { Bell, CheckCheck, Loader2, CheckCircle } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import type { Notification } from "@prisma/client";
+
+interface NotificationItem {
+  id: number;
+  systemNotification: string;
+  message: string;
+  isRead: boolean;
+  createdAt: Date;
+}
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { data: session } = useSession();
+  const userId = Number(session?.user?.id ?? 0);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   function load() {
+    if (!userId) return;
     setLoading(true);
-    getNotifications().then((data) => {
-      setNotifications(data as Notification[]);
+    getNotifications(userId).then((data) => {
+      setNotifications(data as NotificationItem[]);
       setLoading(false);
     });
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    if (userId) load();
+  }, [userId]);
 
   async function handleMarkRead(id: number) {
-    await markNotificationRead(id);
+    await markNotificationRead(userId, id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
     );
   }
 
   async function handleMarkAllRead() {
-    await markAllNotificationsRead();
+    await markAllNotificationsRead(userId);
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   }
 

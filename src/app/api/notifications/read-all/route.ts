@@ -11,8 +11,8 @@ import { requireUser } from "@/lib/server-access";
 import { NextResponse } from "next/server";
 
 export async function PATCH() {
-  await requireUser();
-  await markAllNotificationsRead();
+  const session = await requireUser();
+  await markAllNotificationsRead(Number(session.user.id));
   return NextResponse.json({ success: true });
 }
 

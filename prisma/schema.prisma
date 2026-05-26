@@ -86,10 +86,11 @@ model User {
   notifDailySales       Boolean @default(true) @map("NOTIF_DAILY_SALES")
   notifTransaction      Boolean @default(true) @map("NOTIF_TRANSACTION")
 
-  transactions Transaction[]
-  buyers       Buyer[]
-  auditLogs    AuditLog[]
-  emailTokens  EmailToken[]
+  transactions     Transaction[]
+  buyers           Buyer[]
+  auditLogs        AuditLog[]
+  emailTokens      EmailToken[]
+  notificationReads NotificationRead[]
 
   @@map("users")
 }
@@ -222,13 +223,26 @@ model TransactionItem {
 
 /// System-generated notifications (stock alerts, transaction reminders)
 model Notification {
-  id                 Int      @id @default(autoincrement()) @map("NOTIFICATION_ID")
-  systemNotification String   @map("SYSTEM_NOTIFICATIONS")
-  message            String   @map("MESSAGE")
-  isRead             Boolean  @default(false) @map("IS_READ")
-  createdAt          DateTime @default(now()) @map("CREATED_AT")
+  id                 Int                 @id @default(autoincrement()) @map("NOTIFICATION_ID")
+  systemNotification String              @map("SYSTEM_NOTIFICATIONS")
+  message            String              @map("MESSAGE")
+  createdAt          DateTime            @default(now()) @map("CREATED_AT")
+  reads              NotificationRead[]
 
   @@map("notifications")
+}
+
+/// Tracks per-user read status for notifications
+model NotificationRead {
+  id             Int          @id @default(autoincrement())
+  notificationId Int
+  userId         Int
+  readAt         DateTime     @default(now())
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@map("notification_reads")
 }
 
 /// Customers / clients who purchase products

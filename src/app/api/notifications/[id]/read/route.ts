@@ -14,9 +14,9 @@ export async function PATCH(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  await requireUser();
+  const session = await requireUser();
   const { id } = await params;
-  await markNotificationRead(Number(id));
+  await markNotificationRead(Number(session.user.id), Number(id));
   return NextResponse.json({ success: true });
 }
 

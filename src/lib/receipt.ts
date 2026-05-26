@@ -204,7 +204,7 @@ export async function downloadReceiptPdf(data: {
     y += 4.5;
   }
 
-  // Grand total
+  // Grand total — value on its own line to avoid overflow
   y += 1.5;
   doc.setDrawColor(14, 33, 44);
   doc.setLineWidth(0.5);
@@ -214,6 +214,7 @@ export async function downloadReceiptPdf(data: {
   doc.setFontSize(9);
   doc.setTextColor(253, 118, 26);
   doc.text("GRAND TOTAL", l, y);
+  y += 3.5;
   doc.text(`₱${formatMoney(data.grandTotal)}`, r, y, { align: "right" });
   y += 7;
 
