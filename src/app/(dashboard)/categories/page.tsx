@@ -170,7 +170,7 @@ export default function CategoriesPage() {
     return pages.map((p, i) =>
       p === "ellipsis" ? (
         <span key={`e${i}`} className="px-1 text-[#94a3b8] select-none">
-          â€¦
+          …
         </span>
       ) : (
         <button
@@ -200,7 +200,7 @@ export default function CategoriesPage() {
     <div className="space-y-5">
       <PageHeader
         title="Category Management"
-        subtitle="Organize your product catalog â€” add, edit, and remove categories."
+        subtitle="Organize your product catalog — add, edit, and remove categories."
       />
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
@@ -238,7 +238,7 @@ export default function CategoriesPage() {
                           month: "short",
                           day: "numeric",
                         })
-                      : "â€”";
+                      : "—";
                   return "";
                 }),
               )
@@ -308,7 +308,7 @@ export default function CategoriesPage() {
                           month: "short",
                           day: "numeric",
                         })
-                      : "â€”"}
+                      : "—"}
                   </td>
                   {isAdmin && <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-1">

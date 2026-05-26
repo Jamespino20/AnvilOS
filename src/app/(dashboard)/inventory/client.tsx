@@ -250,7 +250,7 @@ export function InventoryClient({
     <div className="space-y-5">
       <PageHeader
         title="Inventory Management"
-        subtitle="Manage your product catalog â€” add, edit, and remove stock items. Track quantities and thresholds for each product."
+        subtitle="Manage your product catalog — add, edit, and remove stock items. Track quantities and thresholds for each product."
       />
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-3 items-center">

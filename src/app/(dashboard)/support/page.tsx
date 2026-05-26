@@ -28,7 +28,7 @@ const supportOptions = [
   {
     icon: Mail,
     label: "Email Support",
-    desc: "Get help via email â€” response within 24 hours",
+    desc: "Get help via email — response within 24 hours",
     href: "mailto:support@cwlhardware.com",
     color: "bg-amber-50 text-amber-600",
   },

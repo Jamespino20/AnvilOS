@@ -294,7 +294,7 @@ export default function OrdersPage() {
     <div className="space-y-5">
       <PageHeader
         title="Purchase Orders"
-        subtitle={`${filtered.length} active purchase order${filtered.length !== 1 ? "s" : ""} â€” manage purchase orders, update items, and track delivery status.`}
+        subtitle={`${filtered.length} active purchase order${filtered.length !== 1 ? "s" : ""} — manage purchase orders, update items, and track delivery status.`}
       />
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
@@ -509,7 +509,7 @@ export default function OrdersPage() {
                               <div className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold shrink-0 ${
                                 isActive ? "bg-emerald-100 text-emerald-700" : "bg-[#f1f5f9] text-[#94a3b8]"
                               } ${isCurrent ? "ring-2 ring-emerald-300" : ""}`}>
-                                {isActive ? "âœ“" : i + 1}
+                                {isActive ? "✓" : i + 1}
                               </div>
                               <span className={`mx-1 text-[9px] whitespace-nowrap ${isActive ? "text-[#0e212c] font-medium" : "text-[#94a3b8]"}`}>{stage}</span>
                               {i < statusMap.length - 1 && <div className={`w-6 h-px ${isActive && i < currentIdx ? "bg-emerald-300" : "bg-[#e2e8f0]"}`} />}
@@ -602,7 +602,7 @@ export default function OrdersPage() {
                           }} className="flex-1 min-w-[180px] px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]">
                             <option value="">Select product</option>
                             {products.map((p) => (
-                              <option key={p.id} value={p.id}>{p.productName}{(p as any).imageUrl ? " ðŸ“·" : ""}</option>
+                              <option key={p.id} value={p.id}>{p.productName}{(p as any).imageUrl ? " 📷" : ""}</option>
                             ))}
                           </select>
                           <label className="text-[10px] font-semibold text-[#94a3b8] uppercase shrink-0">Qty</label>

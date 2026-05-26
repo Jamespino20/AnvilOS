@@ -22,7 +22,7 @@ import type { Prisma } from "@prisma/client";
 
 const DB_TIMEOUT = 20000;
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Products â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────── Products ───────────
 
 export async function getProducts(opts?: {
   categoryId?: number;
@@ -140,7 +140,7 @@ export async function adjustStock(productId: number, newQuantity: number) {
   await logAudit(
     "InventoryPanel",
     "Adjust Stock",
-    `${product.productName}: ${product.quantity} â†’ ${newQuantity}`,
+    `${product.productName}: ${product.quantity} → ${newQuantity}`,
   );
   revalidatePath("/inventory");
   return updated;
@@ -174,7 +174,7 @@ export async function deleteProduct(id: number) {
   revalidatePath("/inventory");
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Categories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────── Categories ───────────
 
 export async function getCategories() {
   return prisma.category.findMany({
@@ -243,7 +243,7 @@ export async function deleteCategory(id: number) {
   revalidatePath("/categories");
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Suppliers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────── Suppliers ───────────
 
 export async function getSuppliers() {
   return prisma.supplier.findMany({
@@ -310,7 +310,7 @@ export async function updateSupplier(
   await logAudit(
     "SupplierPanel",
     "Edit Supplier",
-    `${before.supplierName} â†’ ${s.supplierName}`,
+    `${before.supplierName} → ${s.supplierName}`,
   );
   revalidatePath("/suppliers");
   return s;
@@ -330,7 +330,7 @@ export async function deleteSupplier(id: number) {
   revalidatePath("/suppliers");
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Transactions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────── Transactions ───────────
 
 export async function getTransactions(opts?: {
   status?: string;
@@ -722,7 +722,7 @@ export async function updateTransactionStatus(
   await logAudit(
     "EditTransactionDialog",
     "Update Status",
-    `#${txn.receiptNumber}: ${txn.transactionStatus} â†’ ${status}`,
+    `#${txn.receiptNumber}: ${txn.transactionStatus} → ${status}`,
   );
   revalidatePath("/transactions");
   revalidatePath("/pos");
@@ -827,7 +827,7 @@ export async function updateTransaction(
       await logAudit(
         "EditTransactionDialog",
         txn.transactionType,
-        `${product.productName} (#${txn.receiptNumber}): ${oldQty}â†’${newItem.quantity} (delta:${delta})`,
+        `${product.productName} (#${txn.receiptNumber}): ${oldQty}→${newItem.quantity} (delta:${delta})`,
       );
     }
   }
@@ -841,7 +841,7 @@ export async function updateTransaction(
   return updated;
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Stock KPIs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────── Stock KPIs ───────────
 
 export async function getDailySales(date?: string) {
   const start = date ? new Date(date) : new Date();
@@ -876,7 +876,7 @@ export async function getRevenueTrend(days: number = 7) {
   return data;
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Audit Logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────── Audit Logs ───────────
 
 export async function getAuditLogs(opts?: {
   startDate?: string;
@@ -906,7 +906,7 @@ export async function getAuditLogs(opts?: {
   });
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────── Notifications ───────────
 
 export async function getNotifications() {
   return prisma.notification.findMany({
@@ -934,7 +934,7 @@ export async function getUnreadNotificationCount() {
   return prisma.notification.count({ where: { isRead: false } });
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Buyers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────── Buyers ───────────
 
 export async function getBuyers(type?: "WalkIn" | "PO") {
   const nameFilter =
@@ -1031,7 +1031,7 @@ export async function getBuyerTransactions(buyerName: string) {
   });
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Dashboard KPIs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────── Dashboard KPIs ───────────
 
 export async function getDashboardKpis() {
   const today = new Date();
@@ -1251,7 +1251,7 @@ export async function updateBuyerInfo(
   return txns;
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Financial Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────── Financial Dashboard ───────────
 
 export async function getFinancialDashboard(period?: {
   start: string;
@@ -1374,7 +1374,7 @@ export async function getFinancialDashboard(period?: {
     period: {
       start: start.toISOString(),
       end: end.toISOString(),
-      label: `${start.toLocaleDateString("en-PH", { month: "short", day: "numeric" })} â€“ ${end.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`,
+      label: `${start.toLocaleDateString("en-PH", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`,
     },
     grossSales: gross,
     returnsTotal,
@@ -1515,7 +1515,7 @@ export async function getTopProductsByRevenue(
     .slice(0, limit);
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Paginated Audit Logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────── Paginated Audit Logs ───────────
 
 export async function getAuditLogCount(opts?: {
   startDate?: string;
@@ -1571,7 +1571,7 @@ export async function getPaginatedAuditLogs(
   return { logs, total, page, perPage, totalPages: Math.ceil(total / perPage) };
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Data Import â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────── Data Import ───────────
 
 type ValidationError = { row: number; column: string; message: string };
 

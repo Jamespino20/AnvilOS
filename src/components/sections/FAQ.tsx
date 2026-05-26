@@ -27,7 +27,7 @@ const faqs = [
   },
   {
     q: "How long does it take to deploy?",
-    a: "Most single-location stores are fully set up in under 2 days â€” including product catalog import, register configuration, and staff training.",
+    a: "Most single-location stores are fully set up in under 2 days — including product catalog import, register configuration, and staff training.",
   },
   {
     q: "What hardware do I need for the POS?",

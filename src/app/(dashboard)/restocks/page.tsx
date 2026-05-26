@@ -175,7 +175,7 @@ export default function RestocksPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Restocks" subtitle={`${total} restock record${total !== 1 ? "s" : ""} â€” track and process inventory replenishment.`} />
+      <PageHeader title="Restocks" subtitle={`${total} restock record${total !== 1 ? "s" : ""} — track and process inventory replenishment.`} />
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
         <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">

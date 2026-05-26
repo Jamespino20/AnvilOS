@@ -83,7 +83,7 @@ export async function sendLowStockAlerts(lowStockProducts: { productName: string
           </tr></thead>
           <tbody>${productRows}</tbody>
         </table>
-        <p style="color:#94a3b8;font-size:12px;margin-top:16px"><a href="${process.env.NEXT_PUBLIC_APP_URL || ""}/inventory" style="color:#fd761a">View Inventory â†’</a></p>
+        <p style="color:#94a3b8;font-size:12px;margin-top:16px"><a href="${process.env.NEXT_PUBLIC_APP_URL || ""}/inventory" style="color:#fd761a">View Inventory →</a></p>
       </div>
     </div>`,
   });
@@ -181,7 +181,7 @@ export async function sendDailySalesReport() {
             <p style="color:#0e212c;font-size:24px;font-weight:700;margin:0">${txnCount}</p>
           </div>
         </div>
-        <p style="color:#94a3b8;font-size:12px;margin:0"><a href="${process.env.NEXT_PUBLIC_APP_URL || ""}/dashboard" style="color:#fd761a">View Full Dashboard â†’</a></p>
+        <p style="color:#94a3b8;font-size:12px;margin:0"><a href="${process.env.NEXT_PUBLIC_APP_URL || ""}/dashboard" style="color:#fd761a">View Full Dashboard →</a></p>
       </div>
     </div>`,
   });

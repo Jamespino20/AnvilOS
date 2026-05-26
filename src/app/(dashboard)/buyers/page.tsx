@@ -119,8 +119,8 @@ export default function BuyersPage() {
     ]);
     const metaRows = [
       [`Buyer Report: ${selectedBuyer}`],
-      [`Address: ${history[0]?.buyerAddress || "â€”"}`],
-      [`Contact: ${history[0]?.buyerContact || "â€”"}`],
+      [`Address: ${history[0]?.buyerAddress || "—"}`],
+      [`Contact: ${history[0]?.buyerContact || "—"}`],
       [],
     ];
     const summaryRows = [
@@ -541,7 +541,7 @@ export default function BuyersPage() {
     <div className="space-y-5">
       <PageHeader
         title="Buyers"
-        subtitle={`${filtered.length} buyer${filtered.length !== 1 ? "s" : ""} found â€” view customer purchase histories and contact details.`}
+        subtitle={`${filtered.length} buyer${filtered.length !== 1 ? "s" : ""} found — view customer purchase histories and contact details.`}
       />
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
         <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
@@ -665,10 +665,10 @@ export default function BuyersPage() {
                     </div>
                   </td>
                   <td className="p-4 text-[#64748b]">
-                    {buyer.buyerContact || "â€”"}
+                    {buyer.buyerContact || "—"}
                   </td>
                   <td className="p-4 text-[#64748b] max-w-[200px] truncate">
-                    {buyer.buyerAddress || "â€”"}
+                    {buyer.buyerAddress || "—"}
                   </td>
                   <td className="p-4 text-right font-medium text-[#0e212c]">
                     {buyer.totalOrders}
@@ -683,7 +683,7 @@ export default function BuyersPage() {
                           day: "numeric",
                           year: "numeric",
                         })
-                      : "â€”"}
+                      : "—"}
                   </td>
                   <td className="p-4 text-center">
                     <button

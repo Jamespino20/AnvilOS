@@ -122,7 +122,7 @@ export function FeaturesGrid() {
                     {f.description}
                   </p>
                   <span className="text-xs font-bold text-safety-orange flex items-center gap-1 group-hover:translate-x-1 transition-transform duration-300 uppercase tracking-widest">
-                    Manual <span className="text-lg">â†’</span>
+                    Manual <span className="text-lg">→</span>
                   </span>
                 </div>
               </div>

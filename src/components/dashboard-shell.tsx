@@ -31,7 +31,7 @@ export function DashboardShell({ children, user, unreadCount }: Props) {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#e2e8f0]">
+    <div className="flex min-h-screen bg-background">
       <DashboardSidebar collapsed={!sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} role={user.role} />
       <div className={cn(
         "flex-1 flex flex-col min-h-screen transition-all duration-300",

@@ -184,7 +184,7 @@ export default function SuppliersPage() {
     return pages.map((p, i) =>
       p === "ellipsis" ? (
         <span key={`e${i}`} className="px-1 text-[#94a3b8] select-none">
-          â€¦
+          …
         </span>
       ) : (
         <button
@@ -214,7 +214,7 @@ export default function SuppliersPage() {
     <div className="space-y-5">
       <PageHeader
         title="Supplier Management"
-        subtitle="Manage your supply chain partners â€” add, edit, and remove suppliers."
+        subtitle="Manage your supply chain partners — add, edit, and remove suppliers."
       />
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
@@ -312,13 +312,13 @@ export default function SuppliersPage() {
                       </span>
                     </div>
                   </td>
-                  <td className="p-4 text-[#64748b]">{s.contactName || "â€”"}</td>
+                  <td className="p-4 text-[#64748b]">{s.contactName || "—"}</td>
                   <td className="p-4 text-[#64748b]">
-                    {s.contactNumber || "â€”"}
+                    {s.contactNumber || "—"}
                   </td>
-                  <td className="p-4 text-[#64748b]">{s.email || "â€”"}</td>
+                  <td className="p-4 text-[#64748b]">{s.email || "—"}</td>
                   <td className="p-4 text-[#64748b] max-w-[200px] truncate">
-                    {s.address || "â€”"}
+                    {s.address || "—"}
                   </td>
                   <td className="p-4 text-center text-[#64748b]">
                     {s._count.products}

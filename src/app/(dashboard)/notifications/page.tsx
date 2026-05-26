@@ -47,7 +47,7 @@ export default function NotificationsPage() {
       <div className="flex items-center justify-between">
         <PageHeader
           title="Notifications"
-          subtitle={`${notifications.length} notification${notifications.length !== 1 ? "s" : ""}${unread > 0 ? ` Â· ${unread} unread` : ""}`}
+          subtitle={`${notifications.length} notification${notifications.length !== 1 ? "s" : ""}${unread > 0 ? ` · ${unread} unread` : ""}`}
         />
         {unread > 0 && (
           <button onClick={handleMarkAllRead}

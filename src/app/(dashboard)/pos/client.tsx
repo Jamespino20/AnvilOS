@@ -319,7 +319,7 @@ export function POSClient({ products, buyers }: Props) {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-5 h-auto lg:h-[calc(100vh-12rem)] relative">
-        {/* Mobile Cart FAB â€” fixed bottom bar in thumb zone */}
+        {/* Mobile Cart FAB — fixed bottom bar in thumb zone */}
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-2 bg-gradient-to-t from-white via-white to-transparent pointer-events-none">
           <div className="pointer-events-auto">
             {cart.length > 0 ? (

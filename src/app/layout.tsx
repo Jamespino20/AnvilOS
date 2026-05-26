@@ -34,7 +34,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CWL Hardware â€” POS & Inventory System",
+  title: "CWL Hardware — POS & Inventory System",
   description:
     "Complete point-of-sale, inventory, and supplier management system by CWL Hardware.",
   icons: {
