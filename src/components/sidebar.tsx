@@ -81,7 +81,7 @@ interface Props {
 export function DashboardSidebar({ collapsed, onToggle, role }: Props) {
   const pathname = usePathname();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const { lowStockCount, pendingRestockCount } = useSidebarBadges();
+  const { lowStockCount, pendingRestockCount, pendingPOCount } = useSidebarBadges();
 
   function toggleGroup(label: string) {
     setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -90,6 +90,7 @@ export function DashboardSidebar({ collapsed, onToggle, role }: Props) {
   function getBadge(href: string) {
     if (href === "/inventory" && lowStockCount > 0) return lowStockCount;
     if (href === "/restocks" && pendingRestockCount > 0) return pendingRestockCount;
+    if (href === "/orders" && pendingPOCount > 0) return pendingPOCount;
     return 0;
   }
 

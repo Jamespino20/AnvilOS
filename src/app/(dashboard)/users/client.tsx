@@ -17,7 +17,8 @@ import {
   X,
   Loader2,
   Pencil,
-  Trash2,
+  ToggleLeft,
+  ToggleRight,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -52,9 +53,9 @@ export function UsersClient({ users: initialUsers }: Props) {
   const perPage = 15;
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState<number | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<UserRow | null>(null);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [toggling, setToggling] = useState(false);
   const [form, setForm] = useState({
     sellerName: "",
     username: "",
@@ -156,18 +157,18 @@ export function UsersClient({ users: initialUsers }: Props) {
     }
   }
 
-  async function handleDelete() {
-    if (deleteTarget === null) return;
-    setDeleting(true);
+  async function handleToggle() {
+    if (!toggleTarget) return;
+    setToggling(true);
     try {
-      await deleteUser(deleteTarget);
-      setDeleteTarget(null);
+      await deleteUser(toggleTarget.id);
+      setToggleTarget(null);
       router.refresh();
-      toast.success("User deleted successfully");
+      toast.success(toggleTarget.isActive ? "User deactivated" : "User activated");
     } catch (err: any) {
-      toast.error(err.message || "Failed to delete user");
+      toast.error(err.message || "Failed to update user status");
     } finally {
-      setDeleting(false);
+      setToggling(false);
     }
   }
 
@@ -272,9 +273,10 @@ export function UsersClient({ users: initialUsers }: Props) {
                         className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all" title="Edit user">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button onClick={() => setDeleteTarget(u.id)}
-                        className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all" title="Delete user">
-                        <Trash2 className="h-4 w-4" />
+                      <button onClick={() => setToggleTarget(u)}
+                        className={`p-1.5 rounded-md transition-all ${u.isActive ? "text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50" : "text-[#94a3b8] hover:text-emerald-600 hover:bg-emerald-50"}`}
+                        title={u.isActive ? "Deactivate user" : "Activate user"}>
+                        {u.isActive ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
                       </button>
                     </div>
                   </td>
@@ -418,9 +420,15 @@ export function UsersClient({ users: initialUsers }: Props) {
         </div>
       )}
 
-      <ConfirmModal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete}
-        title="Delete User" message="Are you sure you want to delete this user? This action cannot be undone."
-        confirmLabel={deleting ? "Deleting..." : "Delete"} variant="danger" />
+      {toggleTarget && (
+        <ConfirmModal open onClose={() => setToggleTarget(null)} onConfirm={handleToggle}
+          title={toggleTarget.isActive ? "Deactivate User" : "Activate User"}
+          message={toggleTarget.isActive
+            ? `Deactivate "${toggleTarget.sellerName}"? They will not be able to sign in until reactivated.`
+            : `Reactivate "${toggleTarget.sellerName}"? They will regain access to the system.`}
+          confirmLabel={toggling ? "Updating..." : toggleTarget.isActive ? "Deactivate" : "Activate"}
+          variant={toggleTarget.isActive ? "danger" : "warning"} />
+      )}
     </div>
   );
 }

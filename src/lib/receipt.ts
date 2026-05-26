@@ -179,8 +179,8 @@ export async function downloadReceiptPdf(data: {
   doc.setTextColor(100, 116, 139);
   doc.setFont("courier", "bold");
   doc.text("Item", l, y);
-  doc.text("Qty", 48, y, { align: "center" });
-  doc.text("Price", 62, y, { align: "right" });
+  doc.text("Qty", 42, y, { align: "center" });
+  doc.text("Price", 57, y, { align: "right" });
   doc.text("Total", r, y, { align: "right" });
   y += 1.5;
   doc.setDrawColor(226, 232, 240);
@@ -189,19 +189,19 @@ export async function downloadReceiptPdf(data: {
 
   // Items
   doc.setFont("courier", "normal");
-  doc.setFontSize(6);
+  doc.setFontSize(5.5);
   doc.setTextColor(14, 33, 44);
   for (let i = 0; i < data.items.length; i++) {
     const item = data.items[i];
-    const name = item.productName.length > 26 ? item.productName.substring(0, 25) + "\u2026" : item.productName;
+    const name = item.productName.length > 22 ? item.productName.substring(0, 21) + "\u2026" : item.productName;
     const bg = i % 2 === 1 ? 248 : 255;
     doc.setFillColor(bg, bg, bg);
-    doc.rect(l, y - 2, r - l, 4.5, "F");
+    doc.rect(l, y - 2, r - l, 4, "F");
     doc.text(name, l + 0.5, y);
-    doc.text(String(item.quantity), 48, y, { align: "center" });
-    doc.text(formatMoney(item.unitPrice), 62, y, { align: "right" });
+    doc.text(String(item.quantity), 42, y, { align: "center" });
+    doc.text(formatMoney(item.unitPrice), 57, y, { align: "right" });
     doc.text(formatMoney(item.totalPrice), r, y, { align: "right" });
-    y += 4.5;
+    y += 4;
   }
 
   // Grand total — value on its own line to avoid overflow

@@ -214,7 +214,9 @@ export function POSClient({ products, buyers }: Props) {
           txnType === "Return" ||
           txnType === "Adjustment"
             ? "Completed"
-            : "Ongoing",
+            : txnType === "SalePO"
+              ? "Processing"
+              : "Ongoing",
         grandTotal: cart
           .filter((c) => !(txnType === "Return" && c.quantity === 0))
           .reduce(

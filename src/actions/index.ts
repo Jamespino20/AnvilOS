@@ -586,9 +586,9 @@ export async function createTransaction(data: {
     "Processing transaction",
   );
 
-  // Upsert buyer record
+  // Upsert buyer record (skip for Restock — "CWL Hardware" is internal)
   let buyer: { id: number; email: string | null } | null = null;
-  if (data.buyerName) {
+  if (data.buyerName && data.transactionType !== "Restock") {
     buyer = await prisma.buyer.findFirst({
       where: { name: data.buyerName },
     });
@@ -621,6 +621,18 @@ export async function createTransaction(data: {
       where: { id: transaction.id },
       data: { buyerId: buyer.id },
     });
+  }
+  // For Restock, still link the transaction if a "CWL Hardware" buyer already exists
+  if (data.transactionType === "Restock" && data.buyerName) {
+    const existing = await prisma.buyer.findFirst({
+      where: { name: data.buyerName },
+    });
+    if (existing) {
+      await prisma.transaction.update({
+        where: { id: transaction.id },
+        data: { buyerId: existing.id },
+      });
+    }
   }
 
   await logAudit(
@@ -1105,7 +1117,7 @@ export async function getBuyers(type?: "WalkIn" | "PO") {
   }
 
   merged.sort((a, b) => b.totalSpent - a.totalSpent);
-  return merged;
+  return merged.filter((b) => b.buyerName !== "CWL Hardware");
 }
 
 export async function getBuyerTransactions(buyerName: string) {
@@ -1997,16 +2009,18 @@ export async function deleteUser(id: number) {
   await requireAdmin();
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new Error("User not found");
-  const txnCount = await prisma.transaction.count({ where: { sellerId: id } });
-  if (txnCount > 0)
-    throw new Error(
-      "Cannot delete user with existing transactions. Deactivate instead.",
-    );
-  await prisma.user.delete({ where: { id } });
+  if (user.role === "ADMIN") {
+    throw new Error("Cannot deactivate ADMIN users. Change role to STAFF first.");
+  }
+  await prisma.user.update({
+    where: { id },
+    data: { isActive: !user.isActive },
+  });
+  const action = user.isActive ? "Deactivated" : "Activated";
   await logAudit(
     "User Management",
-    "Delete User",
-    `Deleted user ${user.sellerName} (id=${id})`,
+    `${action} User`,
+    `${action} user ${user.sellerName} (id=${id})`,
   );
   revalidatePath("/users");
   return { success: true };

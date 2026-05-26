@@ -14,6 +14,7 @@ import { getDashboardKpis, getTransactionsCount } from "@/actions";
 export function useSidebarBadges() {
   const [lowStockCount, setLowStockCount] = useState(0);
   const [pendingRestockCount, setPendingRestockCount] = useState(0);
+  const [pendingPOCount, setPendingPOCount] = useState(0);
 
   const fetch = useCallback(async () => {
     try {
@@ -23,6 +24,10 @@ export function useSidebarBadges() {
     try {
       const count = await getTransactionsCount({ status: "Ongoing", type: "Restock" });
       setPendingRestockCount(count);
+    } catch {}
+    try {
+      const count = await getTransactionsCount({ status: "Processing", type: "SalePO" });
+      setPendingPOCount(count);
     } catch {}
   }, []);
 
@@ -40,5 +45,5 @@ export function useSidebarBadges() {
     };
   }, [fetch]);
 
-  return { lowStockCount, pendingRestockCount };
+  return { lowStockCount, pendingRestockCount, pendingPOCount };
 }

@@ -251,7 +251,8 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
       h.length,
       ...outputRows.map((r) => (r[i] || "").length),
     );
-    return Math.min(maxColWidth, Math.max(minColWidth, maxContent * 2.2));
+    const isMoney = MONEY_HEADER_RE.test(h);
+    return Math.min(maxColWidth, Math.max(isMoney ? 28 : minColWidth, maxContent * 2.2));
   });
   const totalWidth = colWidths.reduce((s, w) => s + w, 0);
   const scaled = colWidths.map((w) => Math.max(14, (w / totalWidth) * usable));
@@ -262,7 +263,7 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
     body: outputRows,
     startY: 46,
     styles: {
-      fontSize: headers.length > 7 ? 6.4 : 7,
+      fontSize: headers.length > 8 ? 5.5 : headers.length > 6 ? 6 : 7,
       cellPadding: 1.8,
       lineColor: [226, 232, 240],
       lineWidth: 0.2,
