@@ -1539,14 +1539,27 @@ export async function getFinancialDashboard(period?: {
   };
 }
 
-export async function getCashFlowTrend(days: number = 30) {
+export async function getCashFlowTrend(
+  days: number = 30,
+  startDate?: Date,
+  endDate?: Date,
+) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  const start = new Date();
-  start.setDate(start.getDate() - days);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date();
-  end.setHours(23, 59, 59, 999);
+  const start = startDate || (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  })();
+  const end = endDate || (() => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999);
+    return d;
+  })();
+  const effectiveDays = startDate && endDate
+    ? Math.round((end.getTime() - start.getTime()) / 86400000) + 1
+    : days;
   const [revenues, expenses] = await Promise.all([
     prisma.transaction.findMany({
       where: {
@@ -1581,9 +1594,12 @@ export async function getCashFlowTrend(days: number = 30) {
     expenses: number;
     net: number;
   }[] = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
+  for (let i = effectiveDays - 1; i >= 0; i--) {
+    const d = endDate ? new Date(end.getTime() - i * 86400000) : (() => {
+      const d2 = new Date();
+      d2.setDate(d2.getDate() - i);
+      return d2;
+    })();
     const dateStr = d.toISOString().split("T")[0];
     const rev = revMap.get(dateStr) || 0;
     const exp = expMap.get(dateStr) || 0;
@@ -1604,15 +1620,20 @@ export async function getCashFlowTrend(days: number = 30) {
 export async function getTopProductsByRevenue(
   days: number = 30,
   limit: number = 10,
+  startDate?: Date,
+  endDate?: Date,
 ) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  const start = new Date();
-  start.setDate(start.getDate() - days);
+  const start = startDate || (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return d;
+  })();
   const items = await prisma.transactionItem.findMany({
     where: {
       transaction: {
-        transactionDate: { gte: start },
+        transactionDate: { gte: start, ...(endDate ? { lte: endDate } : {}) },
         transactionStatus: "Completed",
         transactionType: { in: ["SaleWalkIn", "SalePO"] },
       },

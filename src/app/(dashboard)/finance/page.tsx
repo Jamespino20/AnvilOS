@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getFinancialDashboard, getCashFlowTrend, getTopProductsByRevenue } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExportDialog } from "@/components/export-dialog";
-import { TrendingUp, TrendingDown, DollarSign, Receipt, ArrowUpRight, ArrowDownRight, Calendar, ShoppingCart, RotateCcw, Ban, Wallet, BarChart3, PieChart, LineChart, Download, ChevronLeft, ChevronRight, AlertTriangle, Package } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Receipt, ArrowUpRight, ArrowDownRight, Calendar,   ShoppingCart, RotateCcw, Undo2, Ban, Wallet, BarChart3, PieChart, LineChart, Download, ChevronLeft, ChevronRight, AlertTriangle, Package } from "lucide-react";
 import { CardSkeleton } from "@/components/ui/skeleton";
 
 const PERIODS = [
@@ -111,10 +111,12 @@ export default function FinancePage() {
       const dates = period === "custom"
         ? { start: customStart, end: customEnd }
         : periodDates(period);
+      const startDate = dates ? new Date(dates.start) : undefined;
+      const endDate = dates ? new Date(dates.end + "T23:59:59") : undefined;
       const [finance, flow, products] = await Promise.all([
         getFinancialDashboard(dates),
-        getCashFlowTrend(30),
-        getTopProductsByRevenue(30, 50),
+        getCashFlowTrend(30, startDate, endDate),
+        getTopProductsByRevenue(30, 50, startDate, endDate),
       ]);
       setFin(finance);
       setCashFlow(flow);
@@ -233,6 +235,7 @@ export default function FinancePage() {
               { icon: TrendingUp, label: "Gross Sales", value: `${fin.grossSales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: fin.comparison.grossChange, color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50" },
               { icon: DollarSign, label: "Gross Revenue", value: `${fin.grossRevenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: fin.comparison.netChange, color: "from-blue-500 to-indigo-600", bg: "bg-blue-50" },
               { icon: ShoppingCart, label: "Restocks Cost", value: `${fin.restocksTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "from-rose-500 to-pink-600", bg: "bg-rose-50" },
+              { icon: Undo2, label: "Returns Loss", value: `${fin.returnsTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "from-amber-500 to-yellow-600", bg: "bg-amber-50" },
               { icon: AlertTriangle, label: "Damages Loss", value: `${fin.damagesTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "from-orange-500 to-red-600", bg: "bg-orange-50" },
               { icon: TrendingUp, label: "Net Revenue", value: `${fin.netRevenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, profit: fin.netRevenue >= 0, color: "from-violet-500 to-purple-600", bg: "bg-violet-50" },
             ].map((card, i) => (
@@ -275,7 +278,7 @@ export default function FinancePage() {
           <div className="grid grid-cols-12 gap-5">
             <div className="col-span-12 lg:col-span-8 bg-white rounded-xl border border-[#e2e8f0] p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2"><LineChart className="h-4 w-4 text-[#fd761a]" /> Cash Flow (30 Days)</h3>
+                <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2"><LineChart className="h-4 w-4 text-[#fd761a]" /> Cash Flow ({fin.period.label})</h3>
               </div>
               <div className="h-64 flex items-end gap-[3px]">
                 {cashFlow.map((d, i) => {
@@ -324,7 +327,7 @@ export default function FinancePage() {
 
           {/* Top Products by Revenue */}
           <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
-            <h3 className="text-sm font-bold text-[#0e212c] mb-4 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-[#fd761a]" /> Top Products by Revenue (30 Days)</h3>
+            <h3 className="text-sm font-bold text-[#0e212c] mb-4 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-[#fd761a]" /> Top Products by Revenue ({fin.period.label})</h3>
             {topProducts.length > 0 ? (
               <>
                 <div className="overflow-x-auto">
