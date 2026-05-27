@@ -586,13 +586,12 @@ export async function createTransaction(data: {
     "Processing transaction",
   );
 
-  // Upsert buyer record (skip for Restock/Internal — "CWL Hardware" is internal)
+  // Upsert buyer record (skip for internal/Restock — CWL Hardware names)
   let buyer: { id: number; email: string | null } | null = null;
   if (
     data.buyerName &&
     data.transactionType !== "Restock" &&
-    data.buyerName !== "CWL Hardware" &&
-    data.buyerName !== "CWL Hardware (Restocks)"
+    !data.buyerName.startsWith("CWL Hardware")
   ) {
     buyer = await prisma.buyer.findFirst({
       where: { name: data.buyerName },
@@ -1128,11 +1127,7 @@ export async function getBuyers(type?: "WalkIn" | "PO") {
   }
 
   merged.sort((a, b) => b.totalSpent - a.totalSpent);
-  return merged.filter(
-    (b) =>
-      b.buyerName !== "CWL Hardware" &&
-      b.buyerName !== "CWL Hardware (Restocks)",
-  );
+  return merged.filter((b) => !b.buyerName.startsWith("CWL Hardware"));
 }
 
 export async function getBuyerTransactions(buyerName: string) {
