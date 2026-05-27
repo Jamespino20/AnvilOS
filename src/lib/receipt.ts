@@ -216,7 +216,7 @@ export async function downloadReceiptPdf(data: {
   doc.text("GRAND TOTAL", l, y);
   y += 4;
   doc.setFontSize(9.5);
-  doc.text(`₱${formatMoney(data.grandTotal)}`, r - 1, y, { align: "right" });
+  doc.text(`PHP ${formatMoney(data.grandTotal)}`, r - 1, y, { align: "right" });
   y += 7;
 
   // --- Footer ---
