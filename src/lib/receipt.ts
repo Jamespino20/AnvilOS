@@ -211,11 +211,12 @@ export async function downloadReceiptPdf(data: {
   doc.line(l, y, r, y);
   y += 2.5;
   doc.setFont("courier", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(253, 118, 26);
   doc.text("GRAND TOTAL", l, y);
-  y += 3.5;
-  doc.text(`₱${formatMoney(data.grandTotal)}`, r, y, { align: "right" });
+  y += 4;
+  doc.setFontSize(9.5);
+  doc.text(`₱${formatMoney(data.grandTotal)}`, r - 1, y, { align: "right" });
   y += 7;
 
   // --- Footer ---

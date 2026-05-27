@@ -1,22 +1,20 @@
-﻿/*
-App Name: CWL Hardware
-App Client: CWL Hardware
-Author: James Bryant D. Espino
-URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
-*/
-
-import { issueEmailToken } from "@/lib/email-token";
+﻿import { issueEmailToken } from "@/lib/email-token";
 import { sendMail } from "@/lib/mail";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIp, RateLimitError } from "@/lib/rate-limit";
+import { sanitizeString, validateBody, safeJsonParse, ValidationError } from "@/lib/sanitize";
 
 export async function POST(req: Request) {
   try {
-    const { identifier } = await req.json();
-    if (!identifier) {
-      return NextResponse.json({ error: "Username or email is required" }, { status: 400 });
-    }
+    const ip = getClientIp(req);
+    await checkRateLimit(`request-password-reset:${ip}`, 5, 15);
+
+    const raw = await req.text();
+    const body = safeJsonParse(raw);
+    validateBody(req, body, ["identifier"]);
+
+    const identifier = sanitizeString(body.identifier, 100);
 
     const user = await prisma.user.findFirst({
       where: {
@@ -57,11 +55,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof RateLimitError || error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 429 });
+    }
     console.error("Password reset request error:", error);
     return NextResponse.json({ error: "Failed to request password reset" }, { status: 500 });
   }
 }
-
-
-
-

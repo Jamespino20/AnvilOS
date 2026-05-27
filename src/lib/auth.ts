@@ -11,6 +11,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { verifyTotp } from "@/lib/totp";
+import { checkRateLimit, RateLimitError } from "@/lib/rate-limit";
 
 class TotpRequired extends CredentialsSignin {
   code = "TOTP_REQUIRED";
@@ -40,6 +41,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const password = credentials.password as string;
 
         try {
+          await checkRateLimit(`login:${identifier.toLowerCase()}`, 5, 15);
+
           const user = await prisma.user.findFirst({
             where: {
               OR: [

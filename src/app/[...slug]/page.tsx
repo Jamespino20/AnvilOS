@@ -16,13 +16,9 @@
         <h1 className="text-3xl font-black text-primary mb-3 tracking-tight">{title}</h1>
         <p className="text-muted-foreground mb-8">We are putting the final touches on this page. Check back soon.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <a href="/" className="px-6 py-3 bg-safety-orange text-white text-sm font-bold rounded-lg hover:brightness-110 transition-all shadow-lg shadow-safety-orange/20 text-center">Back to Home</a>
-          <a href="/solutions" className="px-6 py-3 border border-border text-primary text-sm font-bold rounded-lg hover:bg-muted transition-all text-center">Explore Features</a>
+          <a href="/login" className="px-6 py-3 bg-safety-orange text-white text-sm font-bold rounded-lg hover:brightness-110 transition-all shadow-lg shadow-safety-orange/20 text-center">Sign In</a>
         </div>
       </div>
     </div>
   );
 }
-
-
-

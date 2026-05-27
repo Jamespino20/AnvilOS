@@ -586,9 +586,14 @@ export async function createTransaction(data: {
     "Processing transaction",
   );
 
-  // Upsert buyer record (skip for Restock — "CWL Hardware" is internal)
+  // Upsert buyer record (skip for Restock/Internal — "CWL Hardware" is internal)
   let buyer: { id: number; email: string | null } | null = null;
-  if (data.buyerName && data.transactionType !== "Restock") {
+  if (
+    data.buyerName &&
+    data.transactionType !== "Restock" &&
+    data.buyerName !== "CWL Hardware" &&
+    data.buyerName !== "CWL Hardware (Restocks)"
+  ) {
     buyer = await prisma.buyer.findFirst({
       where: { name: data.buyerName },
     });
@@ -962,10 +967,16 @@ export async function getAuditLogs(opts?: {
 
 // ─────────── Notifications ───────────
 
-export async function getNotifications(userId: number) {
+export async function getNotifications(
+  userId: number,
+  page: number = 1,
+  limit: number = 10,
+) {
+  const skip = (page - 1) * limit;
   const notifications = await prisma.notification.findMany({
     orderBy: { createdAt: "desc" },
-    take: 50,
+    skip,
+    take: limit,
   });
   const readIds = await prisma.notificationRead.findMany({
     where: { userId, notificationId: { in: notifications.map((n) => n.id) } },
@@ -1117,7 +1128,11 @@ export async function getBuyers(type?: "WalkIn" | "PO") {
   }
 
   merged.sort((a, b) => b.totalSpent - a.totalSpent);
-  return merged.filter((b) => b.buyerName !== "CWL Hardware");
+  return merged.filter(
+    (b) =>
+      b.buyerName !== "CWL Hardware" &&
+      b.buyerName !== "CWL Hardware (Restocks)",
+  );
 }
 
 export async function getBuyerTransactions(buyerName: string) {

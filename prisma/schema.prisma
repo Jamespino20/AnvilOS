@@ -245,6 +245,15 @@ model NotificationRead {
   @@map("notification_reads")
 }
 
+/// Rate limiting (auth attempts, API throttling)
+model RateLimit {
+  id        String   @id
+  attempts  Int
+  resetAt   DateTime
+
+  @@map("rate_limits")
+}
+
 /// Customers / clients who purchase products
 model Buyer {
   id           Int      @id @default(autoincrement()) @map("BUYER_ID")

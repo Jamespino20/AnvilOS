@@ -1,27 +1,24 @@
-﻿/*
-App Name: CWL Hardware
-App Client: CWL Hardware
-Author: James Bryant D. Espino
-URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
-*/
-
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { issueEmailToken } from "@/lib/email-token";
 import { sendMail } from "@/lib/mail";
+import { checkRateLimit, getClientIp, RateLimitError } from "@/lib/rate-limit";
+import { sanitizeString, sanitizeEmail, sanitizePassword, validateBody, safeJsonParse, ValidationError } from "@/lib/sanitize";
 
 export async function POST(req: Request) {
   try {
-    const { sellerName, username, email, password } = await req.json();
+    const ip = getClientIp(req);
+    await checkRateLimit(`register:${ip}`, 5, 15);
 
-    if (!password || !email) {
-      return NextResponse.json(
-        { error: "Email and password are required" },
-        { status: 400 },
-      );
-    }
+    const raw = await req.text();
+    const body = safeJsonParse(raw);
+    validateBody(req, body, ["password", "email"]);
+
+    const email = sanitizeEmail(body.email);
+    const password = sanitizePassword(body.password);
+    const username = sanitizeString(body.username, 50);
+    const sellerName = sanitizeString(body.sellerName || username, 100);
 
     const existingByUsername = await prisma.user.findUnique({
       where: { username },
@@ -33,9 +30,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const existingByEmail = email
-      ? await prisma.user.findFirst({ where: { email } })
-      : null;
+    const existingByEmail = await prisma.user.findFirst({ where: { email } });
     if (existingByEmail) {
       return NextResponse.json(
         { error: "Email already registered" },
@@ -49,7 +44,7 @@ export async function POST(req: Request) {
       data: {
         sellerName: sellerName || username,
         username,
-        email: email || null,
+        email,
         passwordHash,
         role: "STAFF",
         registryDate: new Date(),
@@ -86,6 +81,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, verifyToken: issued.token });
   } catch (error) {
+    if (error instanceof RateLimitError || error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 429 });
+    }
     console.error("Registration error:", error);
     return NextResponse.json({ error: "Registration failed" }, { status: 500 });
   }
