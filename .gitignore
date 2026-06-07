@@ -1,5 +1,5 @@
 # agentic skills for ide
-.agent/
+.agents/
 
 # dependencies
 node_modules/
@@ -38,5 +38,3 @@ next-env.d.ts
 
 # prisma
 prisma/migrations/
-
-StocksX/

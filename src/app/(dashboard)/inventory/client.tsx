@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -13,11 +13,13 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Check,
 } from "lucide-react";
 import {
   createProduct,
   updateProduct,
   deleteProduct,
+  adjustStock,
 } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
@@ -33,7 +35,6 @@ interface Props {
     supplierRel: Supplier | null;
   })[];
   categories: (Category & {
-    childCategories: Category[];
     _count: { products: number };
   })[];
   suppliers: (Supplier & { _count: { products: number } })[];
@@ -63,10 +64,15 @@ export function InventoryClient({
     categoryId: "",
     supplierName: "",
     supplierId: "",
-    unitPrice: "",
+    sellingPrice: "",
+    costPrice: "",
     quantity: "",
     minThreshold: "",
     imageUrl: "",
+    isFastMoving: false,
+    sellByWeight: false,
+    sellByBox: false,
+    boxQuantity: "",
   });
   const defaultForm = {
     productName: "",
@@ -74,15 +80,49 @@ export function InventoryClient({
     categoryId: "",
     supplierName: "",
     supplierId: "",
-    unitPrice: "",
+    sellingPrice: "",
+    costPrice: "",
     quantity: "",
     minThreshold: "",
     imageUrl: "",
+    isFastMoving: false,
+    sellByWeight: false,
+    sellByBox: false,
+    boxQuantity: "",
   };
 
   const [page, setPage] = useState(1);
   const perPage = 15;
   const isAdmin = role === "ADMIN";
+
+  // Inline quantity editing
+  const [editQtyId, setEditQtyId] = useState<number | null>(null);
+  const [editQtyVal, setEditQtyVal] = useState("");
+  const [savingQty, setSavingQty] = useState(false);
+  const editQtyRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editQtyId !== null && editQtyRef.current) {
+      editQtyRef.current.focus();
+      editQtyRef.current.select();
+    }
+  }, [editQtyId]);
+
+  async function handleSaveQty(productId: number) {
+    const val = parseInt(editQtyVal, 10);
+    if (isNaN(val) || val < 0) { setEditQtyId(null); return; }
+    setSavingQty(true);
+    try {
+      await adjustStock(productId, val);
+      router.refresh();
+      toast.success("Quantity updated");
+    } catch (e) {
+      toast.error("Failed to update quantity");
+    } finally {
+      setSavingQty(false);
+      setEditQtyId(null);
+    }
+  }
 
 
   const filtered = initialProducts.filter((p) => {
@@ -171,10 +211,15 @@ export function InventoryClient({
         categoryId: Number(form.categoryId) || undefined,
         supplierName: form.supplierName || "Unknown",
         supplierId: Number(form.supplierId) || undefined,
-        unitPrice: Number(form.unitPrice) || 0,
+        unitPrice: Number(form.costPrice) || undefined,
+        sellingPrice: Number(form.sellingPrice) || 0,
         quantity: Number(form.quantity) || 0,
         minThreshold: Number(form.minThreshold) || 5,
         imageUrl: form.imageUrl || undefined,
+        isFastMoving: form.isFastMoving,
+        sellByWeight: form.sellByWeight,
+        sellByBox: form.sellByBox,
+        boxQuantity: form.sellByBox ? Number(form.boxQuantity) || undefined : undefined,
       });
       setShowAdd(false);
       setForm(defaultForm);
@@ -195,10 +240,15 @@ export function InventoryClient({
       categoryId: String(product.categoryId ?? ""),
       supplierName: product.supplierName,
       supplierId: String(product.supplierId ?? ""),
-      unitPrice: String(product.unitPrice),
+      sellingPrice: String(product.sellingPrice),
+      costPrice: String(product.unitPrice ?? ""),
       quantity: String(product.quantity),
       minThreshold: String(product.minThreshold),
       imageUrl: product.imageUrl || "",
+      isFastMoving: product.isFastMoving,
+      sellByWeight: product.sellByWeight,
+      sellByBox: product.sellByBox,
+      boxQuantity: String(product.boxQuantity ?? ""),
     });
     setShowEdit(product.id);
   }
@@ -214,9 +264,14 @@ export function InventoryClient({
         categoryId: Number(form.categoryId) || undefined,
         supplierName: form.supplierName || "Unknown",
         supplierId: Number(form.supplierId) || undefined,
-        unitPrice: Number(form.unitPrice) || 0,
+        unitPrice: Number(form.costPrice) || undefined,
+        sellingPrice: Number(form.sellingPrice) || undefined,
         minThreshold: Number(form.minThreshold) || 5,
         imageUrl: form.imageUrl || undefined,
+        isFastMoving: form.isFastMoving,
+        sellByWeight: form.sellByWeight,
+        sellByBox: form.sellByBox,
+        boxQuantity: form.sellByBox ? Number(form.boxQuantity) || undefined : undefined,
       });
       setShowEdit(null);
       setForm(defaultForm);
@@ -302,9 +357,14 @@ export function InventoryClient({
               { key: "productName", label: "Product Name" },
               { key: "category", label: "Category" },
               { key: "supplierName", label: "Supplier" },
-              { key: "unitPrice", label: "Unit Price" },
+              { key: "sellingPrice", label: "Selling Price" },
+              { key: "costPrice", label: "Cost Price" },
               { key: "quantity", label: "Quantity" },
               { key: "minThreshold", label: "Min Threshold" },
+              { key: "isFastMoving", label: "Fast Moving" },
+              { key: "sellByWeight", label: "Sell by Weight" },
+              { key: "sellByBox", label: "Sell by Box" },
+              { key: "boxQuantity", label: "Box Qty" },
               { key: "isAvailable", label: "Status" },
             ]}
             fetchRows={async (selectedColumns) => filtered.map((p) =>
@@ -312,9 +372,14 @@ export function InventoryClient({
                 if (key === "productName") return p.productName;
                 if (key === "category") return p.category;
                 if (key === "supplierName") return p.supplierName;
-                if (key === "unitPrice") return formatReportMoney(p.unitPrice);
+                if (key === "sellingPrice") return formatReportMoney(p.sellingPrice);
+                if (key === "costPrice") return p.unitPrice ? formatReportMoney(p.unitPrice) : "";
                 if (key === "quantity") return String(p.quantity);
                 if (key === "minThreshold") return String(p.minThreshold);
+                if (key === "isFastMoving") return p.isFastMoving ? "Yes" : "No";
+                if (key === "sellByWeight") return p.sellByWeight ? "Yes" : "No";
+                if (key === "sellByBox") return p.sellByBox ? "Yes" : "No";
+                if (key === "boxQuantity") return p.boxQuantity ? String(p.boxQuantity) : "";
                 if (key === "isAvailable") return p.quantity === 0 ? "Out of Stock" : p.quantity <= p.minThreshold ? "Low Stock" : "In Stock";
                 return "";
               })
@@ -357,7 +422,10 @@ export function InventoryClient({
                   Supplier
                 </th>
                 <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Price
+                  Selling Price
+                </th>
+                <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Cost Price
                 </th>
                 <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Qty
@@ -367,6 +435,9 @@ export function InventoryClient({
                 </th>
                 <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Status
+                </th>
+                <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Last Restocked
                 </th>
                 {isAdmin && (
                   <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-24">
@@ -405,12 +476,33 @@ export function InventoryClient({
                       {product.supplierName}
                     </td>
                     <td className="p-4 text-right font-mono text-[#0e212c]">
-                      {formatMoney(product.unitPrice)}
+                      {formatMoney(product.sellingPrice)}
+                    </td>
+                    <td className="p-4 text-right font-mono text-[#94a3b8]">
+                      {product.unitPrice ? formatMoney(product.unitPrice) : "\u2014"}
                     </td>
                     <td
                       className={`p-4 text-right font-mono ${product.quantity <= product.minThreshold ? "text-[#fd761a] font-bold" : "text-[#0e212c]"}`}
                     >
-                      {product.quantity}
+                      {isAdmin && editQtyId === product.id ? (
+                        <span className="inline-flex items-center gap-1">
+                          <input ref={editQtyRef} type="number" min={0} value={editQtyVal}
+                            onChange={(e) => setEditQtyVal(e.target.value)}
+                            onBlur={() => handleSaveQty(product.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSaveQty(product.id);
+                              if (e.key === "Escape") setEditQtyId(null);
+                            }}
+                            className="w-16 h-8 px-2 text-right text-xs font-mono border border-[#fd761a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fd761a]/20" />
+                          {savingQty && <Loader2 className="h-3 w-3 animate-spin text-[#64748b]" />}
+                        </span>
+                      ) : isAdmin ? (
+                        <button onClick={() => { setEditQtyId(product.id); setEditQtyVal(String(product.quantity)); }}
+                          className="cursor-pointer hover:bg-[#f1f5f9] px-2 py-1 -ml-2 rounded transition-colors text-right font-mono w-full"
+                          title="Click to edit quantity">
+                          {product.quantity}
+                        </button>
+                      ) : product.quantity}
                     </td>
                     <td className="p-4 text-right font-mono text-[#94a3b8]">
                       {product.minThreshold}
@@ -421,6 +513,9 @@ export function InventoryClient({
                       >
                         {badge.label}
                       </span>
+                    </td>
+                    <td className="p-4 text-right text-xs font-mono text-[#94a3b8]">
+                      {product.lastRestockedAt ? new Date(product.lastRestockedAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "\u2014"}
                     </td>
                     {isAdmin && <td className="p-4 text-center">
                       <div className="flex items-center justify-center gap-1">
@@ -445,7 +540,7 @@ export function InventoryClient({
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={isAdmin ? 9 : 8} className="p-8 text-center text-[#94a3b8]">
+                  <td colSpan={isAdmin ? 11 : 10} className="p-8 text-center text-[#94a3b8]">
                     No products found
                   </td>
                 </tr>
@@ -560,13 +655,27 @@ export function InventoryClient({
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                    Unit Price
+                    Selling Price *
                   </label>
                   <input
                     type="number"
-                    value={form.unitPrice}
+                    value={form.sellingPrice}
                     onChange={(e) =>
-                      setForm({ ...form, unitPrice: e.target.value })
+                      setForm({ ...form, sellingPrice: e.target.value })
+                    }
+                    required
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Cost Price
+                  </label>
+                  <input
+                    type="number"
+                    value={form.costPrice}
+                    onChange={(e) =>
+                      setForm({ ...form, costPrice: e.target.value })
                     }
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
@@ -584,6 +693,8 @@ export function InventoryClient({
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Min Threshold
@@ -597,6 +708,53 @@ export function InventoryClient({
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Fast Moving
+                  </label>
+                  <label className="relative inline-flex items-center cursor-pointer mt-1.5">
+                    <input type="checkbox" checked={form.isFastMoving} onChange={(e) => setForm({ ...form, isFastMoving: e.target.checked })}
+                      className="sr-only peer" />
+                    <div className="w-10 h-5 bg-[#e2e8f0] rounded-full peer peer-checked:bg-[#fd761a] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Sell by Weight
+                  </label>
+                  <label className="relative inline-flex items-center cursor-pointer mt-1.5">
+                    <input type="checkbox" checked={form.sellByWeight} onChange={(e) => setForm({ ...form, sellByWeight: e.target.checked })}
+                      className="sr-only peer" />
+                    <div className="w-10 h-5 bg-[#e2e8f0] rounded-full peer peer-checked:bg-[#fd761a] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
+                  </label>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Sell by Box
+                  </label>
+                  <label className="relative inline-flex items-center cursor-pointer mt-1.5">
+                    <input type="checkbox" checked={form.sellByBox} onChange={(e) => setForm({ ...form, sellByBox: e.target.checked })}
+                      className="sr-only peer" />
+                    <div className="w-10 h-5 bg-[#e2e8f0] rounded-full peer peer-checked:bg-[#fd761a] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
+                  </label>
+                </div>
+                {form.sellByBox && (
+                  <div>
+                    <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                      Qty per Box
+                    </label>
+                    <input
+                      type="number"
+                      value={form.boxQuantity}
+                      onChange={(e) =>
+                        setForm({ ...form, boxQuantity: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                    />
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
@@ -747,13 +905,26 @@ export function InventoryClient({
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                    Unit Price
+                    Selling Price
                   </label>
                   <input
                     type="number"
-                    value={form.unitPrice}
+                    value={form.sellingPrice}
                     onChange={(e) =>
-                      setForm({ ...form, unitPrice: e.target.value })
+                      setForm({ ...form, sellingPrice: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Cost Price
+                  </label>
+                  <input
+                    type="number"
+                    value={form.costPrice}
+                    onChange={(e) =>
+                      setForm({ ...form, costPrice: e.target.value })
                     }
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
@@ -769,6 +940,8 @@ export function InventoryClient({
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#94a3b8] bg-[#f8fafc] focus:outline-none cursor-not-allowed"
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Min Threshold
@@ -782,6 +955,53 @@ export function InventoryClient({
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Fast Moving
+                  </label>
+                  <label className="relative inline-flex items-center cursor-pointer mt-1.5">
+                    <input type="checkbox" checked={form.isFastMoving} onChange={(e) => setForm({ ...form, isFastMoving: e.target.checked })}
+                      className="sr-only peer" />
+                    <div className="w-10 h-5 bg-[#e2e8f0] rounded-full peer peer-checked:bg-[#fd761a] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Sell by Weight
+                  </label>
+                  <label className="relative inline-flex items-center cursor-pointer mt-1.5">
+                    <input type="checkbox" checked={form.sellByWeight} onChange={(e) => setForm({ ...form, sellByWeight: e.target.checked })}
+                      className="sr-only peer" />
+                    <div className="w-10 h-5 bg-[#e2e8f0] rounded-full peer peer-checked:bg-[#fd761a] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
+                  </label>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Sell by Box
+                  </label>
+                  <label className="relative inline-flex items-center cursor-pointer mt-1.5">
+                    <input type="checkbox" checked={form.sellByBox} onChange={(e) => setForm({ ...form, sellByBox: e.target.checked })}
+                      className="sr-only peer" />
+                    <div className="w-10 h-5 bg-[#e2e8f0] rounded-full peer peer-checked:bg-[#fd761a] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
+                  </label>
+                </div>
+                {form.sellByBox && (
+                  <div>
+                    <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                      Qty per Box
+                    </label>
+                    <input
+                      type="number"
+                      value={form.boxQuantity}
+                      onChange={(e) =>
+                        setForm({ ...form, boxQuantity: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                    />
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">

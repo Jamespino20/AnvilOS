@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 import { markNotificationRead } from "@/actions";
@@ -19,6 +19,3 @@ export async function PATCH(
   await markNotificationRead(Number(session.user.id), Number(id));
   return NextResponse.json({ success: true });
 }
-
-
-

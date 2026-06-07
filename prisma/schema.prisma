@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 generator client {
@@ -112,18 +112,15 @@ model EmailToken {
   @@map("email_tokens")
 }
 
-/// Hierarchical product categories (self-referencing via parentCategoryId)
+/// Product categories
 model Category {
-  id               Int       @id @default(autoincrement()) @map("CATEGORY_ID")
-  name             String    @unique @map("CATEGORY")
-  parentCategoryId Int?      @map("PARENT_CATEGORY_ID")
-  isAvailable      Boolean   @default(true) @map("IS_AVAILABLE")
-  createdAt        DateTime? @map("CREATED_AT")
-  updatedAt        DateTime  @default(now()) @updatedAt @map("UPDATED_AT")
+  id          Int       @id @default(autoincrement()) @map("CATEGORY_ID")
+  name        String    @unique @map("CATEGORY")
+  isAvailable Boolean   @default(true) @map("IS_AVAILABLE")
+  createdAt   DateTime? @map("CREATED_AT")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("UPDATED_AT")
 
-  parentCategory  Category?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id])
-  childCategories Category[] @relation("CategoryHierarchy")
-  products        Product[]
+  products Product[]
 
   @@map("categories")
 }
@@ -136,6 +133,7 @@ model Supplier {
   contactNumber String? @map("CONTACT_NUMBER")
   email         String? @map("EMAIL")
   address       String? @map("ADDRESS")
+  tin           String? @map("TIN")
   isAvailable   Boolean @default(true) @map("IS_AVAILABLE")
 
   products Product[]
@@ -145,19 +143,25 @@ model Supplier {
 
 /// Inventory items / stock keeping units
 model Product {
-  id           Int      @id @default(autoincrement()) @map("PRODUCT_ID")
-  productName  String   @map("PRODUCT_NAME")
-  categoryId   Int?     @map("CATEGORY_ID")
-  category     String   @map("CATEGORY")
-  supplierId   Int?     @map("SUPPLIER_ID")
-  supplierName String   @map("SUPPLIER_NAME")
-  unitPrice    Decimal  @db.Decimal(10, 2) @map("UNIT_PRICE")
-  quantity     Int      @map("QUANTITY")
-  minThreshold Int      @map("MIN_THRESHOLD")
-  imageUrl     String?  @map("IMAGE_URL")
-  isAvailable  Boolean  @default(true) @map("IS_AVAILABLE")
-  createdAt    DateTime? @map("CREATED_AT")
-  updatedAt    DateTime @default(now()) @updatedAt @map("UPDATED_AT")
+  id             Int      @id @default(autoincrement()) @map("PRODUCT_ID")
+  productName    String   @map("PRODUCT_NAME")
+  categoryId     Int?     @map("CATEGORY_ID")
+  category       String   @map("CATEGORY")
+  supplierId     Int?     @map("SUPPLIER_ID")
+  supplierName   String   @map("SUPPLIER_NAME")
+  unitPrice      Decimal? @db.Decimal(10, 2) @map("UNIT_PRICE")
+  sellingPrice   Decimal  @db.Decimal(10, 2) @map("SELLING_PRICE")
+  quantity       Int      @map("QUANTITY")
+  minThreshold   Int      @map("MIN_THRESHOLD")
+  isFastMoving   Boolean  @default(false) @map("IS_FAST_MOVING")
+  lastRestockedAt DateTime? @map("LAST_RESTOCKED_AT")
+  sellByWeight   Boolean  @default(false) @map("SELL_BY_WEIGHT")
+  sellByBox      Boolean  @default(false) @map("SELL_BY_BOX")
+  boxQuantity    Int?     @map("BOX_QUANTITY")
+  imageUrl       String?  @map("IMAGE_URL")
+  isAvailable    Boolean  @default(true) @map("IS_AVAILABLE")
+  createdAt      DateTime? @map("CREATED_AT")
+  updatedAt      DateTime @default(now()) @updatedAt @map("UPDATED_AT")
 
   categoryRel    Category?         @relation(fields: [categoryId], references: [id])
   supplierRel    Supplier?         @relation(fields: [supplierId], references: [id])
@@ -172,6 +176,7 @@ model Product {
 model Transaction {
   id                     Int               @id @default(autoincrement()) @map("TRANSACTION_ID")
   receiptNumber          Int               @map("RECEIPT_NUMBER")
+  invoiceNumber          String?           @map("INVOICE_NUMBER")
   buyerName              String            @map("BUYER_NAME")
   buyerAddress           String?           @map("BUYER_ADDRESS")
   buyerContact           String?           @map("BUYER_CONTACT")
@@ -186,6 +191,9 @@ model Transaction {
   transactionDate        DateTime          @map("TRANSACTION_DATE")
   grandTotal             Decimal?          @db.Decimal(10, 2) @map("GRAND_TOTAL")
   paymentMethod          String?           @map("PAYMENT_METHOD")
+  isCredit               Boolean           @default(false) @map("IS_CREDIT")
+  creditDueDate          DateTime?         @map("CREDIT_DUE_DATE")
+  creditPaidAt           DateTime?         @map("CREDIT_PAID_AT")
   isReturned             Boolean           @default(false) @map("IS_RETURNED")
   returnForReceiptNumber Int?              @map("RETURN_FOR_RECEIPT_NUMBER")
   buyerId                Int?              @map("BUYER_ID")
@@ -264,6 +272,7 @@ model Buyer {
   notes        String?  @map("NOTES")
   totalOrders  Int      @default(0) @map("TOTAL_ORDERS")
   totalSpent   Decimal  @default(0) @db.Decimal(10, 2) @map("TOTAL_SPENT")
+  creditBalance Decimal @default(0) @db.Decimal(10, 2) @map("CREDIT_BALANCE")
   sellerId     Int?     @map("SELLER_ID")
   createdAt    DateTime @default(now()) @map("CREATED_AT")
   updatedAt    DateTime @default(now()) @updatedAt @map("UPDATED_AT")

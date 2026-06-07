@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 import { createHash, randomBytes, randomInt } from "crypto";
@@ -23,7 +23,11 @@ export function createEmailCode() {
   return String(randomInt(100000, 1000000));
 }
 
-export async function issueEmailToken(userId: number, purpose: EmailTokenPurpose, minutes = 30) {
+export async function issueEmailToken(
+  userId: number,
+  purpose: EmailTokenPurpose,
+  minutes = 30,
+) {
   const token = createPlainToken();
   const code = createEmailCode();
   const expiresAt = new Date(Date.now() + minutes * 60_000);
@@ -41,7 +45,11 @@ export async function issueEmailToken(userId: number, purpose: EmailTokenPurpose
   return { token, code, expiresAt };
 }
 
-export async function consumeEmailToken(purpose: EmailTokenPurpose, token: string, code: string) {
+export async function consumeEmailToken(
+  purpose: EmailTokenPurpose,
+  token: string,
+  code: string,
+) {
   const record = await prisma.emailToken.findFirst({
     where: {
       purpose,
@@ -62,7 +70,3 @@ export async function consumeEmailToken(purpose: EmailTokenPurpose, token: strin
   });
   return record;
 }
-
-
-
-

@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 import NextAuth, { CredentialsSignin } from "next-auth";
@@ -30,10 +30,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         totp: { label: "Authenticator Code", type: "text" },
       },
       async authorize(credentials) {
-        console.log("Auth attempt for:", credentials?.username);
-
         if (!credentials?.username || !credentials?.password) {
-          console.log("Missing credentials");
           return null;
         }
 
@@ -52,29 +49,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             },
           });
 
-          if (!user) {
-            console.log("User not found:", identifier);
-            return null;
-          }
+          if (!user) return null;
 
           let isValid = await bcrypt.compare(password, user.passwordHash);
           if (!isValid && user.oldPasswordHash) {
             isValid = await bcrypt.compare(password, user.oldPasswordHash);
           }
-          if (!isValid) {
-            console.log("Invalid password for:", identifier);
-            return null;
-          }
+          if (!isValid) return null;
 
-          if (!user.isActive) {
-            console.log("User inactive:", identifier);
-            return null;
-          }
+          if (!user.isActive) return null;
 
           if (user.totpEnabled) {
             const code = String((credentials as any).totp || "");
             if (!user.totpSecret || !verifyTotp(user.totpSecret, code)) {
-              console.log("TOTP required for:", identifier);
               throw new TotpRequired();
             }
           }
@@ -133,8 +120,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             (session.user as any).imageUrl = u?.imageUrl ?? null;
             (session.user as any).role = u?.role ?? token.role ?? "STAFF";
             (session.user as any).totpEnabled = u?.totpEnabled ?? false;
-          } catch {
+          } catch { console.warn("Failed to fetch user image/role in session callback");
             (session.user as any).imageUrl = null;
+            (session.user as any).role = token.role ?? "STAFF";
+            (session.user as any).totpEnabled = false;
           }
         }
         return session;

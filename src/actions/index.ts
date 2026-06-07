@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 "use server";
@@ -18,7 +18,6 @@ import { actionFingerprint } from "@/lib/access";
 import { requireAdmin, requireUser } from "@/lib/server-access";
 import { formatMoney } from "@/lib/format";
 import { createTotpSecret, verifyTotp } from "@/lib/totp";
-import type { Prisma } from "@prisma/client";
 
 const DB_TIMEOUT = 20000;
 
@@ -67,10 +66,15 @@ export async function createProduct(data: {
   category: string;
   supplierId?: number;
   supplierName: string;
-  unitPrice: number;
+  unitPrice?: number;
+  sellingPrice: number;
   quantity: number;
   minThreshold: number;
   imageUrl?: string;
+  isFastMoving?: boolean;
+  sellByWeight?: boolean;
+  sellByBox?: boolean;
+  boxQuantity?: number;
 }) {
   await requireAdmin();
   const fn = async () => {
@@ -106,10 +110,15 @@ export async function updateProduct(
     supplierId: number;
     supplierName: string;
     unitPrice: number;
+    sellingPrice: number;
     quantity: number;
     minThreshold: number;
     isAvailable: boolean;
     imageUrl: string;
+    isFastMoving: boolean;
+    sellByWeight: boolean;
+    sellByBox: boolean;
+    boxQuantity: number;
   }>,
 ) {
   await requireAdmin();
@@ -177,7 +186,7 @@ export async function deleteProduct(id: number) {
 export async function getCategories() {
   return prisma.category.findMany({
     orderBy: { name: "asc" },
-    include: { childCategories: true, _count: { select: { products: true } } },
+    include: { _count: { select: { products: true } } },
   });
 }
 
@@ -263,6 +272,7 @@ export async function createSupplier(data: {
   contactNumber?: string;
   email?: string;
   address?: string;
+  tin?: string;
 }) {
   await requireAdmin();
   const fn = async () => {
@@ -297,6 +307,7 @@ export async function updateSupplier(
     contactNumber: string;
     email: string;
     address: string;
+    tin: string;
     isAvailable: boolean;
   }>,
 ) {
@@ -332,20 +343,20 @@ export async function deleteSupplier(id: number) {
 
 // ─────────── Transactions ───────────
 
-export async function getTransactions(opts?: {
+function buildTransactionWhere(opts?: {
   status?: string;
   statusIn?: string[];
   type?: string;
   startDate?: string;
   endDate?: string;
   search?: string;
-  page?: number;
-  perPage?: number;
+  paymentMethod?: string;
 }) {
   const where: any = {};
   if (opts?.status) where.transactionStatus = opts.status;
   if (opts?.statusIn) where.transactionStatus = { in: opts.statusIn };
   if (opts?.type) where.transactionType = opts.type;
+  if (opts?.paymentMethod) where.paymentMethod = opts.paymentMethod;
   if (opts?.startDate)
     where.transactionDate = { gte: new Date(opts.startDate) };
   if (opts?.endDate) {
@@ -360,14 +371,32 @@ export async function getTransactions(opts?: {
       { receiptNumber: parseInt(opts.search) || undefined },
     ].filter(Boolean);
   }
+  return where;
+}
 
+export async function getTransactions(opts?: {
+  status?: string;
+  statusIn?: string[];
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  page?: number;
+  perPage?: number;
+  paymentMethod?: string;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
+}) {
+  const where = buildTransactionWhere(opts);
   const take = opts?.perPage || 100;
   const skip = ((opts?.page || 1) - 1) * take;
 
   return withTimeout(
     prisma.transaction.findMany({
       where,
-      orderBy: { transactionDate: "desc" },
+      orderBy: opts?.sortBy
+        ? { [opts.sortBy]: opts.sortDir || "desc" }
+        : { transactionDate: "desc" },
       include: { items: true, seller: { select: { sellerName: true } } },
       skip,
       take,
@@ -383,24 +412,9 @@ export async function getTransactionsCount(opts?: {
   startDate?: string;
   endDate?: string;
   search?: string;
+  paymentMethod?: string;
 }) {
-  const where: any = {};
-  if (opts?.status) where.transactionStatus = opts.status;
-  if (opts?.type) where.transactionType = opts.type;
-  if (opts?.startDate)
-    where.transactionDate = { gte: new Date(opts.startDate) };
-  if (opts?.endDate) {
-    where.transactionDate = {
-      ...where.transactionDate,
-      lte: new Date(opts.endDate),
-    };
-  }
-  if (opts?.search) {
-    where.OR = [
-      { buyerName: { contains: opts.search, mode: "insensitive" } },
-      { receiptNumber: parseInt(opts.search) || undefined },
-    ].filter(Boolean);
-  }
+  const where = buildTransactionWhere(opts);
   return prisma.transaction.count({ where });
 }
 
@@ -489,6 +503,9 @@ export async function createTransaction(data: {
     costPrice?: number;
   }[];
   returnForReceiptNumber?: number;
+  invoiceNumber?: string;
+  isCredit?: boolean;
+  creditDueDate?: Date;
 }) {
   const session = await auth();
   const sellerId = Number(session?.user?.id) || 0;
@@ -578,6 +595,9 @@ export async function createTransaction(data: {
         transactionDate: new Date(),
         grandTotal: data.grandTotal,
         returnForReceiptNumber: data.returnForReceiptNumber,
+        invoiceNumber: data.invoiceNumber,
+        isCredit: data.isCredit || false,
+        creditDueDate: data.creditDueDate,
         isReturned: data.transactionType === "Return",
         items: { create: itemsWithNames },
       },
@@ -626,6 +646,14 @@ export async function createTransaction(data: {
       data: { buyerId: buyer.id },
     });
   }
+  // For credit sales, update buyer's credit balance
+  if (data.isCredit && buyer) {
+    await prisma.buyer.update({
+      where: { id: buyer.id },
+      data: { creditBalance: { increment: data.grandTotal } },
+    });
+  }
+
   // For Restock, still link the transaction if a "CWL Hardware" buyer already exists
   if (data.transactionType === "Restock" && data.buyerName) {
     const existing = await prisma.buyer.findFirst({
@@ -717,6 +745,24 @@ export async function getReturnTransaction(receiptNumber: number) {
       totalPrice: Number(i.totalPrice),
     })),
   };
+}
+
+export async function updateTransactionInvoice(id: number, invoiceNumber: string) {
+  await requireAdmin();
+  const txn = await prisma.transaction.findUniqueOrThrow({
+    where: { id },
+    select: { receiptNumber: true },
+  });
+  await prisma.transaction.update({
+    where: { id },
+    data: { invoiceNumber: invoiceNumber || null },
+  });
+  await logAudit(
+    "Transactions",
+    "Update Invoice",
+    `#${txn.receiptNumber}: invoice set to "${invoiceNumber}"`,
+  );
+  revalidatePath("/transactions");
 }
 
 export async function updateTransactionStatus(
@@ -895,6 +941,20 @@ export async function updateTransaction(
     "Edit Transaction",
     `#${txn.receiptNumber} updated`,
   );
+  revalidatePath("/transactions");
+  return updated;
+}
+
+export async function markCreditAsPaid(id: number) {
+  await requireAdmin();
+  const txn = await prisma.transaction.findUniqueOrThrow({ where: { id } });
+  if (!txn.isCredit) throw new Error("Transaction is not a credit sale");
+  if (txn.creditPaidAt) throw new Error("Credit is already marked as paid");
+  const updated = await prisma.transaction.update({
+    where: { id },
+    data: { creditPaidAt: new Date() },
+  });
+  await logAudit("Transactions", "Mark Credit Paid", `#${txn.receiptNumber} credit marked as paid`);
   revalidatePath("/transactions");
   return updated;
 }
@@ -1302,6 +1362,8 @@ export async function processRestock(transactionId: number) {
       data: {
         quantity: product.quantity + (item.quantity ?? 0),
         isAvailable: true,
+        unitPrice: item.costPrice ?? undefined,
+        lastRestockedAt: new Date(),
       },
     });
   }
@@ -1715,13 +1777,15 @@ export async function getPaginatedAuditLogs(
     endDate?: string;
     search?: string;
     panel?: string;
+    sellerId?: number;
   },
 ) {
   const where: any = {};
   if (opts?.startDate) where.logTime = { gte: new Date(opts.startDate) };
   if (opts?.endDate)
-    where.logTime = { ...where.logTime, lte: new Date(opts.endDate) };
+    where.logTime = { ...where.logTime, lte: new Date(opts.endDate + "T23:59:59") };
   if (opts?.panel) where.panel = opts.panel;
+  if (opts?.sellerId) where.sellerId = opts.sellerId;
   if (opts?.search)
     where.OR = [
       { action: { contains: opts.search, mode: "insensitive" } },
@@ -1739,6 +1803,18 @@ export async function getPaginatedAuditLogs(
     prisma.auditLog.count({ where }),
   ]);
   return { logs, total, page, perPage, totalPages: Math.ceil(total / perPage) };
+}
+
+export async function getAuditLogUsers() {
+  const result = await prisma.auditLog.findMany({
+    where: { sellerId: { not: null } },
+    distinct: ["sellerId"],
+    select: { sellerId: true, seller: { select: { sellerName: true } } },
+  });
+  return result.filter((r) => r.seller).map((r) => ({
+    id: r.sellerId!,
+    sellerName: r.seller!.sellerName,
+  }));
 }
 
 // ─────────── Data Import ───────────
@@ -1841,7 +1917,8 @@ export async function importData(
     case "products":
     case "inventory": {
       for (const row of validation.preview) {
-        const unitPrice = parseFloat(row.unitPrice);
+        const sellingPrice = parseFloat(row.sellingPrice || row.unitPrice || "0");
+        const costPrice = parseFloat(row.costPrice || "0") || undefined;
         const quantity = parseInt(row.quantity);
         const minThreshold = parseInt(row.minThreshold || "0");
         let categoryId: number | undefined;
@@ -1855,7 +1932,8 @@ export async function importData(
             category: row.category,
             categoryId,
             supplierName: row.supplierName || "",
-            unitPrice,
+            sellingPrice,
+            unitPrice: costPrice,
             quantity,
             minThreshold,
             imageUrl: row.imageUrl || null,

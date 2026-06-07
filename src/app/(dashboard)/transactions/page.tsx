@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 "use client";
@@ -13,12 +13,13 @@ import {
   getTransactions,
   getTransactionsCount,
   updateTransactionStatus,
+  updateTransactionInvoice,
+  markCreditAsPaid,
   getProducts,
 } from "@/actions";
 import {
   Search,
   Receipt,
-  Filter,
   Loader2,
   CheckCircle,
   XCircle,
@@ -30,6 +31,7 @@ import {
   Truck,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { getDateScopeStart, DATE_SCOPES } from "@/lib/format";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
@@ -37,37 +39,6 @@ import type { Transaction, TransactionItem, Product } from "@prisma/client";
 import { toast } from "sonner";
 
 type TxnWithItems = Transaction & { items: TransactionItem[] };
-
-const DATE_SCOPES = [
-  { label: "All", value: "all" },
-  { label: "Today", value: "today" },
-  { label: "This Week", value: "week" },
-  { label: "This Month", value: "month" },
-  { label: "This Year", value: "year" },
-];
-
-function getDateScopeStart(scope: string): string | undefined {
-  const now = new Date();
-  switch (scope) {
-    case "today":
-      return now.toISOString().split("T")[0];
-    case "week": {
-      const d = new Date(now);
-      const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      d.setDate(diff);
-      return d.toISOString().split("T")[0];
-    }
-    case "month":
-      return new Date(now.getFullYear(), now.getMonth(), 1)
-        .toISOString()
-        .split("T")[0];
-    case "year":
-      return new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0];
-    default:
-      return undefined;
-  }
-}
 
 const STATUS_OPTIONS = [
   "",
@@ -102,14 +73,31 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<TxnWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [paymentFilter, setPaymentFilter] = useState("");
+  const [sortBy, setSortBy] = useState<string>("");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [editingInvoice, setEditingInvoice] = useState<{
+    id: number;
+    value: string;
+  } | null>(null);
   const [dateScope, setDateScope] = useState("all");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const perPage = 15;
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     setLoading(true);
@@ -118,14 +106,18 @@ export default function TransactionsPage() {
       getTransactions({
         status: statusFilter || undefined,
         type: typeFilter || undefined,
+        paymentMethod: paymentFilter || undefined,
         search: search || undefined,
         startDate,
         page,
         perPage,
+        sortBy: sortBy || undefined,
+        sortDir,
       }),
       getTransactionsCount({
         status: statusFilter || undefined,
         type: typeFilter || undefined,
+        paymentMethod: paymentFilter || undefined,
         search: search || undefined,
         startDate,
       }),
@@ -136,7 +128,7 @@ export default function TransactionsPage() {
       setProducts(prods as Product[]);
       setLoading(false);
     });
-  }, [statusFilter, typeFilter, search, page, dateScope]);
+  }, [statusFilter, typeFilter, paymentFilter, search, page, dateScope, sortBy, sortDir]);
 
   async function quickStatusChange(
     id: number,
@@ -150,14 +142,18 @@ export default function TransactionsPage() {
         getTransactions({
           status: statusFilter || undefined,
           type: typeFilter || undefined,
+          paymentMethod: paymentFilter || undefined,
           search: search || undefined,
           startDate,
           page,
           perPage,
+          sortBy: sortBy || undefined,
+          sortDir,
         }),
         getTransactionsCount({
           status: statusFilter || undefined,
           type: typeFilter || undefined,
+          paymentMethod: paymentFilter || undefined,
           search: search || undefined,
           startDate,
         }),
@@ -191,11 +187,8 @@ export default function TransactionsPage() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input
             type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search receipt..."
             className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
@@ -245,23 +238,41 @@ export default function TransactionsPage() {
               </option>
             ))}
           </select>
+          <select
+            value={paymentFilter}
+            onChange={(e) => {
+              setPaymentFilter(e.target.value);
+              setPage(1);
+            }}
+            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[120px]"
+          >
+            <option value="">Payment</option>
+            <option value="Cash">Cash</option>
+            <option value="Credit">Credit</option>
+          </select>
         </div>
         <div className="flex gap-2 w-full lg:w-auto flex-wrap">
           <ExportDialog
-            filename={`cwl-hardware-transactions-${new Date().toISOString().slice(0, 10)}.csv`}
+            filename={`cwl-hardware-transactions${dateScope !== "all" ? `-${getDateScopeStart(dateScope) || ""}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={[
               { key: "receiptNumber", label: "Receipt #" },
+              { key: "invoiceNumber", label: "Invoice #" },
               { key: "buyerName", label: "Buyer" },
               { key: "transactionType", label: "Type" },
               { key: "transactionDate", label: "Date" },
               { key: "paymentMethod", label: "Payment" },
               { key: "grandTotal", label: "Total" },
               { key: "transactionStatus", label: "Status" },
+              { key: "sellerName", label: "Seller" },
+              { key: "isCredit", label: "Credit" },
+              { key: "creditDueDate", label: "Credit Due" },
+              { key: "creditPaidAt", label: "Credit Paid" },
             ]}
             fetchRows={async (selectedColumns) =>
               transactions.map((t) =>
                 selectedColumns.map((key) => {
                   if (key === "receiptNumber") return String(t.receiptNumber);
+                  if (key === "invoiceNumber") return t.invoiceNumber || "";
                   if (key === "buyerName") return t.buyerName;
                   if (key === "transactionType")
                     return t.transactionType.replace(/([A-Z])/g, " $1").trim();
@@ -273,12 +284,23 @@ export default function TransactionsPage() {
                   if (key === "grandTotal")
                     return `${Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   if (key === "transactionStatus") return t.transactionStatus;
+                  if (key === "sellerName") return t.sellerName || "—";
+                  if (key === "isCredit") return t.isCredit ? "Yes" : "No";
+                  if (key === "creditDueDate")
+                    return t.creditDueDate
+                      ? new Date(t.creditDueDate).toLocaleDateString("en-PH")
+                      : "";
+                  if (key === "creditPaidAt")
+                    return t.creditPaidAt
+                      ? new Date(t.creditPaidAt).toLocaleDateString("en-PH")
+                      : "";
                   return "";
                 }),
               )
             }
             label="Export"
             title="Export transactions"
+            filterLabel={dateScope !== "all" ? DATE_SCOPES.find((s) => s.value === dateScope)?.label || dateScope : undefined}
           />
           <ImportButton
             table="transactions"
@@ -301,11 +323,47 @@ export default function TransactionsPage() {
           <table className="w-full text-sm min-w-[800px] lg:min-w-0">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                <th
+                  className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
+                  onClick={() => {
+                    if (sortBy === "receiptNumber") {
+                      setSortDir(sortDir === "asc" ? "desc" : "asc");
+                    } else {
+                      setSortBy("receiptNumber");
+                      setSortDir("desc");
+                    }
+                  }}
+                >
                   Receipt #
+                  {sortBy === "receiptNumber" && (
+                    <span className="ml-1">
+                      {sortDir === "asc" ? "\u25B2" : "\u25BC"}
+                    </span>
+                  )}
+                </th>
+                <th
+                  className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
+                  onClick={() => {
+                    if (sortBy === "invoiceNumber") {
+                      setSortDir(sortDir === "asc" ? "desc" : "asc");
+                    } else {
+                      setSortBy("invoiceNumber");
+                      setSortDir("desc");
+                    }
+                  }}
+                >
+                  Invoice #
+                  {sortBy === "invoiceNumber" && (
+                    <span className="ml-1">
+                      {sortDir === "asc" ? "\u25B2" : "\u25BC"}
+                    </span>
+                  )}
                 </th>
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Buyer
+                </th>
+                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Vendor
                 </th>
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Type
@@ -340,8 +398,58 @@ export default function TransactionsPage() {
                     <td className="p-4 font-mono text-sm text-[#0e212c]">
                       #{t.receiptNumber}
                     </td>
+                    <td
+                      className="p-4 text-sm text-[#0e212c] cursor-pointer"
+                      onClick={(e) => {
+                        if (editingInvoice?.id !== t.id) {
+                          e.stopPropagation();
+                          setEditingInvoice({
+                            id: t.id,
+                            value: t.invoiceNumber || "",
+                          });
+                        }
+                      }}
+                    >
+                      {editingInvoice?.id === t.id ? (
+                        <input
+                          type="text"
+                          value={editingInvoice.value}
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) =>
+                            setEditingInvoice({
+                              ...editingInvoice,
+                              value: e.target.value,
+                            })
+                          }
+                          onBlur={() => {
+                            updateTransactionInvoice(
+                              editingInvoice.id,
+                              editingInvoice.value,
+                            );
+                            setEditingInvoice(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              (e.target as HTMLInputElement).blur();
+                            }
+                            if (e.key === "Escape") {
+                              setEditingInvoice(null);
+                            }
+                          }}
+                          className="w-full max-w-[160px] px-2 py-1 text-xs border border-[#fd761a] rounded focus:outline-none"
+                        />
+                      ) : (
+                        <span className="text-[#64748b]">
+                          {t.invoiceNumber || "\u2014"}
+                        </span>
+                      )}
+                    </td>
                     <td className="p-4 font-medium text-[#0e212c]">
                       {t.buyerName}
+                    </td>
+                    <td className="p-4 text-[#64748b]">
+                      {(t as any).seller?.sellerName || "\u2014"}
                     </td>
                     <td className="p-4 text-[#64748b]">
                       {t.transactionType.replace(/([A-Z])/g, " $1").trim()}
@@ -354,7 +462,31 @@ export default function TransactionsPage() {
                       })}
                     </td>
                     <td className="p-4 text-[#64748b]">
-                      {t.paymentMethod || "—"}
+                      <div className="flex items-center gap-2">
+                        <span>{t.paymentMethod || "\u2014"}</span>
+                        {(t as any).isCredit && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            (t as any).creditPaidAt
+                              ? "bg-green-100 text-green-700"
+                              : "bg-amber-100 text-amber-700"
+                          }`}>
+                            {(t as any).creditPaidAt ? "Paid" : "Unpaid"}
+                            {(t as any).creditDueDate && (
+                              <span className="text-[9px] opacity-70">
+                                Due: {new Date((t as any).creditDueDate).toLocaleDateString("en-PH")}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        {(t as any).isCredit && !(t as any).creditPaidAt && (
+                          <button
+                            onClick={() => markCreditAsPaid(t.id)}
+                            className="px-2 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded hover:bg-blue-700"
+                          >
+                            Mark Paid
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4 text-right font-mono text-[#0e212c] font-semibold">
                       {Number(t.grandTotal || 0).toLocaleString("en-PH", {
@@ -465,7 +597,7 @@ export default function TransactionsPage() {
                   </tr>
                   {expandedId === t.id && (
                     <tr key={`${t.id}-items`}>
-                      <td colSpan={8} className="bg-[#f8fafc] p-4">
+                      <td colSpan={10} className="bg-[#f8fafc] p-4">
                         <div className="max-w-xl">
                           <table className="w-full text-xs">
                             <thead>
@@ -531,7 +663,7 @@ export default function TransactionsPage() {
               ))}
               {transactions.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-[#94a3b8]">
+                  <td colSpan={10} className="p-8 text-center text-[#94a3b8]">
                     No transactions found
                   </td>
                 </tr>

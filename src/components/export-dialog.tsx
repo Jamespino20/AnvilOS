@@ -21,6 +21,7 @@ interface Props {
   fetchRows: (selectedColumns: string[]) => Promise<string[][]>;
   label?: string;
   title?: string;
+  filterLabel?: string;
 }
 
 const FORMATS: { value: Format; label: string; icon: typeof File }[] = [
@@ -29,7 +30,7 @@ const FORMATS: { value: Format; label: string; icon: typeof File }[] = [
   { value: "pdf", label: "PDF", icon: File },
 ];
 
-export function ExportDialog({ filename, allColumns, fetchRows, label = "Export", title }: Props) {
+export function ExportDialog({ filename, allColumns, fetchRows, label = "Export", title, filterLabel }: Props) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(allColumns.map((c) => c.key));
   const [format, setFormat] = useState<Format>("csv");
@@ -69,11 +70,22 @@ export function ExportDialog({ filename, allColumns, fetchRows, label = "Export"
         <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center" onClick={() => setOpen(false)}>
           <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
-              <h2 className="text-lg font-bold text-[#0e212c]">Export Data</h2>
+              <div>
+                <h2 className="text-lg font-bold text-[#0e212c]">Export Data</h2>
+                {filterLabel && <p className="text-xs text-[#64748b] mt-0.5">Filters: {filterLabel}</p>}
+              </div>
               <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"><X className="h-5 w-5" /></button>
             </div>
 
             <div className="p-6 space-y-5">
+              {/* Filename display */}
+              <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg px-3 py-2">
+                <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Filename</p>
+                <p className="text-xs font-mono text-[#0e212c] mt-0.5 truncate" title={filename}>
+                  {filename.replace(/\.[^/.]+$/, "")}.{format}
+                </p>
+              </div>
+
               {/* Format selector */}
               <div>
                 <p className="text-xs font-bold text-[#64748b] uppercase tracking-wider mb-2">Format</p>

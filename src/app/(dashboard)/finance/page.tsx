@@ -8,6 +8,7 @@ import { TrendingUp, TrendingDown, DollarSign, Receipt, ArrowUpRight, ArrowDownR
 import { CardSkeleton } from "@/components/ui/skeleton";
 
 const PERIODS = [
+  { label: "Today", value: "today" },
   { label: "Last Year", value: "lastYear" },
   { label: "Last Quarter", value: "lastQuarter" },
   { label: "Last Month", value: "lastMonth" },
@@ -34,6 +35,11 @@ function periodDates(period: string, customStart?: string, customEnd?: string) {
   endOfWeek.setDate(d - dow + 6);
 
   switch (period) {
+    case "today":
+      return {
+        start: now.toISOString().split("T")[0],
+        end: now.toISOString().split("T")[0],
+      };
     case "lastYear":
       return {
         start: `${y - 1}-01-01`,
@@ -184,7 +190,7 @@ export default function FinancePage() {
             </div>
           )}
           <ExportDialog
-            filename={`cwl-hardware-finance-${new Date().toISOString().slice(0, 10)}.csv`}
+            filename={`cwl-hardware-finance${period !== "thisMonth" ? `-${period === "custom" ? `${customStart}_${customEnd}` : period}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={[
               { key: "metric", label: "Metric" },
               { key: "value", label: "Value" },
@@ -221,6 +227,7 @@ export default function FinancePage() {
             }}
             label="Export Report"
             title="Export financial report"
+            filterLabel={period === "custom" ? `${customStart} to ${customEnd}` : PERIODS.find((p) => p.value === period)?.label || period}
           />
         </div>
       </div>

@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 "use client";
@@ -61,6 +61,7 @@ export default function SuppliersPage() {
     contactNumber: "",
     email: "",
     address: "",
+    tin: "",
   });
   const [editForm, setEditForm] = useState({
     supplierName: "",
@@ -68,6 +69,7 @@ export default function SuppliersPage() {
     contactNumber: "",
     email: "",
     address: "",
+    tin: "",
   });
 
   useEffect(() => {
@@ -110,6 +112,7 @@ export default function SuppliersPage() {
         contactNumber: "",
         email: "",
         address: "",
+        tin: "",
       });
       router.refresh();
       toast.success("Supplier added successfully");
@@ -129,6 +132,7 @@ export default function SuppliersPage() {
       contactNumber: s.contactNumber || "",
       email: s.email || "",
       address: s.address || "",
+      tin: s.tin || "",
     });
   }
 
@@ -238,6 +242,7 @@ export default function SuppliersPage() {
               { key: "supplierName", label: "Supplier Name" },
               { key: "contactName", label: "Contact Person" },
               { key: "contactNumber", label: "Contact Number" },
+              { key: "tin", label: "TIN" },
               { key: "email", label: "Email" },
               { key: "address", label: "Address" },
             ]}
@@ -247,6 +252,7 @@ export default function SuppliersPage() {
                   if (key === "supplierName") return s.supplierName;
                   if (key === "contactName") return s.contactName || "";
                   if (key === "contactNumber") return s.contactNumber || "";
+                  if (key === "tin") return s.tin || "";
                   if (key === "email") return s.email || "";
                   if (key === "address") return s.address || "";
                   return "";
@@ -285,6 +291,9 @@ export default function SuppliersPage() {
                   Phone
                 </th>
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  TIN
+                </th>
+                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Email
                 </th>
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
@@ -318,6 +327,7 @@ export default function SuppliersPage() {
                   <td className="p-4 text-[#64748b]">
                     {s.contactNumber || "—"}
                   </td>
+                  <td className="p-4 text-[#64748b]">{s.tin || "—"}</td>
                   <td className="p-4 text-[#64748b]">{s.email || "—"}</td>
                   <td className="p-4 text-[#64748b] max-w-[200px] truncate">
                     {s.address || "—"}
@@ -352,7 +362,7 @@ export default function SuppliersPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-[#94a3b8]">
+                  <td colSpan={8} className="p-8 text-center text-[#94a3b8]">
                     No suppliers registered yet
                   </td>
                 </tr>
@@ -469,6 +479,18 @@ export default function SuppliersPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                  TIN
+                </label>
+                <input
+                  value={editForm.tin}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, tin: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Email
                 </label>
                 <input
@@ -578,6 +600,16 @@ export default function SuppliersPage() {
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
                   />
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                  TIN
+                </label>
+                <input
+                  value={form.tin}
+                  onChange={(e) => setForm({ ...form, tin: e.target.value })}
+                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">

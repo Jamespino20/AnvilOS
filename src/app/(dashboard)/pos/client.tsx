@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 "use client";
@@ -30,6 +30,8 @@ import {
   X,
   Pencil,
   FolderPlus,
+  Receipt,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createTransaction, getReturnTransaction } from "@/actions";
@@ -56,7 +58,7 @@ interface CartItem {
   originalQty?: number;
 }
 
-const PAYMENT_METHODS = ["Cash", "Card", "GCash", "Credit"];
+const PAYMENT_METHODS = ["Cash", "Credit"];
 const DELIVERY_METHODS = ["WalkIn", "Pickup", "Delivery", "COD"];
 
 const TXN_TYPES = [
@@ -84,11 +86,16 @@ export function POSClient({ products, buyers }: Props) {
   const [returnReceipt, setReturnReceipt] = useState("");
   const [loadingReturn, setLoadingReturn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [creditDueDate, setCreditDueDate] = useState("");
   const [done, setDone] = useState<{
     receipt: number;
     items: any[];
     buyerName: string;
     grandTotal: number;
+    invoiceNumber?: string;
+    isCredit?: boolean;
+    creditDueDate?: Date;
   } | null>(null);
   const [error, setError] = useState("");
   const [editingQty, setEditingQty] = useState<number | null>(null);
@@ -188,7 +195,7 @@ export function POSClient({ products, buyers }: Props) {
   const grandTotal = useMemo(
     () =>
       cart.reduce(
-        (sum, c) => sum + Number(c.product.unitPrice) * c.quantity,
+        (sum, c) => sum + Number(c.product.sellingPrice) * c.quantity,
         0,
       ),
     [cart],
@@ -206,6 +213,12 @@ export function POSClient({ products, buyers }: Props) {
         buyerAddress: buyerAddress || undefined,
         buyerContact: buyerContact || undefined,
         buyerEmail: buyerEmail || undefined,
+        invoiceNumber: invoiceNumber || undefined,
+        isCredit: paymentMethod === "Credit",
+        creditDueDate:
+          paymentMethod === "Credit" && creditDueDate
+            ? new Date(creditDueDate)
+            : undefined,
         paymentMethod,
         deliveryMethod: deliveryMethod as any,
         transactionType: txnType,
@@ -220,7 +233,7 @@ export function POSClient({ products, buyers }: Props) {
         grandTotal: cart
           .filter((c) => !(txnType === "Return" && c.quantity === 0))
           .reduce(
-            (sum, c) => sum + Number(c.product.unitPrice) * c.quantity,
+            (sum, c) => sum + Number(c.product.sellingPrice) * c.quantity,
             0,
           ),
         items: cart
@@ -228,8 +241,8 @@ export function POSClient({ products, buyers }: Props) {
           .map((c) => ({
             productId: c.product.id,
             quantity: c.quantity,
-            unitPrice: Number(c.product.unitPrice),
-            totalPrice: Number(c.product.unitPrice) * c.quantity,
+            unitPrice: Number(c.product.sellingPrice),
+            totalPrice: Number(c.product.sellingPrice) * c.quantity,
           })),
         returnForReceiptNumber:
           txnType === "Return" ||
@@ -238,6 +251,7 @@ export function POSClient({ products, buyers }: Props) {
             ? Number(returnReceipt) || undefined
             : undefined,
       });
+      const isCredit = paymentMethod === "Credit";
       const receiptData = {
         receiptNumber: result.receiptNumber,
         date: new Date(),
@@ -245,14 +259,18 @@ export function POSClient({ products, buyers }: Props) {
         buyerName: buyerName,
         buyerAddress: buyerAddress || undefined,
         buyerContact: buyerContact || undefined,
+        invoiceNumber: invoiceNumber || undefined,
+        isCredit,
+        creditDueDate:
+          isCredit && creditDueDate ? new Date(creditDueDate) : undefined,
         grandTotal: grandTotal,
         items: cart
           .filter((c) => !(txnType === "Return" && c.quantity === 0))
           .map((c) => ({
             productName: c.product.productName,
             quantity: c.quantity,
-            unitPrice: Number(c.product.unitPrice),
-            totalPrice: Number(c.product.unitPrice) * c.quantity,
+            unitPrice: Number(c.product.sellingPrice),
+            totalPrice: Number(c.product.sellingPrice) * c.quantity,
           })),
         paymentMethod,
         transactionType: txnType,
@@ -264,6 +282,10 @@ export function POSClient({ products, buyers }: Props) {
         buyerName: buyerName,
         grandTotal: doneGrandTotal,
         items: doneItems,
+        invoiceNumber: invoiceNumber || undefined,
+        isCredit,
+        creditDueDate:
+          isCredit && creditDueDate ? new Date(creditDueDate) : undefined,
       });
       setCart([]);
       setBuyerName("");
@@ -271,6 +293,8 @@ export function POSClient({ products, buyers }: Props) {
       setBuyerContact("");
       setBuyerEmail("");
       setReturnReceipt("");
+      setInvoiceNumber("");
+      setCreditDueDate("");
       setPaymentMethod("Cash");
       setDeliveryMethod("WalkIn");
       setTimeout(() => {
@@ -441,7 +465,7 @@ export function POSClient({ products, buyers }: Props) {
                 </p>
                 <div className="flex items-baseline justify-between mt-1 gap-1">
                   <p className="text-base sm:text-lg font-bold text-[#fd761a]">
-                    {Number(product.unitPrice).toLocaleString("en-PH", {
+                    {Number(product.sellingPrice).toLocaleString("en-PH", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -538,6 +562,17 @@ export function POSClient({ products, buyers }: Props) {
                   />
                 </div>
               )}
+            </div>
+
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Receipt className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+              <input
+                type="text"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                placeholder="Invoice # (opt)"
+                className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
+              />
             </div>
 
             {txnType !== "Return" && (
@@ -645,6 +680,26 @@ export function POSClient({ products, buyers }: Props) {
                 </select>
               </div>
             </div>
+
+          {paymentMethod === "Credit" && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Calendar className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+                <input
+                  type="date"
+                  value={creditDueDate}
+                  onChange={(e) => setCreditDueDate(e.target.value)}
+                  className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                />
+                <span className="text-[10px] text-[#94a3b8] whitespace-nowrap">
+                  Due Date
+                </span>
+              </div>
+              <p className="text-[10px] text-amber-600 ml-6">
+                Credit sale — payment due by selected date
+              </p>
+            </div>
+          )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-1.5 min-h-[150px]">
@@ -658,7 +713,7 @@ export function POSClient({ products, buyers }: Props) {
                     {item.product.productName}
                   </p>
                   <p className="text-[10px] text-[#94a3b8] font-mono">
-                    {Number(item.product.unitPrice).toLocaleString("en-PH", {
+                    {Number(item.product.sellingPrice).toLocaleString("en-PH", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -762,7 +817,7 @@ export function POSClient({ products, buyers }: Props) {
                         {item.quantity}
                       </span>
                       <span className="w-[72px] text-right font-mono text-[#64748b]">
-                        {Number(item.product.unitPrice).toLocaleString(
+                        {Number(item.product.sellingPrice).toLocaleString(
                           "en-PH",
                           {
                             minimumFractionDigits: 2,
@@ -772,7 +827,7 @@ export function POSClient({ products, buyers }: Props) {
                       </span>
                       <span className="w-[72px] text-right font-mono text-[#0e212c] font-semibold">
                         {(
-                          Number(item.product.unitPrice) * item.quantity
+                          Number(item.product.sellingPrice) * item.quantity
                         ).toLocaleString("en-PH", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
@@ -811,6 +866,8 @@ export function POSClient({ products, buyers }: Props) {
               >
                 {checkingOut ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
+                ) : paymentMethod === "Credit" ? (
+                  "Credit"
                 ) : (
                   "Process Order"
                 )}
@@ -827,6 +884,9 @@ export function POSClient({ products, buyers }: Props) {
                       grandTotal: done.grandTotal,
                       paymentMethod,
                       transactionType: txnType,
+                      invoiceNumber: done.invoiceNumber,
+                      isCredit: done.isCredit,
+                      creditDueDate: done.creditDueDate,
                     })
                   }
                   title="Download receipt as PDF"

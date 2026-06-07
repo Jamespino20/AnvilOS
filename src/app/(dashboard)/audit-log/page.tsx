@@ -1,12 +1,13 @@
 ﻿"use client";
 
 import { useState, useEffect, useCallback, Fragment } from "react";
-import { getPaginatedAuditLogs, getAuditLogCount } from "@/actions";
+import { getPaginatedAuditLogs, getAuditLogUsers } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { ImportButton } from "@/components/import-button";
 import { ExportDialog } from "@/components/export-dialog";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Shield, ChevronDown, ChevronUp, Search, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { getDateScopeStart, DATE_SCOPES } from "@/lib/format";
 
 interface AuditEntry {
   id: number;
@@ -42,40 +43,62 @@ const EXPORT_COLUMNS = [
   { key: "successStatus", label: "Status" },
 ];
 
+interface AuditUser {
+  id: number;
+  sellerName: string;
+}
+
 export default function AuditLogPage() {
   const [logs, setLogs] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [panel, setPanel] = useState("");
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
+  const [dateScope, setDateScope] = useState("all");
+  const [auditUsers, setAuditUsers] = useState<AuditUser[]>([]);
+  const [sellerFilter, setSellerFilter] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
+  const dateStart = dateScope !== "all" ? getDateScopeStart(dateScope) : undefined;
+
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await getPaginatedAuditLogs(page, perPage, { search: search || undefined, panel: panel || undefined, startDate: start || undefined, endDate: end || undefined });
+      const result = await getPaginatedAuditLogs(page, perPage, {
+        search: search || undefined,
+        panel: panel || undefined,
+        startDate: dateStart,
+        sellerId: sellerFilter ? Number(sellerFilter) : undefined,
+      });
       setLogs(result.logs as unknown as AuditEntry[]);
       setTotal(result.total);
       setTotalPages(result.totalPages);
     } finally {
       setLoading(false);
     }
-  }, [page, perPage, search, panel, start, end]);
+  }, [page, perPage, search, panel, dateStart, sellerFilter]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
+  useEffect(() => {
+    getAuditLogUsers().then(setAuditUsers).catch(() => {});
+  }, []);
+
   function handleSearchChange(val: string) { setSearch(val); setPage(1); }
   function handlePanelChange(val: string) { setPanel(val); setPage(1); }
-  function handleStartChange(val: string) { setStart(val); setPage(1); }
-  function handleEndChange(val: string) { setEnd(val); setPage(1); }
+  function handleDateScopeChange(val: string) { setDateScope(val); setPage(1); }
+  function handleSellerChange(val: string) { setSellerFilter(val); setPage(1); }
 
   async function fetchExportRows(selectedColumns: string[]) {
-    const expanded = await getPaginatedAuditLogs(1, 10000, { search: search || undefined, panel: panel || undefined, startDate: start || undefined, endDate: end || undefined });
+    const expanded = await getPaginatedAuditLogs(1, 10000, {
+      search: search || undefined,
+      panel: panel || undefined,
+      startDate: dateStart,
+      sellerId: sellerFilter ? Number(sellerFilter) : undefined,
+    });
     return expanded.logs.map((log: any) =>
       selectedColumns.map((key) => {
         if (key === "logTime") return new Date(log.logTime).toLocaleString("en-PH");
@@ -98,8 +121,16 @@ export default function AuditLogPage() {
             className="w-full h-10 pl-10 pr-4 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
         </div>
         <div className="flex gap-2 w-full lg:w-auto flex-wrap">
+          <div className="flex items-center gap-1.5 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-1">
+            {DATE_SCOPES.map((s) => (
+              <button key={s.value} onClick={() => handleDateScopeChange(s.value)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${dateScope === s.value ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:text-[#0e212c]"}`}>
+                {s.label}
+              </button>
+            ))}
+          </div>
           <select value={panel} onChange={(e) => handlePanelChange(e.target.value)}
-            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] min-w-[140px]">
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] min-w-[120px]">
             <option value="">Panel</option>
             <option value="POSPanel">POS Panel</option>
             <option value="ProductDialog">Product Dialog</option>
@@ -110,18 +141,22 @@ export default function AuditLogPage() {
             <option value="Settings">Settings</option>
             <option value="Buyers">Buyers</option>
           </select>
-          <input type="date" value={start} onChange={(e) => handleStartChange(e.target.value)}
-            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
-          <input type="date" value={end} onChange={(e) => handleEndChange(e.target.value)}
-            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
+          <select value={sellerFilter} onChange={(e) => handleSellerChange(e.target.value)}
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] min-w-[140px]">
+            <option value="">User</option>
+            {auditUsers.map((u) => (
+              <option key={u.id} value={u.id}>{u.sellerName}</option>
+            ))}
+          </select>
         </div>
         <div className="flex gap-2 w-full lg:w-auto">
           <ExportDialog
-            filename={`cwl-hardware-audit-logs-${new Date().toISOString().slice(0, 10)}.csv`}
+            filename={`cwl-hardware-audit-logs${dateScope !== "all" ? `-${getDateScopeStart(dateScope) || ""}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={EXPORT_COLUMNS}
             fetchRows={fetchExportRows}
             label="Export"
             title="Export audit logs as CSV, XLSX, or PDF"
+            filterLabel={dateScope !== "all" ? DATE_SCOPES.find((s) => s.value === dateScope)?.label : undefined}
           />
           <ImportButton table="audit-logs" onImported={() => {}} title="Import audit logs from CSV or XLSX" />
         </div>

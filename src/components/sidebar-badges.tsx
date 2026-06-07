@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 "use client";
@@ -22,11 +22,17 @@ export function useSidebarBadges() {
       setLowStockCount(kpis.lowStockCount);
     } catch {}
     try {
-      const count = await getTransactionsCount({ status: "Ongoing", type: "Restock" });
+      const count = await getTransactionsCount({
+        status: "Ongoing",
+        type: "Restock",
+      });
       setPendingRestockCount(count);
     } catch {}
     try {
-      const count = await getTransactionsCount({ status: "Processing", type: "SalePO" });
+      const count = await getTransactionsCount({
+        status: "Processing",
+        type: "SalePO",
+      });
       setPendingPOCount(count);
     } catch {}
   }, []);

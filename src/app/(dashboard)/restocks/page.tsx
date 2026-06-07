@@ -193,7 +193,7 @@ export default function RestocksPage() {
             ))}
           </div>
           <ExportDialog
-            filename={`cwl-hardware-restocks-${new Date().toISOString().slice(0, 10)}.csv`}
+            filename={`cwl-hardware-restocks${dateScope !== "all" ? `-${getDateScopeStart(dateScope) || ""}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={[
               { key: "receiptNumber", label: "Receipt #" },
               { key: "items", label: "Items" },
@@ -216,6 +216,7 @@ export default function RestocksPage() {
             )}
             label="Export"
             title="Export restocks"
+            filterLabel={dateScope !== "all" ? DATE_SCOPES.find((s) => s.value === dateScope)?.label : undefined}
           />
           <ImportButton table="transactions" onImported={() => window.location.reload()} title="Import restocks from CSV or XLSX" />
           <button onClick={() => setShowNew(true)}
@@ -270,24 +271,29 @@ export default function RestocksPage() {
               </div>
               {isExpanded && (
                 <div className="border-t border-[#e2e8f0] bg-[#f8fafc] p-4">
-                  <table className="w-full text-sm">
+                      <table className="w-full text-sm">
                     <thead>
                       <tr className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
                         <th className="text-left pb-2">Product</th>
                         <th className="text-right pb-2">Cost/Unit</th>
                         <th className="text-right pb-2">Qty</th>
                         <th className="text-right pb-2">Total Cost</th>
+                        <th className="text-right pb-2">Last Restocked</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#e2e8f0]">
-                      {r.items.map((item) => (
-                        <tr key={item.id}>
-                          <td className="py-2 text-[#0e212c] font-medium">{products.find(p => p.id === item.productId)?.productName || `#${item.productId}`}</td>
-                          <td className="py-2 text-right text-[#64748b] font-mono">{Number(item.costPrice || item.unitPrice || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                          <td className="py-2 text-right text-[#64748b]">{item.quantity}</td>
-                          <td className="py-2 text-right text-[#0e212c] font-semibold font-mono">{((Number(item.costPrice || item.unitPrice || 0)) * (item.quantity || 0)).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        </tr>
-                      ))}
+                      {r.items.map((item) => {
+                        const prod = products.find(p => p.id === item.productId);
+                        return (
+                          <tr key={item.id}>
+                            <td className="py-2 text-[#0e212c] font-medium">{prod?.productName || `#${item.productId}`}</td>
+                            <td className="py-2 text-right text-[#64748b] font-mono">{Number(item.costPrice || item.unitPrice || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td className="py-2 text-right text-[#64748b]">{item.quantity}</td>
+                            <td className="py-2 text-right text-[#0e212c] font-semibold font-mono">{((Number(item.costPrice || item.unitPrice || 0)) * (item.quantity || 0)).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td className="py-2 text-right text-[#64748b] text-xs">{prod?.lastRestockedAt ? new Date(prod.lastRestockedAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "\u2014"}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

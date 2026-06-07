@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 "use server";
@@ -314,9 +314,7 @@ export async function checkAndAlertLowStock() {
       FROM "products" 
       WHERE "quantity" <= "minThreshold" AND "quantity" > 0 AND "isAvailable" = true
     `,
-    prisma.$queryRaw<
-      { productName: string }[]
-    >`
+    prisma.$queryRaw<{ productName: string }[]>`
       SELECT "productName"
       FROM "products"
       WHERE "quantity" = 0 AND "isAvailable" = true

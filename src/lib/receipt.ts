@@ -38,6 +38,9 @@ export async function downloadReceiptPdf(data: {
   grandTotal: number;
   paymentMethod?: string;
   transactionType: string;
+  invoiceNumber?: string;
+  isCredit?: boolean;
+  creditDueDate?: Date;
 }) {
   const doc = new jsPDF({ unit: "mm", format: [80, 400] });
 
@@ -75,7 +78,7 @@ export async function downloadReceiptPdf(data: {
     }
     doc.addImage(b64, "PNG", cx - logoW / 2, y, logoW, logoH);
     y += logoH + 3;
-  } catch {}
+  } catch { console.warn("Logo not available, skipping in receipt"); }
 
   doc.setTextColor(14, 33, 44);
   doc.setFont("courier", "bold");
@@ -103,7 +106,14 @@ export async function downloadReceiptPdf(data: {
   doc.setTextColor(14, 33, 44);
   doc.text(`RECEIPT #${data.receiptNumber}`, cx, y, { align: "center" });
   y += 5;
-  doc.setFont("courier", "normal");
+  if (data.invoiceNumber) {
+    doc.setFont("courier", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(14, 33, 44);
+    doc.text(`INVOICE #${data.invoiceNumber}`, cx, y, { align: "center" });
+    y += 5;
+    doc.setFont("courier", "normal");
+  }
   doc.setFontSize(7);
   doc.setTextColor(100, 116, 139);
   doc.text(data.date.toLocaleString("en-PH"), cx, y, { align: "center" });
@@ -158,6 +168,14 @@ export async function downloadReceiptPdf(data: {
   y += 4;
   if (data.paymentMethod) {
     doc.text(`Payment: ${data.paymentMethod}`, l, y);
+    y += 4;
+  }
+  if (data.isCredit && data.creditDueDate) {
+    doc.text(
+      `Due Date: ${new Date(data.creditDueDate).toLocaleDateString("en-PH")}`,
+      l,
+      y,
+    );
     y += 4;
   }
   y += 2;
@@ -229,6 +247,14 @@ export async function downloadReceiptPdf(data: {
   doc.setTextColor(148, 163, 184);
   doc.text("Thank you for your purchase!", cx, y, { align: "center" });
   y += 4;
+  if (data.isCredit) {
+    doc.setFont("courier", "bold");
+    doc.setTextColor(253, 118, 26);
+    doc.text("CREDIT SALE", cx, y, { align: "center" });
+    y += 4;
+    doc.setFont("courier", "normal");
+    doc.setTextColor(100, 116, 139);
+  }
   doc.setTextColor(100, 116, 139);
   doc.text(`${COMPANY}  |  Receipt #${data.receiptNumber}`, cx, y, { align: "center" });
   y += 3.5;

@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 "use client";
@@ -81,7 +81,8 @@ interface Props {
 export function DashboardSidebar({ collapsed, onToggle, role }: Props) {
   const pathname = usePathname();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const { lowStockCount, pendingRestockCount, pendingPOCount } = useSidebarBadges();
+  const { lowStockCount, pendingRestockCount, pendingPOCount } =
+    useSidebarBadges();
 
   function toggleGroup(label: string) {
     setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -89,7 +90,8 @@ export function DashboardSidebar({ collapsed, onToggle, role }: Props) {
 
   function getBadge(href: string) {
     if (href === "/inventory" && lowStockCount > 0) return lowStockCount;
-    if (href === "/restocks" && pendingRestockCount > 0) return pendingRestockCount;
+    if (href === "/restocks" && pendingRestockCount > 0)
+      return pendingRestockCount;
     if (href === "/orders" && pendingPOCount > 0) return pendingPOCount;
     return 0;
   }
@@ -101,7 +103,12 @@ export function DashboardSidebar({ collapsed, onToggle, role }: Props) {
         collapsed ? "w-[64px]" : "w-[260px]",
       )}
     >
-      <div className={cn("px-6 py-6 border-b border-white/10 flex items-center", collapsed ? "justify-center" : "justify-between")}>
+      <div
+        className={cn(
+          "px-6 py-6 border-b border-white/10 flex items-center",
+          collapsed ? "justify-center" : "justify-between",
+        )}
+      >
         {!collapsed && (
           <div className="flex items-center gap-3">
             <img
@@ -128,7 +135,9 @@ export function DashboardSidebar({ collapsed, onToggle, role }: Props) {
       {!collapsed && (
         <div className="flex-1 overflow-y-auto py-4 space-y-4">
           {groups.map((group) => {
-            const items = group.items.filter((item) => canAccessPath(role, item.href));
+            const items = group.items.filter((item) =>
+              canAccessPath(role, item.href),
+            );
             if (items.length === 0) return null;
             const isOpen = openGroups[group.label] !== false;
             return (
@@ -151,7 +160,9 @@ export function DashboardSidebar({ collapsed, onToggle, role }: Props) {
                         <Link
                           key={item.href}
                           href={item.href}
-                          onClick={() => { if (window.innerWidth < 768) onToggle(); }}
+                          onClick={() => {
+                            if (window.innerWidth < 768) onToggle();
+                          }}
                           className={cn(
                             "flex items-center gap-3 mx-3 px-4 py-2.5 text-sm font-medium rounded-sm transition-all duration-200",
                             isActive

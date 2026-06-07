@@ -87,7 +87,7 @@ export async function exportXLSX(filename: string, headers: string[], rows: stri
       tl: { col: 0, row: 0 },
       ext: { width: 40, height: 36 },
     });
-  } catch {} // fallback: no logo, text header suffices
+  } catch { console.warn("Logo not available, skipping in XLSX header"); }
 
   // Orange accent row (thin)
   ws.mergeCells(2, 1, 2, headers.length);
@@ -210,7 +210,7 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
       logoW = logoH * aspect;
     }
     doc.addImage(b64, "PNG", 12 + (maxLogoW - logoW) / 2, 7 + (maxLogoH - logoH) / 2, logoW, logoH);
-  } catch {}
+  } catch { console.warn("Logo not available, skipping in PDF header"); }
 
   doc.setTextColor(...THEME_WHITE);
   doc.setFontSize(18);

@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 import { PrismaClient } from "@prisma/client";
@@ -585,6 +585,7 @@ async function main() {
         supplierId: 8,
         supplierName: "Globe International Distributor Center INC.",
         unitPrice: 195.0,
+        sellingPrice: 195.0,
         quantity: 110,
         minThreshold: 20,
         isAvailable: true,
@@ -598,6 +599,7 @@ async function main() {
         supplierId: 7,
         supplierName: "SHERIDAN MARKETING, INC",
         unitPrice: 43.0,
+        sellingPrice: 43.0,
         quantity: 40,
         minThreshold: 3,
         isAvailable: true,
@@ -611,6 +613,7 @@ async function main() {
         supplierId: 28,
         supplierName: "TAN SU AND SONS CORPORATION",
         unitPrice: 54.0,
+        sellingPrice: 54.0,
         quantity: 33,
         minThreshold: 13,
         isAvailable: true,
@@ -624,6 +627,7 @@ async function main() {
         supplierId: 30,
         supplierName: "A.F. Bautista Lumber",
         unitPrice: 45.0,
+        sellingPrice: 45.0,
         quantity: 23,
         minThreshold: 10,
         isAvailable: true,
@@ -637,6 +641,7 @@ async function main() {
         supplierId: 22,
         supplierName: "Bo De Oro",
         unitPrice: 10.0,
+        sellingPrice: 10.0,
         quantity: 49,
         minThreshold: 100,
         isAvailable: false,
@@ -650,6 +655,7 @@ async function main() {
         supplierId: 17,
         supplierName: "DILCUE TRADING",
         unitPrice: 15.0,
+        sellingPrice: 15.0,
         quantity: 0,
         minThreshold: 20,
         isAvailable: false,
@@ -663,6 +669,7 @@ async function main() {
         supplierId: 31,
         supplierName: "New Samex Trading Eagle",
         unitPrice: 15.0,
+        sellingPrice: 15.0,
         quantity: 100,
         minThreshold: 100,
         isAvailable: true,
@@ -676,6 +683,7 @@ async function main() {
         supplierId: 30,
         supplierName: "A.F. Bautista Lumber",
         unitPrice: 50.0,
+        sellingPrice: 50.0,
         quantity: 0,
         minThreshold: 100,
         isAvailable: false,
