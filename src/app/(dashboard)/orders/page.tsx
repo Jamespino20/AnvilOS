@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: May 26, 2026
+Last Update Date: June 7, 2026
 */
 
 "use client";
@@ -27,11 +27,11 @@ import {
   ChevronDown,
   ChevronUp,
   Truck,
+  AlertTriangle,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { getDateScopeStart, DATE_SCOPES } from "@/lib/format";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
@@ -60,8 +60,6 @@ const STATUS_COLORS: Record<string, string> = {
   Cancelled: "bg-rose-50 text-rose-700 border border-rose-200",
 };
 
-
-
 export default function OrdersPage() {
   const [orders, setOrders] = useState<TxnWithItems[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -69,7 +67,6 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [deliveryFilter, setDeliveryFilter] = useState("");
-  const [dateScope, setDateScope] = useState("all");
   const [editId, setEditId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -110,12 +107,10 @@ export default function OrdersPage() {
 
   function loadOrders() {
     setLoading(true);
-    const startDate = getDateScopeStart(dateScope);
     Promise.all([
       getTransactions({
         statusIn: ["Ongoing", "Processing", "OnTheWay"],
         type: "SalePO",
-        startDate,
       }),
       getProducts({ status: "available" }),
       getDeliverers(),
@@ -130,7 +125,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     loadOrders();
-  }, [dateScope]);
+  }, []);
 
   function displayName(item: TransactionItem) {
     if (item.productName) return item.productName;
@@ -351,14 +346,6 @@ export default function OrdersPage() {
           />
         </div>
         <div className="flex gap-2 w-full lg:w-auto flex-wrap">
-          <div className="flex items-center gap-1.5 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-1">
-            {DATE_SCOPES.map((s) => (
-              <button key={s.value} onClick={() => { setDateScope(s.value); setPage(1); }}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${dateScope === s.value ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:text-[#0e212c]"}`}>
-                {s.label}
-              </button>
-            ))}
-          </div>
           <select
             value={deliveryFilter}
             onChange={(e) => {
@@ -375,7 +362,7 @@ export default function OrdersPage() {
             ))}
           </select>
           <ExportDialog
-            filename={`cwl-hardware-purchase-orders${dateScope !== "all" ? `-${getDateScopeStart(dateScope) || ""}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`}
+            filename={`cwl-hardware-purchase-orders-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={[
               { key: "receiptNumber", label: "Receipt #" },
               { key: "buyerName", label: "Buyer" },
@@ -384,7 +371,6 @@ export default function OrdersPage() {
               { key: "transactionDate", label: "Date" },
               { key: "deliveryMethod", label: "Delivery" },
               { key: "transactionStatus", label: "Status" },
-              { key: "sellerName", label: "Seller" },
             ]}
             fetchRows={async (selectedColumns) =>
               filtered.map((order) =>
@@ -406,12 +392,10 @@ export default function OrdersPage() {
                       STAGE_LABELS[order.transactionStatus] ||
                       order.transactionStatus
                     );
-                  if (key === "sellerName") return order.sellerName || "—";
                   return "";
                 }),
               )
             }
-            filterLabel={dateScope !== "all" ? DATE_SCOPES.find((s) => s.value === dateScope)?.label : undefined}
           />
           <ImportButton
             table="transactions"
@@ -864,7 +848,7 @@ export default function OrdersPage() {
                                 productId: pid,
                                 unitPrice: Number(prod?.sellingPrice || 0),
                                 totalPrice:
-                                  Number(prod?.sellingPrice || 0) * item.quantity,
+                                  Number(prod?.unitPrice || 0) * item.quantity,
                               };
                               setEditItems(newItems);
                             }}
