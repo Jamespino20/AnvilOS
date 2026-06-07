@@ -88,6 +88,10 @@ export function POSClient({ products, buyers }: Props) {
   const [checkingOut, setCheckingOut] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [creditDueDate, setCreditDueDate] = useState("");
+  const [chequeNumber, setChequeNumber] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [chequeDate, setChequeDate] = useState("");
+  const [payeeName, setPayeeName] = useState("CWL Hardware");
   const [done, setDone] = useState<{
     receipt: number;
     items: any[];
@@ -96,6 +100,12 @@ export function POSClient({ products, buyers }: Props) {
     invoiceNumber?: string;
     isCredit?: boolean;
     creditDueDate?: Date;
+    chequeDetails?: {
+      chequeNumber: string;
+      bankName: string;
+      chequeDate?: Date;
+      payeeName: string;
+    };
   } | null>(null);
   const [error, setError] = useState("");
   const [editingQty, setEditingQty] = useState<number | null>(null);
@@ -274,6 +284,15 @@ export function POSClient({ products, buyers }: Props) {
           })),
         paymentMethod,
         transactionType: txnType,
+        chequeDetails:
+          isCredit && (chequeNumber || bankName || chequeDate || payeeName)
+            ? {
+                chequeNumber,
+                bankName,
+                chequeDate: chequeDate ? new Date(chequeDate) : undefined,
+                payeeName,
+              }
+            : undefined,
       };
       const doneItems = receiptData.items;
       const doneGrandTotal = doneItems.reduce((s, i) => s + i.totalPrice, 0);
@@ -286,6 +305,15 @@ export function POSClient({ products, buyers }: Props) {
         isCredit,
         creditDueDate:
           isCredit && creditDueDate ? new Date(creditDueDate) : undefined,
+        chequeDetails:
+          isCredit && (chequeNumber || bankName || chequeDate || payeeName)
+            ? {
+                chequeNumber,
+                bankName,
+                chequeDate: chequeDate ? new Date(chequeDate) : undefined,
+                payeeName,
+              }
+            : undefined,
       });
       setCart([]);
       setBuyerName("");
@@ -295,6 +323,10 @@ export function POSClient({ products, buyers }: Props) {
       setReturnReceipt("");
       setInvoiceNumber("");
       setCreditDueDate("");
+      setChequeNumber("");
+      setBankName("");
+      setChequeDate("");
+      setPayeeName("CWL Hardware");
       setPaymentMethod("Cash");
       setDeliveryMethod("WalkIn");
       setTimeout(() => {
@@ -698,6 +730,52 @@ export function POSClient({ products, buyers }: Props) {
               <p className="text-[10px] text-amber-600 ml-6">
                 Credit sale — payment due by selected date
               </p>
+              
+              <div className="pt-2 border-t border-[#e2e8f0] mt-2">
+                <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider mb-2">
+                  Cheque Details
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <input
+                      type="text"
+                      value={chequeNumber}
+                      onChange={(e) => setChequeNumber(e.target.value)}
+                      placeholder="Cheque/Ref #"
+                      className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <input
+                      type="text"
+                      value={bankName}
+                      onChange={(e) => setBankName(e.target.value)}
+                      placeholder="Bank Name"
+                      className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <input
+                      type="date"
+                      value={chequeDate}
+                      onChange={(e) => setChequeDate(e.target.value)}
+                      className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                    />
+                    <span className="text-[10px] text-[#94a3b8] whitespace-nowrap">
+                      Cheque Date
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <input
+                      type="text"
+                      value={payeeName}
+                      onChange={(e) => setPayeeName(e.target.value)}
+                      placeholder="Payee Name"
+                      className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           </div>
@@ -887,6 +965,7 @@ export function POSClient({ products, buyers }: Props) {
                       invoiceNumber: done.invoiceNumber,
                       isCredit: done.isCredit,
                       creditDueDate: done.creditDueDate,
+                      chequeDetails: done.chequeDetails,
                     })
                   }
                   title="Download receipt as PDF"

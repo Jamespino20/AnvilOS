@@ -7,7 +7,7 @@ import { ImportButton } from "@/components/import-button";
 import { ExportDialog } from "@/components/export-dialog";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Shield, ChevronDown, ChevronUp, Search, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import { getDateScopeStart, DATE_SCOPES } from "@/lib/format";
+import { getDateScopeStart, getDateScopeEnd, DATE_SCOPES } from "@/lib/format";
 
 interface AuditEntry {
   id: number;
@@ -53,7 +53,7 @@ export default function AuditLogPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [panel, setPanel] = useState("");
-  const [dateScope, setDateScope] = useState("all");
+  const [dateScope, setDateScope] = useState("today");
   const [auditUsers, setAuditUsers] = useState<AuditUser[]>([]);
   const [sellerFilter, setSellerFilter] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -63,6 +63,7 @@ export default function AuditLogPage() {
   const [totalPages, setTotalPages] = useState(0);
 
   const dateStart = dateScope !== "all" ? getDateScopeStart(dateScope) : undefined;
+  const dateEnd = dateScope !== "all" ? getDateScopeEnd(dateScope) : undefined;
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -71,6 +72,7 @@ export default function AuditLogPage() {
         search: search || undefined,
         panel: panel || undefined,
         startDate: dateStart,
+        endDate: dateEnd,
         sellerId: sellerFilter ? Number(sellerFilter) : undefined,
       });
       setLogs(result.logs as unknown as AuditEntry[]);
@@ -79,7 +81,7 @@ export default function AuditLogPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, perPage, search, panel, dateStart, sellerFilter]);
+  }, [page, perPage, search, panel, dateStart, dateEnd, sellerFilter]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
@@ -97,6 +99,7 @@ export default function AuditLogPage() {
       search: search || undefined,
       panel: panel || undefined,
       startDate: dateStart,
+      endDate: dateEnd,
       sellerId: sellerFilter ? Number(sellerFilter) : undefined,
     });
     return expanded.logs.map((log: any) =>

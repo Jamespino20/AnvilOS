@@ -23,6 +23,7 @@ export function formatReportMoney(
 
 export const DATE_SCOPES = [
   { label: "All", value: "all" },
+  { label: "Last Week", value: "lastWeek" },
   { label: "Today", value: "today" },
   { label: "This Week", value: "week" },
   { label: "This Month", value: "month" },
@@ -33,6 +34,13 @@ export function getDateScopeStart(scope: string): string | undefined {
   const now = new Date();
   switch (scope) {
     case "today": return now.toISOString().split("T")[0];
+    case "lastWeek": {
+      const d = new Date(now);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1) - 7;
+      d.setDate(diff);
+      return d.toISOString().split("T")[0];
+    }
     case "week": {
       const d = new Date(now);
       const day = d.getDay();
@@ -42,6 +50,28 @@ export function getDateScopeStart(scope: string): string | undefined {
     }
     case "month": return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
     case "year": return new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0];
+    default: return undefined;
+  }
+}
+
+export function getDateScopeEnd(scope: string): string | undefined {
+  const now = new Date();
+  switch (scope) {
+    case "today": return now.toISOString().split("T")[0];
+    case "lastWeek": {
+      const d = new Date(now);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1) - 1;
+      d.setDate(diff);
+      return d.toISOString().split("T")[0];
+    }
+    case "week": {
+      const d = new Date(now);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1) + 6;
+      d.setDate(diff);
+      return d.toISOString().split("T")[0];
+    }
     default: return undefined;
   }
 }

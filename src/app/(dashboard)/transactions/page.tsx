@@ -31,7 +31,7 @@ import {
   Truck,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { getDateScopeStart, DATE_SCOPES } from "@/lib/format";
+import { getDateScopeStart, getDateScopeEnd, DATE_SCOPES } from "@/lib/format";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
@@ -84,7 +84,7 @@ export default function TransactionsPage() {
     id: number;
     value: string;
   } | null>(null);
-  const [dateScope, setDateScope] = useState("all");
+  const [dateScope, setDateScope] = useState("today");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -99,9 +99,15 @@ export default function TransactionsPage() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Load products once (not affected by sort/filter)
+  useEffect(() => {
+    getProducts({}).then((prods) => setProducts(prods as Product[]));
+  }, []);
+
   useEffect(() => {
     setLoading(true);
     const startDate = getDateScopeStart(dateScope);
+    const endDate = getDateScopeEnd(dateScope);
     Promise.all([
       getTransactions({
         status: statusFilter || undefined,
@@ -109,6 +115,7 @@ export default function TransactionsPage() {
         paymentMethod: paymentFilter || undefined,
         search: search || undefined,
         startDate,
+        endDate,
         page,
         perPage,
         sortBy: sortBy || undefined,
@@ -120,12 +127,11 @@ export default function TransactionsPage() {
         paymentMethod: paymentFilter || undefined,
         search: search || undefined,
         startDate,
+        endDate,
       }),
-      getProducts({}),
-    ]).then(([data, count, prods]) => {
+    ]).then(([data, count]) => {
       setTransactions(data as TxnWithItems[]);
       setTotal(count);
-      setProducts(prods as Product[]);
       setLoading(false);
     });
   }, [statusFilter, typeFilter, paymentFilter, search, page, dateScope, sortBy, sortDir]);
@@ -138,6 +144,7 @@ export default function TransactionsPage() {
       await updateTransactionStatus(id, status);
       toast.success("Status updated to " + status);
       const startDate = getDateScopeStart(dateScope);
+      const endDate = getDateScopeEnd(dateScope);
       const [data, count] = await Promise.all([
         getTransactions({
           status: statusFilter || undefined,
@@ -145,6 +152,7 @@ export default function TransactionsPage() {
           paymentMethod: paymentFilter || undefined,
           search: search || undefined,
           startDate,
+          endDate,
           page,
           perPage,
           sortBy: sortBy || undefined,
@@ -156,6 +164,7 @@ export default function TransactionsPage() {
           paymentMethod: paymentFilter || undefined,
           search: search || undefined,
           startDate,
+          endDate,
         }),
       ]);
       setTransactions(data as TxnWithItems[]);

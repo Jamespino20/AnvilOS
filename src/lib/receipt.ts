@@ -41,6 +41,12 @@ export async function downloadReceiptPdf(data: {
   invoiceNumber?: string;
   isCredit?: boolean;
   creditDueDate?: Date;
+  chequeDetails?: {
+    chequeNumber: string;
+    bankName: string;
+    chequeDate?: Date;
+    payeeName: string;
+  };
 }) {
   const doc = new jsPDF({ unit: "mm", format: [80, 400] });
 
@@ -177,6 +183,40 @@ export async function downloadReceiptPdf(data: {
       y,
     );
     y += 4;
+  }
+  if (data.chequeDetails) {
+    y += 1;
+    doc.setFont("courier", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(14, 33, 44);
+    doc.text("CHEQUE DETAILS", l, y);
+    y += 1.5;
+    doc.line(l, y, r, y);
+    y += 3;
+    doc.setFont("courier", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    
+    if (data.chequeDetails.chequeNumber) {
+      doc.text(`Cheque #: ${data.chequeDetails.chequeNumber}`, l, y);
+      y += 4;
+    }
+    if (data.chequeDetails.bankName) {
+      doc.text(`Bank: ${data.chequeDetails.bankName}`, l, y);
+      y += 4;
+    }
+    if (data.chequeDetails.chequeDate) {
+      doc.text(
+        `Cheque Date: ${new Date(data.chequeDetails.chequeDate).toLocaleDateString("en-PH")}`,
+        l,
+        y,
+      );
+      y += 4;
+    }
+    if (data.chequeDetails.payeeName) {
+      doc.text(`Payee: ${data.chequeDetails.payeeName}`, l, y);
+      y += 4;
+    }
   }
   y += 2;
 

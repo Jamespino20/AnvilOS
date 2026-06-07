@@ -24,12 +24,19 @@ const THEME_ORANGE = [253, 118, 26] as const;
 const THEME_WHITE = [255, 255, 255] as const;
 const MONEY_HEADER_RE = /(price|total|sales|revenue|spent|cost|loss|returns|amount|gross|net)/i;
 
+function sanitizeForPdf(value: string): string {
+  return String(value)
+    .replace(/±/g, "+/-")
+    .replace(/[^ -~\d,.₱%]/g, "");
+}
+
 function reportRows(headers: string[], rows: string[][]) {
   return rows.map((row) =>
     row.map((cell, index) => {
-      if (!MONEY_HEADER_RE.test(headers[index] || "")) return cell;
-      const cleaned = String(cell).replace(/[^\d.-]/g, "");
-      if (!cleaned || Number.isNaN(Number(cleaned))) return cell;
+      const sanitized = sanitizeForPdf(cell);
+      if (!MONEY_HEADER_RE.test(headers[index] || "")) return sanitized;
+      const cleaned = String(sanitized).replace(/[^\d.-]/g, "");
+      if (!cleaned || Number.isNaN(Number(cleaned))) return sanitized;
       return formatReportMoney(Number(cleaned));
     }),
   );
@@ -258,12 +265,14 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
   const scaled = colWidths.map((w) => Math.max(14, (w / totalWidth) * usable));
 
   // --- Table with column-specific widths ---
+  const baseFontSize = headers.length > 8 ? 5.5 : headers.length > 6 ? 6 : 7;
+
   autoTable(doc, {
     head: [headers],
     body: outputRows,
     startY: 46,
     styles: {
-      fontSize: headers.length > 8 ? 5.5 : headers.length > 6 ? 6 : 7,
+      fontSize: baseFontSize,
       cellPadding: 1.8,
       lineColor: [226, 232, 240],
       lineWidth: 0.2,
@@ -293,6 +302,18 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
       ]),
     ),
     margin: { top: 46, right: marginRight, bottom: 20, left: marginLeft },
+    didParseCell: (data) => {
+      if (data.section !== "body") return;
+      const cellText = String(data.cell.raw || "");
+      const colWidth = scaled[data.column.index];
+      doc.setFontSize(baseFontSize);
+      const textWidth = doc.getTextWidth(cellText);
+      if (textWidth > colWidth - 4 && baseFontSize > 4) {
+        const newSize = Math.max(4, baseFontSize - 1.5);
+        doc.setFontSize(newSize);
+        data.cell.styles.fontSize = newSize;
+      }
+    },
     didDrawPage: (data) => {
       const pageCount = (doc as any).internal.getNumberOfPages();
       doc.setFontSize(7);

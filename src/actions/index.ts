@@ -9,7 +9,7 @@ Last Update Date: June 7, 2026
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { logAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
 import { withTimeout } from "@/lib/timeout";
@@ -18,17 +18,18 @@ import { actionFingerprint } from "@/lib/access";
 import { requireAdmin, requireUser } from "@/lib/server-access";
 import { formatMoney } from "@/lib/format";
 import { createTotpSecret, verifyTotp } from "@/lib/totp";
+import { cache } from "react";
 
 const DB_TIMEOUT = 20000;
 
 // ─────────── Products ───────────
 
-export async function getProducts(opts?: {
+export const getProducts = cache(async (opts?: {
   categoryId?: number;
   supplierId?: number;
   search?: string;
   status?: string;
-}) {
+}) => {
   const where: any = {};
   if (opts?.categoryId) where.categoryId = opts.categoryId;
   if (opts?.supplierId) where.supplierId = opts.supplierId;
@@ -51,7 +52,7 @@ export async function getProducts(opts?: {
     DB_TIMEOUT,
     "Loading products",
   );
-}
+});
 
 export async function getProduct(id: number) {
   return prisma.product.findUnique({
@@ -95,6 +96,7 @@ export async function createProduct(data: {
       await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('products', 'PRODUCT_ID'), COALESCE((SELECT MAX("PRODUCT_ID") FROM "products"), 1))`;
       const product = await fn();
       revalidatePath("/inventory");
+      revalidateTag("products", "default");
       return product;
     }
     throw e;
@@ -129,6 +131,7 @@ export async function updateProduct(
     `${product.productName} (#${id}) updated`,
   );
   revalidatePath("/inventory");
+  revalidateTag("products", "default");
   return product;
 }
 
@@ -150,6 +153,7 @@ export async function adjustStock(productId: number, newQuantity: number) {
     `${product.productName}: ${product.quantity} → ${newQuantity}`,
   );
   revalidatePath("/inventory");
+  revalidateTag("products", "default");
   return updated;
 }
 
@@ -166,6 +170,7 @@ export async function setProductAvailability(id: number, isAvailable: boolean) {
     `${product.productName} (#${id})`,
   );
   revalidatePath("/inventory");
+  revalidateTag("products", "default");
   return updated;
 }
 
@@ -179,16 +184,17 @@ export async function deleteProduct(id: number) {
     `${product.productName} (#${id}) deleted`,
   );
   revalidatePath("/inventory");
+  revalidateTag("products", "default");
 }
 
 // ─────────── Categories ───────────
 
-export async function getCategories() {
+export const getCategories = cache(async () => {
   return prisma.category.findMany({
     orderBy: { name: "asc" },
     include: { _count: { select: { products: true } } },
   });
-}
+});
 
 export async function createCategory(name: string) {
   await requireAdmin();
@@ -199,6 +205,7 @@ export async function createCategory(name: string) {
     await logAudit("InventoryPanel", "Add Category", `${cat.name} created`);
     revalidatePath("/inventory");
     revalidatePath("/categories");
+    revalidateTag("categories", "default");
     return cat;
   } catch (e: any) {
     if (e?.code === "P2002") {
@@ -222,6 +229,7 @@ export async function editCategory(id: number, name: string) {
     );
     revalidatePath("/inventory");
     revalidatePath("/categories");
+    revalidateTag("categories", "default");
     return cat;
   } catch (e: any) {
     if (e?.code === "P2002") {
@@ -248,16 +256,17 @@ export async function deleteCategory(id: number) {
   );
   revalidatePath("/inventory");
   revalidatePath("/categories");
+  revalidateTag("categories", "default");
 }
 
 // ─────────── Suppliers ───────────
 
-export async function getSuppliers() {
+export const getSuppliers = cache(async () => {
   return prisma.supplier.findMany({
     orderBy: { supplierName: "asc" },
     include: { _count: { select: { products: true } } },
   });
-}
+});
 
 export async function getSupplier(id: number) {
   return prisma.supplier.findUnique({
@@ -293,6 +302,7 @@ export async function createSupplier(data: {
       await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('suppliers', 'SUPPLIER_ID'), COALESCE((SELECT MAX("SUPPLIER_ID") FROM "suppliers"), 1))`;
       const s = await fn();
       revalidatePath("/suppliers");
+      revalidateTag("suppliers", "default");
       return s;
     }
     throw e;
@@ -320,6 +330,7 @@ export async function updateSupplier(
     `${before.supplierName} → ${s.supplierName}`,
   );
   revalidatePath("/suppliers");
+  revalidateTag("suppliers", "default");
   return s;
 }
 
@@ -339,6 +350,7 @@ export async function deleteSupplier(id: number) {
     `${supplier.supplierName} deleted`,
   );
   revalidatePath("/suppliers");
+  revalidateTag("suppliers", "default");
 }
 
 // ─────────── Transactions ───────────
@@ -714,6 +726,7 @@ export async function createTransaction(data: {
   revalidatePath("/transactions");
   revalidatePath("/pos");
   revalidatePath("/inventory");
+  revalidateTag("buyers", "default");
   return transaction;
 }
 
@@ -1093,7 +1106,7 @@ export async function getUnreadNotificationCount(userId: number) {
 
 // ─────────── Buyers ───────────
 
-export async function getBuyers(type?: "WalkIn" | "PO") {
+export const getBuyers = cache(async (type?: "WalkIn" | "PO") => {
   const nameFilter =
     type === "WalkIn"
       ? await prisma.transaction
@@ -1188,7 +1201,7 @@ export async function getBuyers(type?: "WalkIn" | "PO") {
 
   merged.sort((a, b) => b.totalSpent - a.totalSpent);
   return merged.filter((b) => !b.buyerName.startsWith("CWL Hardware"));
-}
+});
 
 export async function getBuyerTransactions(buyerName: string) {
   return prisma.transaction.findMany({
@@ -1421,6 +1434,7 @@ export async function updateBuyerInfo(
     `${buyerName}: address/contact/email updated`,
   );
   revalidatePath("/buyers");
+  revalidateTag("buyers", "default");
   return txns;
 }
 

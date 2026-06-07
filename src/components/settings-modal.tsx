@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { X, Settings as SettingsIcon, Save, Loader2, User, Moon, Sun, Key, Lock, Camera } from "lucide-react";
+import { X, Settings as SettingsIcon, Save, Loader2, User, Moon, Sun, Key, Lock, Camera, Eye, EyeOff } from "lucide-react";
 import { updateProfile, updatePassword, startTotpSetup, confirmTotpSetup, disableTotp } from "@/actions";
 import { toast } from "sonner";
 import QRCode from "qrcode";
@@ -27,6 +27,9 @@ export function SettingsModal({ open, onClose }: Props) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwError, setPwError] = useState("");
   const [changingPw, setChangingPw] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // TOTP
   const [totpSecret, setTotpSecret] = useState<string | null>(null);
@@ -233,6 +236,57 @@ export function SettingsModal({ open, onClose }: Props) {
               <button type="submit" disabled={saving}
                 className="flex-1 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                 {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <><Save className="h-4 w-4" /> Save</>}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {tab === "password" && (
+          <form onSubmit={handleChangePassword} className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">Current Password</label>
+              <div className="relative">
+                <input type={showCurrentPassword ? "text" : "password"} autoComplete="current-password"
+                  className="w-full px-3.5 py-2.5 pr-10 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+                <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] transition-colors">
+                  {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">New Password</label>
+              <div className="relative">
+                <input type={showNewPassword ? "text" : "password"} value={newPassword} autoComplete="new-password"
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3.5 py-2.5 pr-10 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] transition-colors">
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">Confirm Password</label>
+              <div className="relative">
+                <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} autoComplete="new-password"
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-3.5 py-2.5 pr-10 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b] transition-colors">
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            {pwError && (
+              <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{pwError}</p>
+            )}
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={onClose}
+                className="flex-1 py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-[#f8fafc] transition-all">Close</button>
+              <button type="submit" disabled={changingPw}
+                className="flex-1 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                {changingPw ? <><Loader2 className="h-4 w-4 animate-spin" /> Changing...</> : <><Lock className="h-4 w-4" /> Change Password</>}
               </button>
             </div>
           </form>

@@ -723,7 +723,7 @@ export function InventoryClient({
                     Sell by Weight
                   </label>
                   <label className="relative inline-flex items-center cursor-pointer mt-1.5">
-                    <input type="checkbox" checked={form.sellByWeight} onChange={(e) => setForm({ ...form, sellByWeight: e.target.checked })}
+                    <input type="checkbox" checked={form.sellByWeight} onChange={(e) => { setForm({ ...form, sellByWeight: e.target.checked, ...(e.target.checked ? { sellByBox: false } : {}) }); }}
                       className="sr-only peer" />
                     <div className="w-10 h-5 bg-[#e2e8f0] rounded-full peer peer-checked:bg-[#fd761a] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
                   </label>
@@ -735,7 +735,7 @@ export function InventoryClient({
                     Sell by Box
                   </label>
                   <label className="relative inline-flex items-center cursor-pointer mt-1.5">
-                    <input type="checkbox" checked={form.sellByBox} onChange={(e) => setForm({ ...form, sellByBox: e.target.checked })}
+                    <input type="checkbox" checked={form.sellByBox} onChange={(e) => { setForm({ ...form, sellByBox: e.target.checked, ...(e.target.checked ? { sellByWeight: false } : {}) }); }}
                       className="sr-only peer" />
                     <div className="w-10 h-5 bg-[#e2e8f0] rounded-full peer peer-checked:bg-[#fd761a] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
                   </label>
@@ -970,7 +970,7 @@ export function InventoryClient({
                     Sell by Weight
                   </label>
                   <label className="relative inline-flex items-center cursor-pointer mt-1.5">
-                    <input type="checkbox" checked={form.sellByWeight} onChange={(e) => setForm({ ...form, sellByWeight: e.target.checked })}
+                    <input type="checkbox" checked={form.sellByWeight} onChange={(e) => { setForm({ ...form, sellByWeight: e.target.checked, ...(e.target.checked ? { sellByBox: false } : {}) }); }}
                       className="sr-only peer" />
                     <div className="w-10 h-5 bg-[#e2e8f0] rounded-full peer peer-checked:bg-[#fd761a] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
                   </label>
@@ -982,7 +982,7 @@ export function InventoryClient({
                     Sell by Box
                   </label>
                   <label className="relative inline-flex items-center cursor-pointer mt-1.5">
-                    <input type="checkbox" checked={form.sellByBox} onChange={(e) => setForm({ ...form, sellByBox: e.target.checked })}
+                    <input type="checkbox" checked={form.sellByBox} onChange={(e) => { setForm({ ...form, sellByBox: e.target.checked, ...(e.target.checked ? { sellByWeight: false } : {}) }); }}
                       className="sr-only peer" />
                     <div className="w-10 h-5 bg-[#e2e8f0] rounded-full peer peer-checked:bg-[#fd761a] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
                   </label>
