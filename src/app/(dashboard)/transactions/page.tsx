@@ -88,6 +88,7 @@ export default function TransactionsPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [initialLoad, setInitialLoad] = useState(true);
   const perPage = 15;
 
   // Debounce search input
@@ -133,6 +134,7 @@ export default function TransactionsPage() {
       setTransactions(data as TxnWithItems[]);
       setTotal(count);
       setLoading(false);
+      setInitialLoad(false);
     });
   }, [statusFilter, typeFilter, paymentFilter, search, page, dateScope, sortBy, sortDir]);
 
@@ -175,14 +177,6 @@ export default function TransactionsPage() {
   }
 
   const totalPages = Math.ceil(total / perPage);
-
-  if (loading)
-    return (
-      <div className="space-y-5">
-        <PageHeader title="Transactions" subtitle="Loading..." />
-        <TableSkeleton rows={10} cols={7} />
-      </div>
-    );
 
   return (
     <div className="space-y-5">
@@ -320,15 +314,15 @@ export default function TransactionsPage() {
       </div>
 
       <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden relative group">
-        <div className="absolute top-1/2 right-4 -translate-y-1/2 px-2 py-4 bg-white/80 border border-[#e2e8f0] rounded-l-lg shadow-sm z-10 lg:hidden pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-[10px] font-bold text-[#64748b] uppercase vertical-text">
-              Scroll
-            </span>
-            <ChevronDown className="h-3 w-3 text-[#fd761a] -rotate-90" />
+        {loading && !initialLoad && (
+          <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] z-20 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-[#fd761a]" />
           </div>
-        </div>
-        <div className="overflow-x-auto scrollbar-hide">
+        )}
+        {initialLoad ? (
+          <TableSkeleton rows={10} cols={10} />
+        ) : (
+          <div className="overflow-x-auto scrollbar-hide">
           <table className="w-full text-sm min-w-[800px] lg:min-w-0">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
@@ -679,7 +673,8 @@ export default function TransactionsPage() {
               )}
             </tbody>
           </table>
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-[#e2e8f0] p-4 flex items-center justify-between text-sm text-[#64748b]">

@@ -8,11 +8,11 @@ import { TrendingUp, TrendingDown, DollarSign, Receipt, ArrowUpRight, ArrowDownR
 import { CardSkeleton } from "@/components/ui/skeleton";
 
 const PERIODS = [
-  { label: "Today", value: "today" },
   { label: "Last Year", value: "lastYear" },
   { label: "Last Quarter", value: "lastQuarter" },
   { label: "Last Month", value: "lastMonth" },
   { label: "Last Week", value: "lastWeek" },
+  { label: "Today", value: "today" },
   { label: "This Week", value: "thisWeek" },
   { label: "This Month", value: "thisMonth" },
   { label: "This Quarter", value: "thisQuarter" },
@@ -100,7 +100,7 @@ function periodDates(period: string, customStart?: string, customEnd?: string) {
 }
 
 export default function FinancePage() {
-  const [period, setPeriod] = useState("thisMonth");
+  const [period, setPeriod] = useState("today");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [showCustom, setShowCustom] = useState(false);
