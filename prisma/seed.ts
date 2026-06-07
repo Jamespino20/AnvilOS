@@ -325,7 +325,6 @@ async function main() {
       {
         id: 37,
         name: "Nuts",
-        parentCategoryId: 17,
         isAvailable: true,
         createdAt: new Date("2025-06-07 18:07:52"),
         updatedAt: new Date("2025-06-14 17:14:01"),
@@ -333,7 +332,6 @@ async function main() {
       {
         id: 38,
         name: "Screws",
-        parentCategoryId: 17,
         isAvailable: true,
         createdAt: new Date("2025-06-07 21:26:59"),
         updatedAt: new Date("2025-06-16 15:15:27"),
