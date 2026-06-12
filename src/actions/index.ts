@@ -249,6 +249,22 @@ export async function editCategory(
   parentCategoryId?: number,
 ) {
   await requireAdmin();
+
+  // Prevent circular nesting: check if new parent is a descendant of this category
+  if (parentCategoryId && parentCategoryId === id) {
+    throw new Error("A category cannot be its own parent.");
+  }
+  if (parentCategoryId) {
+    const descendants = await prisma.category.findMany({
+      where: { parentCategoryId: id },
+      select: { id: true },
+    });
+    const descendantIds = descendants.map((d) => d.id);
+    if (descendantIds.includes(parentCategoryId)) {
+      throw new Error("Cannot assign a subcategory as its own parent.");
+    }
+  }
+
   try {
     const cat = await prisma.category.update({
       where: { id },

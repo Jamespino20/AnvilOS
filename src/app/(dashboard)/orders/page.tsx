@@ -552,150 +552,7 @@ export default function OrdersPage() {
                 </div>
               </div>
 
-              {isExpanded && !isEditing && (
-                <div className="border-t border-[#e2e8f0] bg-[#f8fafc] p-4">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                        <th className="text-left pb-2">Product</th>
-                        <th className="text-right pb-2">Qty</th>
-                        <th className="text-right pb-2">Unit Price</th>
-                        <th className="text-right pb-2">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#e2e8f0]">
-                      {order.items.map((item) => (
-                        <tr key={item.id}>
-                          <td className="py-2 text-[#0e212c] font-medium">
-                            {displayName(item)}
-                          </td>
-                          <td className="py-2 text-right text-[#64748b]">
-                            {item.quantity}
-                          </td>
-                          <td className="py-2 text-right font-mono text-[#64748b]">
-                            {Number(item.unitPrice).toLocaleString("en-PH", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </td>
-                          <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">
-                            {Number(item.totalPrice).toLocaleString("en-PH", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div className="flex flex-wrap items-center gap-4 mt-3">
-                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
-                      Address:
-                    </span>
-                    <span className="text-sm text-[#64748b]">
-                      {order.buyerAddress || "N/A"}
-                    </span>
-                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
-                      Contact:
-                    </span>
-                    <span className="text-sm text-[#64748b]">
-                      {order.buyerContact || "N/A"}
-                    </span>
-                  </div>
-                  {(order.deliveryRef || order.deliveryNotes) && (
-                    <div className="flex flex-wrap items-center gap-4 mt-2 pt-2 border-t border-[#e2e8f0]">
-                      {order.delivererName && (
-                        <>
-                          <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
-                            Deliverer:
-                          </span>
-                          <span className="text-sm text-[#64748b]">
-                            {order.delivererName}
-                          </span>
-                        </>
-                      )}
-                      {order.deliveryRef && (
-                        <>
-                          <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
-                            Delivery Ref:
-                          </span>
-                          <span className="text-sm text-[#64748b]">
-                            {order.deliveryRef}
-                          </span>
-                        </>
-                      )}
-                      {order.deliveryNotes && (
-                        <>
-                          <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
-                            Delivery Notes:
-                          </span>
-                          <span className="text-sm text-[#64748b]">
-                            {order.deliveryNotes}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                  {(order.deliveryMethod === "Delivery" ||
-                    order.deliveryMethod === "COD" ||
-                    order.deliveryMethod === "Pickup") && (
-                    <div className="mt-4 pt-3 border-t border-[#e2e8f0]">
-                      <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-2">
-                        {order.deliveryMethod === "Delivery"
-                          ? "Delivery Tracking"
-                          : order.deliveryMethod === "COD"
-                            ? "COD Tracking"
-                            : "Pickup Tracking"}
-                      </p>
-                      <div className="flex items-center gap-0">
-                        {[
-                          "Placed",
-                          "Processing",
-                          order.deliveryMethod === "Pickup"
-                            ? "Ready"
-                            : "On the Way",
-                          "Completed",
-                        ].map((stage, i) => {
-                          const statusMap = [
-                            "Ongoing",
-                            "Processing",
-                            "OnTheWay",
-                            "Completed",
-                          ];
-                          const currentIdx = statusMap.indexOf(
-                            order.transactionStatus,
-                          );
-                          const isActive = i <= currentIdx;
-                          const isCurrent = i === currentIdx;
-                          return (
-                            <div key={stage} className="flex items-center">
-                              <div
-                                className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold shrink-0 ${
-                                  isActive
-                                    ? "bg-emerald-100 text-emerald-700"
-                                    : "bg-[#f1f5f9] text-[#94a3b8]"
-                                } ${isCurrent ? "ring-2 ring-emerald-300" : ""}`}
-                              >
-                                {isActive ? "✓" : i + 1}
-                              </div>
-                              <span
-                                className={`mx-1 text-[9px] whitespace-nowrap ${isActive ? "text-[#0e212c] font-medium" : "text-[#94a3b8]"}`}
-                              >
-                                {stage}
-                              </span>
-                              {i < statusMap.length - 1 && (
-                                <div
-                                  className={`w-6 h-px ${isActive && i < currentIdx ? "bg-emerald-300" : "bg-[#e2e8f0]"}`}
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+
 
               {isEditing && (
                 <div className="border-t border-[#e2e8f0] p-5 space-y-4 bg-[#f8fafc]">
@@ -1108,6 +965,271 @@ export default function OrdersPage() {
                 </div>
               )}
             </ConfirmModal>
+          );
+        })()}
+
+      {/* Expanded order detail modal */}
+      {expandedId !== null &&
+        (() => {
+          const order = orders.find((o) => o.id === expandedId);
+          if (!order) return null;
+          return (
+            <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
+              <div
+                className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-2xl max-h-[85vh] flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#e2e8f0]">
+                  <div>
+                    <h3 className="font-semibold text-sm text-[#0e212c]">
+                      Order #{order.receiptNumber}
+                    </h3>
+                    <p className="text-[10px] text-[#94a3b8] mt-0.5">
+                      {new Date(order.transactionDate).toLocaleDateString("en-PH", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setExpandedId(null)}
+                    className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Buyer
+                      </p>
+                      <p className="text-[#0e212c] font-medium mt-0.5">
+                        {order.buyerName}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Type
+                      </p>
+                      <p className="text-[#0e212c] font-medium mt-0.5">
+                        {order.transactionType}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Status
+                      </p>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold mt-0.5 ${
+                          STATUS_COLORS[order.transactionStatus] ||
+                          "bg-[#f1f5f9] text-[#64748b]"
+                        }`}
+                      >
+                        {STAGE_LABELS[order.transactionStatus] ||
+                          order.transactionStatus}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Delivery
+                      </p>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold mt-0.5 ${
+                          order.deliveryMethod === "Delivery"
+                            ? "bg-sky-50 text-sky-700 border border-sky-200"
+                            : order.deliveryMethod === "COD"
+                              ? "bg-violet-50 text-violet-700 border border-violet-200"
+                              : order.deliveryMethod === "Pickup"
+                                ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                : "bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0]"
+                        }`}
+                      >
+                        {order.deliveryMethod || "WalkIn"}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Payment
+                      </p>
+                      <p className="text-[#0e212c] font-medium mt-0.5">
+                        {order.paymentMethod || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Invoice #
+                      </p>
+                      <p className="font-mono text-[#0e212c] font-medium mt-0.5">
+                        {order.invoiceNumber || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-2">
+                      Items
+                    </p>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                          <th className="text-left pb-2">Product</th>
+                          <th className="text-right pb-2">Qty</th>
+                          <th className="text-right pb-2">Unit Price</th>
+                          <th className="text-right pb-2">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#e2e8f0]">
+                        {order.items.map((item) => (
+                          <tr key={item.id}>
+                            <td className="py-2 text-[#0e212c] font-medium">
+                              {displayName(item)}
+                            </td>
+                            <td className="py-2 text-right text-[#64748b]">
+                              {item.quantity}
+                            </td>
+                            <td className="py-2 text-right font-mono text-[#64748b]">
+                              {Number(item.unitPrice).toLocaleString("en-PH", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </td>
+                            <td className="py-2 text-right font-mono text-[#0e212c] font-semibold">
+                              {Number(item.totalPrice).toLocaleString("en-PH", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="flex justify-end mt-2 pt-2 border-t border-[#e2e8f0]">
+                      <span className="text-[10px] font-semibold text-[#94a3b8] uppercase mr-3">
+                        Grand Total
+                      </span>
+                      <span className="font-mono text-[#0e212c] font-semibold">
+                        {Number(order.grandTotal || 0).toLocaleString("en-PH", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-[#e2e8f0]">
+                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
+                      Address:
+                    </span>
+                    <span className="text-sm text-[#64748b]">
+                      {order.buyerAddress || "N/A"}
+                    </span>
+                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
+                      Contact:
+                    </span>
+                    <span className="text-sm text-[#64748b]">
+                      {order.buyerContact || "N/A"}
+                    </span>
+                  </div>
+
+                  {(order.deliveryRef || order.deliveryNotes || order.delivererName) && (
+                    <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-[#e2e8f0]">
+                      {order.delivererName && (
+                        <>
+                          <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
+                            Deliverer:
+                          </span>
+                          <span className="text-sm text-[#64748b]">
+                            {order.delivererName}
+                          </span>
+                        </>
+                      )}
+                      {order.deliveryRef && (
+                        <>
+                          <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
+                            Delivery Ref:
+                          </span>
+                          <span className="text-sm text-[#64748b]">
+                            {order.deliveryRef}
+                          </span>
+                        </>
+                      )}
+                      {order.deliveryNotes && (
+                        <>
+                          <span className="text-[10px] font-semibold text-[#94a3b8] uppercase">
+                            Delivery Notes:
+                          </span>
+                          <span className="text-sm text-[#64748b]">
+                            {order.deliveryNotes}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {(order.deliveryMethod === "Delivery" ||
+                    order.deliveryMethod === "COD" ||
+                    order.deliveryMethod === "Pickup") && (
+                    <div className="pt-3 border-t border-[#e2e8f0]">
+                      <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-2">
+                        {order.deliveryMethod === "Delivery"
+                          ? "Delivery Tracking"
+                          : order.deliveryMethod === "COD"
+                            ? "COD Tracking"
+                            : "Pickup Tracking"}
+                      </p>
+                      <div className="flex items-center gap-0">
+                        {[
+                          "Placed",
+                          "Processing",
+                          order.deliveryMethod === "Pickup"
+                            ? "Ready"
+                            : "On the Way",
+                          "Completed",
+                        ].map((stage, i) => {
+                          const statusMap = [
+                            "Ongoing",
+                            "Processing",
+                            "OnTheWay",
+                            "Completed",
+                          ];
+                          const currentIdx = statusMap.indexOf(
+                            order.transactionStatus,
+                          );
+                          const isActive = i <= currentIdx;
+                          const isCurrent = i === currentIdx;
+                          return (
+                            <div key={stage} className="flex items-center">
+                              <div
+                                className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold shrink-0 ${
+                                  isActive
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-[#f1f5f9] text-[#94a3b8]"
+                                } ${isCurrent ? "ring-2 ring-emerald-300" : ""}`}
+                              >
+                                {isActive ? "✓" : i + 1}
+                              </div>
+                              <span
+                                className={`mx-1 text-[9px] whitespace-nowrap ${isActive ? "text-[#0e212c] font-medium" : "text-[#94a3b8]"}`}
+                              >
+                                {stage}
+                              </span>
+                              {i < statusMap.length - 1 && (
+                                <div
+                                  className={`w-6 h-px ${isActive && i < currentIdx ? "bg-emerald-300" : "bg-[#e2e8f0]"}`}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           );
         })()}
     </div>

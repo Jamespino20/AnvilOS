@@ -269,35 +269,7 @@ export default function RestocksPage() {
                   </button>
                 </div>
               </div>
-              {isExpanded && (
-                <div className="border-t border-[#e2e8f0] bg-[#f8fafc] p-4">
-                      <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                        <th className="text-left pb-2">Product</th>
-                        <th className="text-right pb-2">Cost/Unit</th>
-                        <th className="text-right pb-2">Qty</th>
-                        <th className="text-right pb-2">Total Cost</th>
-                        <th className="text-right pb-2">Last Restocked</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#e2e8f0]">
-                      {r.items.map((item) => {
-                        const prod = products.find(p => p.id === item.productId);
-                        return (
-                          <tr key={item.id}>
-                            <td className="py-2 text-[#0e212c] font-medium">{prod?.productName || `#${item.productId}`}</td>
-                            <td className="py-2 text-right text-[#64748b] font-mono">{Number(item.costPrice || item.unitPrice || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="py-2 text-right text-[#64748b]">{item.quantity}</td>
-                            <td className="py-2 text-right text-[#0e212c] font-semibold font-mono">{((Number(item.costPrice || item.unitPrice || 0)) * (item.quantity || 0)).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="py-2 text-right text-[#64748b] text-xs">{prod?.lastRestockedAt ? new Date(prod.lastRestockedAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "\u2014"}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+
             </div>
           );
         })}
@@ -435,6 +407,70 @@ export default function RestocksPage() {
           </div>
         </div>
       )}
+
+      {expandedId !== null && (() => {
+        const restock = restocks.find((r) => r.id === expandedId);
+        if (!restock) return null;
+        const grandTotal = restock.items.reduce((s, i) => s + Number(i.costPrice || i.unitPrice || 0) * (i.quantity || 0), 0);
+        return (
+          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[#e2e8f0]">
+                <div>
+                  <h2 className="text-lg font-bold text-[#0e212c] flex items-center gap-2">
+                    <ArrowDownUp className="h-5 w-5 text-[#fd761a]" /> Restock #{restock.receiptNumber}
+                  </h2>
+                  <p className="text-xs text-[#64748b] mt-1">
+                    {restock.buyerName} &middot; {new Date(restock.transactionDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                </div>
+                <button onClick={() => setExpandedId(null)} className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="overflow-y-auto p-6 space-y-4">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                      <th className="text-left pb-2">Product</th>
+                      <th className="text-right pb-2">Qty</th>
+                      <th className="text-right pb-2">Cost Price</th>
+                      <th className="text-right pb-2">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#e2e8f0]">
+                    {restock.items.map((item) => {
+                      const prod = products.find((p) => p.id === item.productId);
+                      const cost = Number(item.costPrice || item.unitPrice || 0);
+                      return (
+                        <tr key={item.id}>
+                          <td className="py-2.5 text-[#0e212c] font-medium">{prod?.productName || `#${item.productId}`}</td>
+                          <td className="py-2.5 text-right text-[#64748b]">{item.quantity}</td>
+                          <td className="py-2.5 text-right text-[#64748b] font-mono">{cost.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="py-2.5 text-right text-[#0e212c] font-semibold font-mono">{(cost * (item.quantity || 0)).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-[#e2e8f0]">
+                      <td colSpan={3} className="pt-3 text-right text-sm font-semibold text-[#0e212c]">Grand Total</td>
+                      <td className="pt-3 text-right text-sm font-bold text-[#fd761a] font-mono">{grandTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+                {(restock.deliveryRef || restock.deliveryNotes || restock.delivererName) && (
+                  <div className="bg-[#f8fafc] rounded-lg p-4 space-y-1 text-xs text-[#64748b]">
+                    {restock.delivererName && <p><span className="font-semibold text-[#0e212c]">Deliverer:</span> {restock.delivererName}</p>}
+                    {restock.deliveryRef && <p><span className="font-semibold text-[#0e212c]">Delivery Ref:</span> {restock.deliveryRef}</p>}
+                    {restock.deliveryNotes && <p><span className="font-semibold text-[#0e212c]">Notes:</span> {restock.deliveryNotes}</p>}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -437,7 +437,7 @@ export default function CategoriesPage() {
                         >
                           <td className="p-4 pl-16">
                             <div className="flex items-center gap-3">
-                              <span className="text-[#e2e8f0] text-xs select-none">\u2514</span>
+                              <span className="text-[#e2e8f0] text-xs select-none">{"\u2514"}</span>
                               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fd761a]/5 to-transparent flex items-center justify-center">
                                 <FolderTree className="h-3.5 w-3.5 text-[#fd761a]/60" />
                               </div>
@@ -710,6 +710,9 @@ export default function CategoriesPage() {
                       if (c.id === editId) return false;
                       const currentCat = categories.find((cc) => cc.id === editId);
                       if (currentCat?.parentCategoryId === c.id) return false;
+                      // Exclude descendants of the category being edited
+                      const descendantIds = (currentCat?.children || []).map((ch) => ch.id);
+                      if (descendantIds.includes(c.id)) return false;
                       return true;
                     })
                     .map((c) => (
