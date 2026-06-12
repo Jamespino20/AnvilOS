@@ -76,7 +76,6 @@ export function NotificationModal({ open, onClose }: Props) {
   return (
     <div
       className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={onClose}
     >
       <div
         className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-lg flex flex-col h-full max-h-[80vh]"

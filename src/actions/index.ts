@@ -487,7 +487,7 @@ function buildTransactionWhere(opts?: {
   if (opts?.endDate) {
     where.transactionDate = {
       ...where.transactionDate,
-      lte: new Date(opts.endDate),
+      lte: new Date(opts.endDate + "T23:59:59"),
     };
   }
   if (opts?.search) {
@@ -631,6 +631,12 @@ export async function createTransaction(data: {
   invoiceNumber?: string;
   isCredit?: boolean;
   creditDueDate?: Date;
+  chequeDetails?: {
+    chequeNumber?: string;
+    bankName?: string;
+    chequeDate?: Date;
+    payeeName?: string;
+  };
 }) {
   const session = await auth();
   const sellerId = Number(session?.user?.id) || 0;
@@ -723,6 +729,10 @@ export async function createTransaction(data: {
         invoiceNumber: data.invoiceNumber,
         isCredit: data.isCredit || false,
         creditDueDate: data.creditDueDate,
+        chequeNumber: data.chequeDetails?.chequeNumber || undefined,
+        chequeBankName: data.chequeDetails?.bankName || undefined,
+        chequeDate: data.chequeDetails?.chequeDate || undefined,
+        chequePayeeName: data.chequeDetails?.payeeName || undefined,
         isReturned: data.transactionType === "Return",
         items: { create: itemsWithNames },
       },

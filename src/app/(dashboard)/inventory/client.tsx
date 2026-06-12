@@ -57,6 +57,7 @@ export function InventoryClient({
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
+  const [filterSubCategory, setFilterSubCategory] = useState("");
   const [filterSupplier, setFilterSupplier] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [sortBy, setSortBy] = useState<string>("");
@@ -72,6 +73,7 @@ export function InventoryClient({
     productName: "",
     category: "",
     categoryId: "",
+    parentCategoryId: "",
     supplierName: "",
     supplierId: "",
     brandId: "",
@@ -89,6 +91,7 @@ export function InventoryClient({
     productName: "",
     category: "",
     categoryId: "",
+    parentCategoryId: "",
     supplierName: "",
     supplierId: "",
     brandId: "",
@@ -120,6 +123,10 @@ export function InventoryClient({
     }
   }, [editQtyId]);
 
+  const parentCategoryList = categories.filter((c) => c.parentCategoryId === null);
+  const childCategoryList = categories.filter((c) => c.parentCategoryId === Number(filterCategory));
+  const formChildCategoryList = categories.filter((c) => c.parentCategoryId === Number(form.parentCategoryId));
+
   async function handleSaveQty(productId: number) {
     const val = parseInt(editQtyVal, 10);
     if (isNaN(val) || val < 0) { setEditQtyId(null); return; }
@@ -140,7 +147,11 @@ export function InventoryClient({
   const filtered = initialProducts.filter((p) => {
     if (search && !p.productName.toLowerCase().includes(search.toLowerCase()))
       return false;
-    if (filterCategory && p.categoryId !== Number(filterCategory)) return false;
+    if (filterSubCategory && p.categoryId !== Number(filterSubCategory)) return false;
+    else if (filterCategory && p.categoryId !== Number(filterCategory)) {
+      const childIds = childCategoryList.map((c) => c.id);
+      if (!childIds.includes(p.categoryId ?? -1) && p.categoryId !== Number(filterCategory)) return false;
+    }
     if (filterSupplier && p.supplierId !== Number(filterSupplier)) return false;
     if (
       filterStatus === "low" &&
@@ -232,11 +243,13 @@ export function InventoryClient({
     e.preventDefault();
     if (!form.productName) return;
     setAdding(true);
+    const selectedCategoryId = Number(form.categoryId) || Number(form.parentCategoryId) || 0;
+    const selectedCategoryName = form.category || parentCategoryList.find((c) => c.id === Number(form.parentCategoryId))?.name || "Uncategorized";
     try {
       await createProduct({
         productName: form.productName,
-        category: form.category || "Uncategorized",
-        categoryId: Number(form.categoryId) || undefined,
+        category: selectedCategoryName,
+        categoryId: selectedCategoryId || undefined,
         supplierName: form.supplierName || "Unknown",
         supplierId: Number(form.supplierId) || undefined,
         brandId: Number(form.brandId) || undefined,
@@ -263,10 +276,12 @@ export function InventoryClient({
   }
 
   function openEdit(product: Product & { imageUrl?: string | null }) {
+    const catParent = categories.find((c) => c.id === (product.categoryId ?? -1))?.parentCategoryId;
     setForm({
       productName: product.productName,
       category: product.category,
       categoryId: String(product.categoryId ?? ""),
+      parentCategoryId: catParent ? String(catParent) : "",
       supplierName: product.supplierName,
       supplierId: String(product.supplierId ?? ""),
       brandId: String((product as any).brandId ?? ""),
@@ -287,11 +302,13 @@ export function InventoryClient({
     e.preventDefault();
     if (!form.productName || showEdit === null) return;
     setSaving(true);
+    const selectedCategoryId = Number(form.categoryId) || Number(form.parentCategoryId) || 0;
+    const selectedCategoryName = form.category || parentCategoryList.find((c) => c.id === Number(form.parentCategoryId))?.name || "Uncategorized";
     try {
       await updateProduct(showEdit, {
         productName: form.productName,
-        category: form.category || "Uncategorized",
-        categoryId: Number(form.categoryId) || undefined,
+        category: selectedCategoryName,
+        categoryId: selectedCategoryId || undefined,
         supplierName: form.supplierName || "Unknown",
         supplierId: Number(form.supplierId) || undefined,
         brandId: Number(form.brandId) || undefined,
@@ -353,11 +370,24 @@ export function InventoryClient({
         <div className="flex gap-2 w-full lg:w-auto">
           <select
             value={filterCategory}
-            onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
+            onChange={(e) => { setFilterCategory(e.target.value); setFilterSubCategory(""); setPage(1); }}
             className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
-            <option value="">Category</option>
-            {flatCategoryOptions()}
+            <option value="">All Categories</option>
+            {parentCategoryList.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+          <select
+            value={filterSubCategory}
+            onChange={(e) => { setFilterSubCategory(e.target.value); setPage(1); }}
+            disabled={filterCategory === "" || childCategoryList.length === 0}
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <option value="">{filterCategory === "" ? "Select parent first" : childCategoryList.length === 0 ? "No subcategories" : "All Subcategories"}</option>
+            {childCategoryList.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
           </select>
           <select
             value={filterSupplier}
@@ -393,7 +423,7 @@ export function InventoryClient({
               { key: "supplierName", label: "Supplier" },
               { key: "brandName", label: "Brand" },
               { key: "sellingPrice", label: "Selling Price" },
-              { key: "costPrice", label: "Cost Price" },
+              { key: "costPrice", label: "Unit Price" },
               { key: "quantity", label: "Quantity" },
               { key: "minThreshold", label: "Min Threshold" },
               { key: "isFastMoving", label: "Fast Moving" },
@@ -488,7 +518,7 @@ export function InventoryClient({
                   Selling Price
                 </th>
                 <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Cost Price
+                  Unit Price
                 </th>
                 <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Qty
@@ -696,7 +726,29 @@ export function InventoryClient({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                    Category
+                    Parent Category
+                  </label>
+                  <select
+                    value={form.parentCategoryId}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        parentCategoryId: e.target.value,
+                        categoryId: "",
+                        category: "",
+                      })
+                    }
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                  >
+                    <option value="">Select parent category</option>
+                    {parentCategoryList.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Subcategory
                   </label>
                   <select
                     value={form.categoryId}
@@ -705,17 +757,22 @@ export function InventoryClient({
                         ...form,
                         categoryId: e.target.value,
                         category:
-                          categories.find(
+                          formChildCategoryList.find(
                             (c) => c.id === Number(e.target.value),
                           )?.name || "",
                       })
                     }
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                    disabled={form.parentCategoryId === "" || formChildCategoryList.length === 0}
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <option value="">Select category</option>
-                    {flatCategoryOptions()}
+                    <option value="">{form.parentCategoryId === "" ? "Select parent first" : formChildCategoryList.length === 0 ? "No subcategories" : "Select subcategory"}</option>
+                    {formChildCategoryList.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
                   </select>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Supplier
@@ -784,7 +841,7 @@ export function InventoryClient({
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                    Cost Price
+                    Unit Price
                   </label>
                   <input
                     type="number"
@@ -969,7 +1026,29 @@ export function InventoryClient({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                    Category
+                    Parent Category
+                  </label>
+                  <select
+                    value={form.parentCategoryId}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        parentCategoryId: e.target.value,
+                        categoryId: "",
+                        category: "",
+                      })
+                    }
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                  >
+                    <option value="">Select parent category</option>
+                    {parentCategoryList.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Subcategory
                   </label>
                   <select
                     value={form.categoryId}
@@ -978,17 +1057,22 @@ export function InventoryClient({
                         ...form,
                         categoryId: e.target.value,
                         category:
-                          categories.find(
+                          formChildCategoryList.find(
                             (c) => c.id === Number(e.target.value),
                           )?.name || "",
                       })
                     }
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                    disabled={form.parentCategoryId === "" || formChildCategoryList.length === 0}
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <option value="">Select category</option>
-                    {flatCategoryOptions()}
+                    <option value="">{form.parentCategoryId === "" ? "Select parent first" : formChildCategoryList.length === 0 ? "No subcategories" : "Select subcategory"}</option>
+                    {formChildCategoryList.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
                   </select>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Supplier
@@ -1056,7 +1140,7 @@ export function InventoryClient({
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                    Cost Price
+                    Unit Price
                   </label>
                   <input
                     type="number"

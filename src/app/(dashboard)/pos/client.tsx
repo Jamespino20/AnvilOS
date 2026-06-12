@@ -299,6 +299,15 @@ export function POSClient({ products, buyers, categories }: Props) {
           txnType === "Adjustment"
             ? Number(returnReceipt) || undefined
             : undefined,
+        chequeDetails:
+          paymentMethod === "Credit" && (chequeNumber || bankName || chequeDate || payeeName)
+            ? {
+                chequeNumber: chequeNumber || undefined,
+                bankName: bankName || undefined,
+                chequeDate: chequeDate ? new Date(chequeDate) : undefined,
+                payeeName: payeeName || undefined,
+              }
+            : undefined,
       });
       const isCredit = paymentMethod === "Credit";
       const receiptData = {
@@ -511,22 +520,21 @@ export function POSClient({ products, buyers, categories }: Props) {
                 </option>
               ))}
             </select>
-            {parentCategory !== "" && childCategories.length > 0 && (
-              <select
-                value={childCategory}
-                onChange={(e) =>
-                  setChildCategory(e.target.value ? Number(e.target.value) : "")
-                }
-                className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-              >
-                <option value="">All Subcategories</option>
-                {childCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            )}
+            <select
+              value={childCategory}
+              onChange={(e) =>
+                setChildCategory(e.target.value ? Number(e.target.value) : "")
+              }
+              disabled={parentCategory === "" || childCategories.length === 0}
+              className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <option value="">{parentCategory === "" ? "Select parent first" : childCategories.length === 0 ? "No subcategories" : "All Subcategories"}</option>
+              {childCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 content-start max-w-[800px]">

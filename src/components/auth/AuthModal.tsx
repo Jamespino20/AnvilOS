@@ -119,7 +119,6 @@ export function AuthModal({
       {isOpen && (
         <div
           className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center"
-          onClick={onClose}
         >
           <div
             className="bg-white w-full max-w-[440px] mx-4 rounded-xl shadow-2xl border border-[#e2e8f0] overflow-hidden"

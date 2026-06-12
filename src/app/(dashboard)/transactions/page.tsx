@@ -715,6 +715,36 @@ export default function TransactionsPage() {
                                 </>
                               )}
                             </div>
+                            {(t as any).chequeNumber && (
+                              <div className="flex gap-4 mt-2 text-xs">
+                                <span className="font-semibold text-[#0e212c]">
+                                  CHEQUE DETAILS
+                                </span>
+                                {(t as any).chequeNumber && (
+                                  <span>
+                                    Cheque #: {(t as any).chequeNumber}
+                                  </span>
+                                )}
+                                {(t as any).chequeBankName && (
+                                  <span>
+                                    Bank: {(t as any).chequeBankName}
+                                  </span>
+                                )}
+                                {(t as any).chequeDate && (
+                                  <span>
+                                    Cheque Date:{" "}
+                                    {new Date(
+                                      (t as any).chequeDate,
+                                    ).toLocaleDateString("en-PH")}
+                                  </span>
+                                )}
+                                {(t as any).chequePayeeName && (
+                                  <span>
+                                    Payee: {(t as any).chequePayeeName}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
