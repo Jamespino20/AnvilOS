@@ -1415,8 +1415,8 @@ async function main() {
   }
   console.log("");
 
-  // Reset PostgreSQL sequences to avoid unique constraint conflicts
-  console.log("Resetting sequences...");
+  // Reset MySQL AUTO_INCREMENT to avoid unique constraint conflicts
+  console.log("Resetting auto-increments...");
   const tableCols: [string, string][] = [
     ["users", "SELLER_ID"],
     ["suppliers", "SUPPLIER_ID"],
@@ -1428,10 +1428,12 @@ async function main() {
     ["transaction_items", "ITEM_ID"],
   ];
   for (const [table, col] of tableCols) {
+    const rows = await prisma.$queryRawUnsafe<{ max_id: bigint | null }[]>(
+      `SELECT MAX(\`${col}\`) AS max_id FROM \`${table}\``,
+    );
+    const nextId = Number(rows[0]?.max_id ?? 0) + 1;
     await prisma.$executeRawUnsafe(
-      `SELECT setval(pg_get_serial_sequence($1, $2), COALESCE((SELECT MAX("${col}") FROM "${table}"), 1))`,
-      table,
-      col,
+      `ALTER TABLE \`${table}\` AUTO_INCREMENT = ${nextId}`,
     );
   }
 

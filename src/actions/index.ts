@@ -1287,7 +1287,7 @@ export const getBuyers = cache(async (type?: "WalkIn" | "PO") => {
     latest.map((l) => [l.buyerName, l._max.transactionDate]),
   );
 
-  const merged = buyerRecords.map((b) => ({
+  const merged = buyerRecords.map((b: any) => ({
     buyerName: b.name,
     totalOrders: b.totalOrders,
     totalSpent: Number(b.totalSpent),

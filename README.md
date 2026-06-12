@@ -140,7 +140,7 @@ cp .env.example .env
 
 # Push schema & seed
 npx prisma db push
-npm run db:seed
+npx tsx prisma/seed.ts
 
 # Start development server
 npm run dev
@@ -148,11 +148,11 @@ npm run dev
 
 ### Environment Variables
 
-| Variable               | Description                                 |
-| ---------------------- | ------------------------------------------- |
-| `ANVILOS_DATABASE_URL` | PostgreSQL connection (sslmode=verify-full) |
-| `AUTH_SECRET`          | Auth.js encryption secret                   |
-| `NEXT_PUBLIC_API_URL`  | Public API base URL                         |
+| Variable              | Description                            |
+| --------------------- | -------------------------------------- |
+| `DATABASE_URL`        | MySQL connection (sslmode=verify-full) |
+| `AUTH_SECRET`         | Auth.js encryption secret              |
+| `NEXT_PUBLIC_API_URL` | Public API base URL                    |
 
 ## Build
 
