@@ -450,10 +450,10 @@ export default function SuppliersPage() {
           className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center"
         >
           <div
-            className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-lg mx-4"
+            className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-lg mx-4 max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0] shrink-0">
               <h2 className="text-lg font-bold text-[#0e212c]">
                 Edit Supplier
               </h2>
@@ -464,7 +464,7 @@ export default function SuppliersPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Company Name *
@@ -578,10 +578,10 @@ export default function SuppliersPage() {
           className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center"
         >
           <div
-            className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-lg mx-4"
+            className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-lg mx-4 max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0] shrink-0">
               <h2 className="text-lg font-bold text-[#0e212c]">Add Supplier</h2>
               <button
                 onClick={() => setShowAdd(false)}
@@ -590,7 +590,7 @@ export default function SuppliersPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleAdd} className="p-6 space-y-4">
+            <form onSubmit={handleAdd} className="p-6 space-y-4 flex-1 overflow-y-auto">
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Company Name *

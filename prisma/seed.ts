@@ -44,7 +44,7 @@ async function main() {
         registryDate: new Date("2025-05-29"),
         lastLogin: new Date("2025-06-19 21:45:41"),
         isActive: true,
-        role: "ADMIN",
+        role: "SUPERADMIN",
         emailVerified: new Date("2025-05-29"),
       },
       {

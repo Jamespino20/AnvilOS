@@ -45,6 +45,13 @@
 - **Price formatting** — All prices use `toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })`. ₱ removed from all module UI, email, and audit display; ₱ only appears in centralized report/export formatting.
 - **Dark mode** — Improved initialization and toaster theme syncing.
 
+### Done
+- **Profile pictures** — Buyer, User, and Audit Log models support profile images. Buyers page has image upload in edit modal. Users table shows profile pictures. Audit Log modal shows user profile pictures.
+- **Superadmin role** — `SUPERADMIN` added to UserRole enum. `isSuperAdminRole()` in access.ts. Users page restricts admin operations: only SUPERADMIN can edit ADMIN users. Server-side guards in updateUser/deleteUser actions.
+- **POS brand name in receipt** — Receipt items include brand name in parentheses when available.
+- **Draggable cart pane** — POS cart pane has drag handle on left edge for resizing. Width constrained between 280px-550px.
+- **POS grid sizing** — Product grid has `min-w-0` for proper flex behavior across screen sizes.
+
 ### Blocked
 - (none)
 
@@ -60,6 +67,8 @@
 - **Payment breakdown excludes non-sales** — returns/damages/adjustments don't inflate method totals.
 - **₱ removed from all UI** — only applied centrally in report/export formatting for consistency.
 - **Cache headers** prevent stale page data across sessions.
+- **SUPERADMIN role** — Only SUPERADMIN can edit ADMIN users. Admins cannot affect other admins.
+- **Draggable cart pane** — Width constrained 280px-550px via mouse drag on left edge handle.
 
 ## Next Steps
 - `npx prisma db push` (or run migration) before first deploy — schema changed (UserRole, EmailToken, TOTP fields, delivery fields, costPrice, oldPasswordHash)
@@ -69,9 +78,9 @@
 - Verify STAFF access restrictions
 
 ## Relevant Files
-- `prisma/schema.prisma`: UserRole enum, User (role, totpSecret, totpEnabled, emailVerified, notif*), EmailToken model, delivery fields, costPrice, oldPasswordHash
+- `prisma/schema.prisma`: UserRole enum (SUPERADMIN, ADMIN, STAFF), User (role, totpSecret, totpEnabled, emailVerified, notif*, imageUrl), Buyer (imageUrl), EmailToken model, delivery fields, costPrice, oldPasswordHash
 - `src/lib/auth.ts`: JWT fix, dual-password hash, TOTP verification, username/email login
-- `src/lib/access.ts`: `canAccessPath()`, `isAdminRole()`, `actionFingerprint()`, STAFF_PATHS
+- `src/lib/access.ts`: `canAccessPath()`, `isAdminRole()`, `isSuperAdminRole()`, `actionFingerprint()`, STAFF_PATHS
 - `src/lib/totp.ts`: `createTotpSecret()`, `generateTotp()`, `verifyTotp()` (SHA1, -1/0/+1 drift)
 - `src/lib/email-token.ts`: `issueEmailToken()`, `consumeEmailToken()`
 - `src/lib/mail.ts`: `sendMail()` helper
@@ -87,19 +96,22 @@
 - `src/app/api/notifications/read-all/route.ts`: Mark all read
 - `src/app/api/clear-cookies/route.ts`: Cookie clearing endpoint
 - `src/app/api/cron/daily-sales/route.ts`: Daily sales report cron
-- `src/actions/index.ts`: getBuyers(type?), getDeliverers(), getReturnTransaction(), updatePassword (saves old hash), getFinancialDashboard (updated KPIs), createTransaction (accepts costPrice), updateTransactionStatus (deliveryData), many isAdminRole guards
+- `src/actions/index.ts`: getBuyers(type?), getDeliverers(), getReturnTransaction(), updatePassword (saves old hash), getFinancialDashboard (updated KPIs), createTransaction (accepts costPrice), updateTransactionStatus (deliveryData), many isAdminRole guards, updateUser/deleteUser (SUPERADMIN checks)
 - `src/actions/email.ts`: checkAndAlertLowStock(), actionFingerprint in audit
 - `src/lib/csv.ts`: exportPDF — logo aspect ratio, column widths (3x, 20-80mm), no cellWidth:auto
-- `src/lib/receipt.ts`: downloadReceiptPdf — logo aspect ratio
+- `src/lib/receipt.ts`: downloadReceiptPdf — logo aspect ratio, brand name in items
 - `src/app/(dashboard)/dashboard/page.tsx`: No ₱, two decimal places, dailySales filtered
 - `src/app/(dashboard)/finance/page.tsx`: Updated KPIs, no Profit/Loss, separate restocks/damages
 - `src/app/(dashboard)/orders/page.tsx`: displayName(), deliveryRef/deliveryNotes/delivererName, OnTheWay disables items
-- `src/app/(dashboard)/pos/client.tsx`: Return auto-population (qty=0, originalQty display), damage/adjustment receipt ref
+- `src/app/(dashboard)/pos/client.tsx`: Return auto-population (qty=0, originalQty display), damage/adjustment receipt ref, draggable cart pane, brand name in receipt
 - `src/app/(dashboard)/restocks/page.tsx`: max-w-6xl, grid-cols-3, costPrice input
 - `src/app/(dashboard)/settings/page.tsx`: RBAC role toggles, TOTP setup/disable
 - `src/app/(auth)/login/page.tsx`: TOTP code input, clear-cookies on mount
 - `src/app/(auth)/register/page.tsx`: Email verification flow
 - `src/app/(auth)/forgot-password/page.tsx`: Email code + token reset
 - `src/app/(dashboard)/notifications/page.tsx`: Notification UI
+- `src/app/(dashboard)/users/client.tsx`: Profile pictures, SUPERADMIN role support
+- `src/app/(dashboard)/buyers/page.tsx`: Profile pictures, image upload
+- `src/app/(dashboard)/audit-log/page.tsx`: Profile pictures in table and modal
 - `src/components/dashboard-export.tsx`: No ₱ in values
 - `StocksX/`: Laravel + Filament PHP reference app

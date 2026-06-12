@@ -6,7 +6,7 @@ URL: https://github.com/Jamespino20
 Last Update Date: June 12, 2026
 */
 
-export type AppRole = "ADMIN" | "STAFF";
+export type AppRole = "SUPERADMIN" | "ADMIN" | "STAFF";
 
 export const STAFF_PATHS = [
   "/dashboard",
@@ -22,8 +22,12 @@ export const STAFF_PATHS = [
   "/orders",
 ];
 
+export function isSuperAdminRole(role?: string | null) {
+  return role === "SUPERADMIN";
+}
+
 export function isAdminRole(role?: string | null) {
-  return role === "ADMIN";
+  return role === "ADMIN" || role === "SUPERADMIN";
 }
 
 export function canAccessPath(

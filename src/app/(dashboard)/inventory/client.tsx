@@ -697,10 +697,10 @@ export function InventoryClient({
           onClick={() => setShowAdd(false)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-lg mx-4"
+            className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-lg mx-4 max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0] shrink-0">
               <h2 className="text-lg font-bold text-[#0e212c]">Add Product</h2>
               <button
                 onClick={() => setShowAdd(false)}
@@ -709,7 +709,7 @@ export function InventoryClient({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleAddProduct} className="p-6 space-y-4">
+            <form onSubmit={handleAddProduct} className="p-6 space-y-4 flex-1 overflow-y-auto">
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Product Name *
@@ -800,8 +800,6 @@ export function InventoryClient({
                       ))}
                   </select>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Brand
@@ -824,7 +822,7 @@ export function InventoryClient({
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Selling Price *
@@ -852,6 +850,8 @@ export function InventoryClient({
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Quantity
@@ -865,8 +865,6 @@ export function InventoryClient({
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Min Threshold
@@ -880,6 +878,8 @@ export function InventoryClient({
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Fast Moving
@@ -900,8 +900,6 @@ export function InventoryClient({
                     <div className="w-10 h-5 bg-[#e2e8f0] rounded-full peer peer-checked:bg-[#fd761a] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
                   </label>
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Sell by Box
@@ -994,10 +992,10 @@ export function InventoryClient({
           }}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-lg mx-4"
+            className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-lg mx-4 max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0] shrink-0">
               <h2 className="text-lg font-bold text-[#0e212c]">Edit Product</h2>
               <button
                 onClick={() => {
@@ -1009,7 +1007,7 @@ export function InventoryClient({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleEditProduct} className="p-6 space-y-4">
+            <form onSubmit={handleEditProduct} className="p-6 space-y-4 flex-1 overflow-y-auto">
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Product Name *

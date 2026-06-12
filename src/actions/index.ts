@@ -1294,6 +1294,7 @@ export const getBuyers = cache(async (type?: "WalkIn" | "PO") => {
     buyerAddress: b.address,
     buyerContact: b.phone,
     buyerEmail: b.email,
+    imageUrl: b.imageUrl,
     lastOrder: latestMap.get(b.name) || null,
   }));
 
@@ -1340,6 +1341,7 @@ export const getBuyers = cache(async (type?: "WalkIn" | "PO") => {
         buyerAddress: info.buyerAddress,
         buyerContact: info.buyerContact,
         buyerEmail: null,
+        imageUrl: null,
         lastOrder: info.lastOrder || null,
       });
     }
@@ -1546,7 +1548,7 @@ export async function processRestock(transactionId: number) {
 
 export async function updateBuyerInfo(
   buyerName: string,
-  data: { buyerAddress?: string; buyerContact?: string; buyerEmail?: string },
+  data: { buyerAddress?: string; buyerContact?: string; buyerEmail?: string; imageUrl?: string | null },
 ) {
   await requireAdmin();
   const session = await auth();
@@ -1571,13 +1573,14 @@ export async function updateBuyerInfo(
         ...(data.buyerAddress !== undefined && { address: data.buyerAddress }),
         ...(data.buyerContact !== undefined && { phone: data.buyerContact }),
         ...(data.buyerEmail !== undefined && { email: data.buyerEmail }),
+        ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
       },
     });
   }
   await logAudit(
     "Buyers",
     "Update Buyer Info",
-    `${buyerName}: address/contact/email updated`,
+    `${buyerName}: address/contact/email/image updated`,
   );
   revalidatePath("/buyers");
   revalidateTag("buyers", "default");
@@ -1968,7 +1971,7 @@ export async function getPaginatedAuditLogs(
     prisma.auditLog.findMany({
       where,
       orderBy: { logTime: "desc" },
-      include: { seller: { select: { sellerName: true } } },
+      include: { seller: { select: { sellerName: true, imageUrl: true } } },
       skip: (page - 1) * perPage,
       take: perPage,
     }),
@@ -2197,6 +2200,7 @@ export async function getUsers(opts?: {
         sellerName: true,
         username: true,
         email: true,
+        imageUrl: true,
         role: true,
         isActive: true,
         emailVerified: true,
@@ -2222,7 +2226,7 @@ export async function createUser(data: {
   username: string;
   email: string;
   password: string;
-  role: "ADMIN" | "STAFF";
+  role: "SUPERADMIN" | "ADMIN" | "STAFF";
 }) {
   await requireAdmin();
   const bcrypt = await import("bcryptjs");
@@ -2263,12 +2267,29 @@ export async function updateUser(
     sellerName?: string;
     username?: string;
     email?: string;
-    role?: "ADMIN" | "STAFF";
+    role?: "SUPERADMIN" | "ADMIN" | "STAFF";
     isActive?: boolean;
     password?: string;
   },
 ) {
   await requireAdmin();
+  const session = await auth();
+  const currentRole = (session?.user as any)?.role;
+  
+  // Check if target user is ADMIN
+  const targetUser = await prisma.user.findUnique({ where: { id } });
+  if (!targetUser) throw new Error("User not found");
+  
+  // Only SUPERADMIN can edit ADMIN users
+  if (targetUser.role === "ADMIN" && currentRole !== "SUPERADMIN") {
+    throw new Error("Only SUPERADMIN can edit ADMIN users");
+  }
+  
+  // Only SUPERADMIN can promote to SUPERADMIN
+  if (data.role === "SUPERADMIN" && currentRole !== "SUPERADMIN") {
+    throw new Error("Only SUPERADMIN can promote to SUPERADMIN");
+  }
+  
   const updateData: any = {};
   if (data.sellerName !== undefined) updateData.sellerName = data.sellerName;
   if (data.username !== undefined) updateData.username = data.username;
@@ -2292,12 +2313,19 @@ export async function updateUser(
 
 export async function deleteUser(id: number) {
   await requireAdmin();
+  const session = await auth();
+  const currentRole = (session?.user as any)?.role;
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new Error("User not found");
-  if (user.role === "ADMIN") {
-    throw new Error(
-      "Cannot deactivate ADMIN users. Change role to STAFF first.",
-    );
+  
+  // Only SUPERADMIN can deactivate ADMIN users
+  if (user.role === "ADMIN" && currentRole !== "SUPERADMIN") {
+    throw new Error("Only SUPERADMIN can deactivate ADMIN users");
+  }
+  
+  // Cannot deactivate SUPERADMIN
+  if (user.role === "SUPERADMIN") {
+    throw new Error("Cannot deactivate SUPERADMIN users");
   }
   await prisma.user.update({
     where: { id },

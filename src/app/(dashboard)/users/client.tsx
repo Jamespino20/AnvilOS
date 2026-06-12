@@ -34,6 +34,7 @@ interface UserRow {
   sellerName: string;
   username: string;
   email: string | null;
+  imageUrl?: string | null;
   role: string;
   isActive: boolean;
   emailVerified: string | null;
@@ -44,9 +45,10 @@ interface UserRow {
 
 interface Props {
   users: UserRow[];
+  currentUserRole?: string;
 }
 
-export function UsersClient({ users: initialUsers }: Props) {
+export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -61,8 +63,14 @@ export function UsersClient({ users: initialUsers }: Props) {
     username: "",
     email: "",
     password: "",
-    role: "STAFF" as "ADMIN" | "STAFF",
+    role: "STAFF" as "SUPERADMIN" | "ADMIN" | "STAFF",
   });
+
+  function canEditUser(targetUser: UserRow) {
+    if (currentUserRole === "SUPERADMIN") return true;
+    if (currentUserRole === "ADMIN" && targetUser.role === "ADMIN") return false;
+    return true;
+  }
 
   function resetForm() {
     setForm({
@@ -80,7 +88,7 @@ export function UsersClient({ users: initialUsers }: Props) {
       username: u.username,
       email: u.email || "",
       password: "",
-      role: u.role as "ADMIN" | "STAFF",
+      role: u.role as "SUPERADMIN" | "ADMIN" | "STAFF",
     });
     setShowEdit(u.id);
   }
@@ -311,9 +319,17 @@ export function UsersClient({ users: initialUsers }: Props) {
                 >
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center shrink-0">
-                        <User className="h-4 w-4 text-[#94a3b8]" />
-                      </div>
+                      {u.imageUrl ? (
+                        <img
+                          src={u.imageUrl}
+                          alt={u.sellerName}
+                          className="w-9 h-9 rounded-lg object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-lg bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center shrink-0">
+                          <User className="h-4 w-4 text-[#94a3b8]" />
+                        </div>
+                      )}
                       <div>
                         <p className="font-medium text-[#0e212c]">
                           {u.sellerName}
@@ -336,7 +352,11 @@ export function UsersClient({ users: initialUsers }: Props) {
                   </td>
                   <td className="p-4 text-center">
                     <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${u.role === "ADMIN" ? "bg-violet-50 text-violet-700 border border-violet-200" : "bg-blue-50 text-blue-700 border border-blue-200"}`}
+                      className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                        u.role === "SUPERADMIN" ? "bg-amber-50 text-amber-700 border border-amber-200" :
+                        u.role === "ADMIN" ? "bg-violet-50 text-violet-700 border border-violet-200" :
+                        "bg-blue-50 text-blue-700 border border-blue-200"
+                      }`}
                     >
                       {u.role}
                     </span>
@@ -365,15 +385,17 @@ export function UsersClient({ users: initialUsers }: Props) {
                     <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={() => openEdit(u)}
-                        className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all"
-                        title="Edit user"
+                        disabled={!canEditUser(u)}
+                        className={`p-1.5 rounded-md transition-all ${canEditUser(u) ? "text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50" : "text-[#e2e8f0] cursor-not-allowed"}`}
+                        title={canEditUser(u) ? "Edit user" : "Only SUPERADMIN can edit ADMIN users"}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => setToggleTarget(u)}
-                        className={`p-1.5 rounded-md transition-all ${u.isActive ? "text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50" : "text-[#94a3b8] hover:text-emerald-600 hover:bg-emerald-50"}`}
-                        title={u.isActive ? "Deactivate user" : "Activate user"}
+                        disabled={!canEditUser(u)}
+                        className={`p-1.5 rounded-md transition-all ${!canEditUser(u) ? "text-[#e2e8f0] cursor-not-allowed" : u.isActive ? "text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50" : "text-[#94a3b8] hover:text-emerald-600 hover:bg-emerald-50"}`}
+                        title={!canEditUser(u) ? "Only SUPERADMIN can modify ADMIN users" : u.isActive ? "Deactivate user" : "Activate user"}
                       >
                         {u.isActive ? (
                           <ToggleRight className="h-4 w-4" />
@@ -506,13 +528,16 @@ export function UsersClient({ users: initialUsers }: Props) {
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        role: e.target.value as "ADMIN" | "STAFF",
+                        role: e.target.value as "SUPERADMIN" | "ADMIN" | "STAFF",
                       })
                     }
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
                   >
                     <option value="STAFF">Staff</option>
                     <option value="ADMIN">Admin</option>
+                    {currentUserRole === "SUPERADMIN" && (
+                      <option value="SUPERADMIN">Superadmin</option>
+                    )}
                   </select>
                 </div>
               </div>
@@ -617,13 +642,17 @@ export function UsersClient({ users: initialUsers }: Props) {
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        role: e.target.value as "ADMIN" | "STAFF",
+                        role: e.target.value as "SUPERADMIN" | "ADMIN" | "STAFF",
                       })
                     }
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                    disabled={showEdit !== null && !canEditUser(initialUsers.find(u => u.id === showEdit)!)}
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] disabled:bg-[#f8fafc] disabled:text-[#94a3b8]"
                   >
                     <option value="STAFF">Staff</option>
                     <option value="ADMIN">Admin</option>
+                    {currentUserRole === "SUPERADMIN" && (
+                      <option value="SUPERADMIN">Superadmin</option>
+                    )}
                   </select>
                 </div>
                 <div>

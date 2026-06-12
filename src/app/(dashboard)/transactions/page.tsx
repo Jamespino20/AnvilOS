@@ -529,9 +529,7 @@ export default function TransactionsPage() {
                         })}
                       </td>
                       <td className="p-4 text-center">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${statusBadge(t.transactionStatus)}`}
-                        >
+                        <span className="text-sm text-[#64748b]">
                           {t.transactionStatus}
                         </span>
                       </td>
@@ -746,9 +744,7 @@ export default function TransactionsPage() {
                   </div>
                   <div>
                     <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Status</span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${t.transactionStatus === "Completed" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : t.transactionStatus === "Cancelled" ? "bg-rose-50 text-rose-700 border border-rose-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
-                      {t.transactionStatus}
-                    </span>
+                    <p className="text-[#0e212c] font-medium">{t.transactionStatus}</p>
                   </div>
                   <div>
                     <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Delivery</span>

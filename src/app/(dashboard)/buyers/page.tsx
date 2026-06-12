@@ -33,6 +33,8 @@ import {
   X,
   Save,
   Download,
+  Camera,
+  ImageIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
@@ -53,6 +55,7 @@ interface Buyer {
   buyerAddress?: string | null;
   buyerContact?: string | null;
   lastOrder?: Date | null;
+  imageUrl?: string | null;
 }
 
 export default function BuyersPage() {
@@ -72,6 +75,7 @@ export default function BuyersPage() {
   const [editContact, setEditContact] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [savingBuyer, setSavingBuyer] = useState(false);
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [perPage, setPerPage] = useState(10);
   const [detailPage, setDetailPage] = useState(1);
 
@@ -100,6 +104,7 @@ export default function BuyersPage() {
         setEditAddress(data[0].buyerAddress || "");
         setEditContact(data[0].buyerContact || "");
         setEditEmail((data[0] as any).buyer?.email || "");
+        setEditImageUrl((data[0] as any).buyer?.imageUrl || null);
       }
     } finally {
       setHistoryLoading(false);
@@ -206,9 +211,17 @@ export default function BuyersPage() {
 
         <div className="bg-white border border-[#e2e8f0] rounded-xl p-6">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#fd761a] to-[#e56600] text-white flex items-center justify-center text-xl font-bold shadow-sm shrink-0">
-              {selectedBuyer.charAt(0).toUpperCase()}
-            </div>
+            {editImageUrl ? (
+              <img
+                src={editImageUrl}
+                alt={selectedBuyer}
+                className="w-14 h-14 rounded-xl object-cover shadow-sm shrink-0"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#fd761a] to-[#e56600] text-white flex items-center justify-center text-xl font-bold shadow-sm shrink-0">
+                {selectedBuyer.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold text-[#0e212c]">
                 {selectedBuyer}
@@ -487,6 +500,40 @@ export default function BuyersPage() {
                 </button>
               </div>
               <div className="p-6 space-y-4">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="relative group">
+                    {editImageUrl ? (
+                      <img
+                        src={editImageUrl}
+                        alt="Profile"
+                        className="w-20 h-20 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-[#fd761a] to-[#e56600] text-white flex items-center justify-center text-2xl font-bold">
+                        {selectedBuyer?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                      <Camera className="h-5 w-5 text-white" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              setEditImageUrl(ev.target?.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                  <span className="text-xs text-[#94a3b8]">Hover to upload photo</span>
+                </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Address
@@ -535,6 +582,7 @@ export default function BuyersPage() {
                           buyerAddress: editAddress,
                           buyerContact: editContact,
                           buyerEmail: editEmail,
+                          imageUrl: editImageUrl,
                         });
                         setHistory((prev) =>
                           prev.map((t) => ({
@@ -700,9 +748,17 @@ export default function BuyersPage() {
                 >
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#0e212c] to-[#1a3a4a] text-white flex items-center justify-center text-sm font-bold shrink-0">
-                        {buyer.buyerName.charAt(0).toUpperCase()}
-                      </div>
+                      {(buyer as any).imageUrl ? (
+                        <img
+                          src={(buyer as any).imageUrl}
+                          alt={buyer.buyerName}
+                          className="w-9 h-9 rounded-lg object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#0e212c] to-[#1a3a4a] text-white flex items-center justify-center text-sm font-bold shrink-0">
+                          {buyer.buyerName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <span className="font-medium text-[#0e212c]">
                         {buyer.buyerName}
                       </span>

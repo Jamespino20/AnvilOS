@@ -16,7 +16,7 @@ interface AuditEntry {
   panel: string | null;
   action: string | null;
   details: string | null;
-  seller: { sellerName: string } | null;
+  seller: { sellerName: string; imageUrl?: string | null } | null;
 }
 
 function parseDetails(details: string | null): { text: string; deltas: { before: string; after: string }[] } {
@@ -194,7 +194,18 @@ export default function AuditLogPage() {
                         hour: "2-digit", minute: "2-digit", second: "2-digit",
                       })}
                     </td>
-                    <td className="p-4 font-medium text-[#0e212c]">{log.seller?.sellerName || "System"}</td>
+                    <td className="p-4 font-medium text-[#0e212c]">
+                      <div className="flex items-center gap-2">
+                        {log.seller?.imageUrl ? (
+                          <img
+                            src={log.seller.imageUrl}
+                            alt={log.seller.sellerName}
+                            className="w-6 h-6 rounded-full object-cover shrink-0"
+                          />
+                        ) : null}
+                        {log.seller?.sellerName || "System"}
+                      </div>
+                    </td>
                     <td className="p-4 text-[#64748b]">{log.panel || "—"}</td>
                     <td className="p-4 text-[#0e212c]">{log.action || "—"}</td>
                     <td className="p-4 text-[#64748b] max-w-xs truncate">{log.details || "—"}</td>
@@ -269,9 +280,6 @@ export default function AuditLogPage() {
         const roleMatch = d.match(/role[:\s]+(\w+)/i);
         if (roleMatch) fields.push({ label: "Role", value: roleMatch[1] });
 
-        const idMatch = d.match(/#(\d+)/);
-        if (idMatch && !createdMatch) fields.push({ label: "Record ID", value: `#${idMatch[1]}` });
-
         const dateMatch = d.match(/date[:\s]+([^.;\n]+)/i);
         if (dateMatch) fields.push({ label: "Date", value: dateMatch[1].trim() });
 
@@ -333,12 +341,20 @@ export default function AuditLogPage() {
               <div className="p-6 space-y-5 overflow-y-auto">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#0e212c] flex items-center justify-center text-white text-sm font-bold">
-                      {(log.seller?.sellerName || "S").charAt(0).toUpperCase()}
-                    </div>
+                    {log.seller?.imageUrl ? (
+                      <img
+                        src={log.seller.imageUrl}
+                        alt={log.seller.sellerName}
+                        className="w-9 h-9 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-[#0e212c] flex items-center justify-center text-white text-sm font-bold">
+                        {(log.seller?.sellerName || "S").charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div>
-                      <p className="text-sm font-semibold text-[#0e212c]">{log.seller?.sellerName || "System"}</p>
                       <p className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Performed by</p>
+                      <p className="text-sm font-semibold text-[#0e212c]">{log.seller?.sellerName || "System"}</p>
                     </div>
                   </div>
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${

@@ -119,6 +119,30 @@ export function POSClient({ products, buyers, categories }: Props) {
   const [error, setError] = useState("");
   const [editingQty, setEditingQty] = useState<number | null>(null);
   const [qtyInput, setQtyInput] = useState("");
+  const [cartWidth, setCartWidth] = useState(380);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    const startX = e.clientX;
+    const startWidth = cartWidth;
+
+    const handleMouseMove = (me: MouseEvent) => {
+      const diff = startX - me.clientX;
+      const newWidth = Math.min(Math.max(startWidth + diff, 280), 550);
+      setCartWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
 
   const buyerSuggestions = useMemo(
     () =>
@@ -324,12 +348,15 @@ export function POSClient({ products, buyers, categories }: Props) {
         grandTotal: grandTotal,
         items: cart
           .filter((c) => !(txnType === "Return" && c.quantity === 0))
-          .map((c) => ({
-            productName: c.product.productName,
-            quantity: c.quantity,
-            unitPrice: Number(c.product.sellingPrice),
-            totalPrice: Number(c.product.sellingPrice) * c.quantity,
-          })),
+          .map((c) => {
+            const brand = (c.product as any).brandRel?.name;
+            return {
+              productName: brand ? `${c.product.productName} (${brand})` : c.product.productName,
+              quantity: c.quantity,
+              unitPrice: Number(c.product.sellingPrice),
+              totalPrice: Number(c.product.sellingPrice) * c.quantity,
+            };
+          }),
         paymentMethod,
         transactionType: txnType,
         chequeDetails:
@@ -537,7 +564,7 @@ export function POSClient({ products, buyers, categories }: Props) {
             </select>
           </div>
 
-          <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 content-start max-w-[800px]">
+          <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 content-start max-w-[800px] min-w-0">
             {filtered.map((product) => (
               <button
                 key={product.id}
@@ -587,11 +614,18 @@ export function POSClient({ products, buyers, categories }: Props) {
         {/* Cart Sidebar (Desktop) / Drawer (Mobile) */}
         <div
           className={cn(
-            "lg:flex flex-col w-full lg:w-[380px] bg-white border border-[#e2e8f0] rounded-xl shadow-sm lg:relative overflow-x-hidden",
+            "lg:flex flex-col w-full bg-white border border-[#e2e8f0] rounded-xl shadow-sm lg:relative overflow-x-hidden",
             "fixed inset-x-0 bottom-0 z-[100] lg:z-auto h-[90vh] lg:h-auto transform transition-transform duration-300 ease-in-out lg:translate-y-0 translate-y-full",
             showCartMobile && "translate-y-0",
           )}
+          style={{ width: `min(${cartWidth}px, 100%)` } as React.CSSProperties}
         >
+          {/* Drag Handle - Desktop only */}
+          <div
+            onMouseDown={handleDragStart}
+            className={`hidden lg:block absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-[#fd761a]/30 transition-colors z-10 ${isDragging ? "bg-[#fd761a]/50" : "bg-transparent"}`}
+            title="Drag to resize cart pane"
+          />
           {/* Mobile Handle / Header */}
           <div className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-[#e2e8f0]">
             <div className="w-12 h-1.5 bg-[#e2e8f0] rounded-full absolute top-2 left-1/2 -translate-x-1/2" />
