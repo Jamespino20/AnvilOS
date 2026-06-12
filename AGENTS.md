@@ -2,8 +2,8 @@
 - Port Java desktop POS/inventory system (HardwareHub → AnvilOS) to Next.js web app on Vercel + NeonDB; resolve all remaining issues before SaaS transition
 
 ## Constraints & Preferences
-- Next.js 16.2.6 (App Router) + Prisma 7.8.0 + PostgreSQL (NeonDB) + Tailwind CSS 4 + TypeScript + shadcn/ui (radix-sera preset)
-- Auth.js v5 (credentials provider, JWT strategy); `@prisma/adapter-pg` for Prisma v7 client engine
+- Next.js 16.2.6 (App Router) + Prisma 7.8.0 + MySQL (Hostinger) + Tailwind CSS 4 + TypeScript + shadcn/ui (radix-sera preset)
+- Auth.js v5 (credentials provider, JWT strategy)
 - Custom theme: #0e212c blue, #fd761a orange, 4px radius
 - File header comment block required on every source file
 - No emojis in source files unless explicitly requested
@@ -71,14 +71,14 @@
 - **Draggable cart pane** — Width constrained 280px-550px via mouse drag on left edge handle.
 
 ## Next Steps
-- `npx prisma db push` (or run migration) before first deploy — schema changed (UserRole, EmailToken, TOTP fields, delivery fields, costPrice, oldPasswordHash)
-- Deploy to Vercel
-- Verify new user registration + email verification flow
-- Verify TOTP setup/disable
-- Verify STAFF access restrictions
+- Set up MySQL database on Hostinger
+- Configure DATABASE_URL in Hostinger environment variables
+- Run `npx prisma db push` to sync schema to MySQL
+- Deploy to Hostinger
 
 ## Relevant Files
-- `prisma/schema.prisma`: UserRole enum (SUPERADMIN, ADMIN, STAFF), User (role, totpSecret, totpEnabled, emailVerified, notif*, imageUrl), Buyer (imageUrl), EmailToken model, delivery fields, costPrice, oldPasswordHash
+- `prisma/schema.prisma`: MySQL provider, UserRole enum (SUPERADMIN, ADMIN, STAFF), User (role, totpSecret, totpEnabled, emailVerified, notif*, imageUrl), Buyer (imageUrl), EmailToken model, delivery fields, costPrice, oldPasswordHash
+- `src/lib/prisma.ts`: Standard Prisma Client instantiation (no adapter)
 - `src/lib/auth.ts`: JWT fix, dual-password hash, TOTP verification, username/email login
 - `src/lib/access.ts`: `canAccessPath()`, `isAdminRole()`, `isSuperAdminRole()`, `actionFingerprint()`, STAFF_PATHS
 - `src/lib/totp.ts`: `createTotpSecret()`, `generateTotp()`, `verifyTotp()` (SHA1, -1/0/+1 drift)

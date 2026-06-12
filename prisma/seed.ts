@@ -7,15 +7,10 @@ Last Update Date: June 12, 2026
 */
 
 import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 import { auditLogs } from "./seed-data/audit-logs";
 
-const pool = new Pool({ connectionString: process.env.ANVILOS_DATABASE_URL! });
-const prisma = new PrismaClient({
-  adapter: new PrismaPg(pool),
-});
+const prisma = new PrismaClient();
 
 async function main() {
   console.log("Clearing existing data...");
