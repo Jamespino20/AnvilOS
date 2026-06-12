@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 7, 2026
+Last Update Date: June 12, 2026
 */
 
 import NextAuth, { CredentialsSignin } from "next-auth";
@@ -120,7 +120,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             (session.user as any).imageUrl = u?.imageUrl ?? null;
             (session.user as any).role = u?.role ?? token.role ?? "STAFF";
             (session.user as any).totpEnabled = u?.totpEnabled ?? false;
-          } catch { console.warn("Failed to fetch user image/role in session callback");
+          } catch {
+            console.warn("Failed to fetch user image/role in session callback");
             (session.user as any).imageUrl = null;
             (session.user as any).role = token.role ?? "STAFF";
             (session.user as any).totpEnabled = false;

@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 7, 2026
+Last Update Date: June 12, 2026
 */
 
 "use client";
@@ -27,6 +27,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   Wallet,
+  Tag,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState, useEffect, useCallback } from "react";
@@ -56,6 +57,7 @@ const groups = [
     items: [
       { href: "/inventory", label: "Inventory", icon: Package },
       { href: "/categories", label: "Categories", icon: FolderTree },
+      { href: "/brands", label: "Brands", icon: Tag },
       { href: "/suppliers", label: "Suppliers", icon: Truck },
       { href: "/restocks", label: "Restocks", icon: ArrowDownUp },
     ],

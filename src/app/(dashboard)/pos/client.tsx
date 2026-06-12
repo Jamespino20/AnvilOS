@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 7, 2026
+Last Update Date: June 12, 2026
 */
 
 "use client";
@@ -47,9 +47,17 @@ interface BuyerInfo {
   buyerEmail?: string | null;
 }
 
+type CategoryWithChildren = {
+  id: number;
+  name: string;
+  parentCategoryId: number | null;
+  children: { id: number; name: string; parentCategoryId: number | null }[];
+};
+
 interface Props {
   products: Product[];
   buyers: BuyerInfo[];
+  categories: CategoryWithChildren[];
 }
 
 interface CartItem {
@@ -69,10 +77,11 @@ const TXN_TYPES = [
   { value: "Adjustment" as const, label: "Adjustment", icon: Package },
 ];
 
-export function POSClient({ products, buyers }: Props) {
+export function POSClient({ products, buyers, categories }: Props) {
   const { data: session } = useSession();
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
+  const [parentCategory, setParentCategory] = useState<number | "">("");
+  const [childCategory, setChildCategory] = useState<number | "">("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [buyerName, setBuyerName] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
@@ -119,18 +128,44 @@ export function POSClient({ products, buyers }: Props) {
     [buyerName, buyers],
   );
 
-  const categories = useMemo(
-    () => [...new Set(products.map((p) => p.category))],
-    [products],
+  const parentCategories = useMemo(
+    () => categories.filter((c) => c.parentCategoryId === null),
+    [categories],
   );
+
+  const childCategories = useMemo(() => {
+    if (parentCategory === "") return [];
+    return categories.find((c) => c.id === parentCategory)?.children || [];
+  }, [categories, parentCategory]);
 
   const filtered = products.filter((p) => {
     if (p.quantity <= 0) return false;
     if (search && !p.productName.toLowerCase().includes(search.toLowerCase()))
       return false;
-    if (category && p.category !== category) return false;
-    return true;
+    if (childCategory !== "" && p.categoryId === childCategory) return true;
+    if (parentCategory !== "" && p.categoryId === parentCategory) return true;
+    if (parentCategory !== "" && childCategory === "") {
+      const parent = categories.find((c) => c.id === parentCategory);
+      if (parent && p.category === parent.name) return true;
+      const childIds = (parent?.children || []).map((c) => c.id);
+      if (childIds.includes(p.categoryId ?? -1)) return true;
+      return false;
+    }
+    if (parentCategory === "" && childCategory === "") return true;
+    return false;
   });
+
+  function categoryDisplay(product: Product): string {
+    if (!product.categoryId) return product.category || "";
+    const parent = categories.find(
+      (c) =>
+        c.id === product.categoryId ||
+        c.children.some((ch) => ch.id === product.categoryId),
+    );
+    if (!parent) return product.category || "";
+    if (parent.id === product.categoryId) return parent.name;
+    return `${parent.name} (${parent.children.find((ch) => ch.id === product.categoryId)?.name || ""})`;
+  }
 
   function addToCart(product: Product) {
     setCart((prev) => {
@@ -215,6 +250,10 @@ export function POSClient({ products, buyers }: Props) {
     const hasItems =
       txnType === "Return" ? cart.some((c) => c.quantity > 0) : cart.length > 0;
     if (!hasItems || !buyerName) return;
+    if (!invoiceNumber.trim()) {
+      setError("Invoice number is required");
+      return;
+    }
     setError("");
     setCheckingOut(true);
     try {
@@ -458,17 +497,36 @@ export function POSClient({ products, buyers }: Props) {
               />
             </div>
             <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="flex-1 px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+              value={parentCategory}
+              onChange={(e) => {
+                setParentCategory(e.target.value ? Number(e.target.value) : "");
+                setChildCategory("");
+              }}
+              className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
             >
-              <option value="">Category</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
+              <option value="">All Categories</option>
+              {parentCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
               ))}
             </select>
+            {parentCategory !== "" && childCategories.length > 0 && (
+              <select
+                value={childCategory}
+                onChange={(e) =>
+                  setChildCategory(e.target.value ? Number(e.target.value) : "")
+                }
+                className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+              >
+                <option value="">All Subcategories</option>
+                {childCategories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 content-start">
@@ -479,7 +537,7 @@ export function POSClient({ products, buyers }: Props) {
                   addToCart(product);
                   // Optional: Vibrate or feedback for mobile
                 }}
-                className={`bg-white border border-[#e2e8f0] rounded-xl p-3 sm:p-4 text-left hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 group ${product.quantity <= 0 ? "opacity-60 cursor-not-allowed" : ""}`}
+                className={`bg-white border border-[#e2e8f0] rounded-xl p-3 sm:p-4 text-left hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 group aspect-square flex flex-col ${product.quantity <= 0 ? "opacity-60 cursor-not-allowed" : ""}`}
               >
                 {(product as any).imageUrl ? (
                   <img
@@ -602,7 +660,7 @@ export function POSClient({ products, buyers }: Props) {
                 type="text"
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
-                placeholder="Invoice # (opt)"
+                placeholder="Invoice # *"
                 className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
               />
             </div>
@@ -653,7 +711,7 @@ export function POSClient({ products, buyers }: Props) {
                     type="text"
                     value={buyerAddress}
                     onChange={(e) => setBuyerAddress(e.target.value)}
-                    placeholder="Address (opt)"
+                    placeholder="Address (Optional)"
                     className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                   />
                 </div>
@@ -663,7 +721,7 @@ export function POSClient({ products, buyers }: Props) {
                     type="text"
                     value={buyerContact}
                     onChange={(e) => setBuyerContact(e.target.value)}
-                    placeholder="Contact (opt)"
+                    placeholder="Contact (Optional)"
                     className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                   />
                 </div>
@@ -673,7 +731,7 @@ export function POSClient({ products, buyers }: Props) {
                     type="email"
                     value={buyerEmail}
                     onChange={(e) => setBuyerEmail(e.target.value)}
-                    placeholder="Email (opt)"
+                    placeholder="Email (Optional)"
                     className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                   />
                 </div>
@@ -713,71 +771,71 @@ export function POSClient({ products, buyers }: Props) {
               </div>
             </div>
 
-          {paymentMethod === "Credit" && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Calendar className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
-                <input
-                  type="date"
-                  value={creditDueDate}
-                  onChange={(e) => setCreditDueDate(e.target.value)}
-                  className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
-                />
-                <span className="text-[10px] text-[#94a3b8] whitespace-nowrap">
-                  Due Date
-                </span>
-              </div>
-              <p className="text-[10px] text-amber-600 ml-6">
-                Credit sale — payment due by selected date
-              </p>
-              
-              <div className="pt-2 border-t border-[#e2e8f0] mt-2">
-                <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider mb-2">
-                  Cheque Details
+            {paymentMethod === "Credit" && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Calendar className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+                  <input
+                    type="date"
+                    value={creditDueDate}
+                    onChange={(e) => setCreditDueDate(e.target.value)}
+                    className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                  />
+                  <span className="text-[10px] text-[#94a3b8] whitespace-nowrap">
+                    Due Date
+                  </span>
+                </div>
+                <p className="text-[10px] text-amber-600 ml-6">
+                  Credit sale — payment due by selected date
                 </p>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <input
-                      type="text"
-                      value={chequeNumber}
-                      onChange={(e) => setChequeNumber(e.target.value)}
-                      placeholder="Cheque/Ref #"
-                      className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <input
-                      type="text"
-                      value={bankName}
-                      onChange={(e) => setBankName(e.target.value)}
-                      placeholder="Bank Name"
-                      className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <input
-                      type="date"
-                      value={chequeDate}
-                      onChange={(e) => setChequeDate(e.target.value)}
-                      className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
-                    />
-                    <span className="text-[10px] text-[#94a3b8] whitespace-nowrap">
-                      Cheque Date
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <input
-                      type="text"
-                      value={payeeName}
-                      onChange={(e) => setPayeeName(e.target.value)}
-                      placeholder="Payee Name"
-                      className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
-                    />
+
+                <div className="pt-2 border-t border-[#e2e8f0] mt-2">
+                  <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider mb-2">
+                    Cheque Details
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <input
+                        type="text"
+                        value={chequeNumber}
+                        onChange={(e) => setChequeNumber(e.target.value)}
+                        placeholder="Cheque/Ref #"
+                        className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <input
+                        type="text"
+                        value={bankName}
+                        onChange={(e) => setBankName(e.target.value)}
+                        placeholder="Bank Name"
+                        className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <input
+                        type="date"
+                        value={chequeDate}
+                        onChange={(e) => setChequeDate(e.target.value)}
+                        className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                      />
+                      <span className="text-[10px] text-[#94a3b8] whitespace-nowrap">
+                        Cheque Date
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <input
+                        type="text"
+                        value={payeeName}
+                        onChange={(e) => setPayeeName(e.target.value)}
+                        placeholder="Payee Name"
+                        className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-1.5 min-h-[150px]">
@@ -789,6 +847,9 @@ export function POSClient({ products, buyers }: Props) {
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-semibold text-[#0e212c] truncate">
                     {item.product.productName}
+                  </p>
+                  <p className="text-[10px] text-[#94a3b8] truncate">
+                    {categoryDisplay(item.product)}
                   </p>
                   <p className="text-[10px] text-[#94a3b8] font-mono">
                     {Number(item.product.sellingPrice).toLocaleString("en-PH", {
@@ -878,6 +939,9 @@ export function POSClient({ products, buyers }: Props) {
                 </div>
                 <div className="flex justify-between items-center text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider pb-1 border-b border-[#e2e8f0]">
                   <span className="flex-1">Item</span>
+                  <span className="w-20 text-right hidden sm:block">
+                    Category
+                  </span>
                   <span className="w-10 text-center">Qty</span>
                   <span className="w-[72px] text-right">Price</span>
                   <span className="w-[72px] text-right">Total</span>
@@ -890,6 +954,9 @@ export function POSClient({ products, buyers }: Props) {
                     >
                       <span className="flex-1 text-[#0e212c] font-medium truncate pr-1">
                         {item.product.productName}
+                      </span>
+                      <span className="w-20 text-right text-[#94a3b8] truncate hidden sm:block">
+                        {categoryDisplay(item.product)}
                       </span>
                       <span className="w-10 text-center text-[#64748b]">
                         {item.quantity}

@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 7, 2026
+Last Update Date: June 12, 2026
 */
 
 "use server";
@@ -24,40 +24,44 @@ const DB_TIMEOUT = 20000;
 
 // ─────────── Products ───────────
 
-export const getProducts = cache(async (opts?: {
-  categoryId?: number;
-  supplierId?: number;
-  search?: string;
-  status?: string;
-}) => {
-  const where: any = {};
-  if (opts?.categoryId) where.categoryId = opts.categoryId;
-  if (opts?.supplierId) where.supplierId = opts.supplierId;
-  if (opts?.search) {
-    where.OR = [
-      { productName: { contains: opts.search, mode: "insensitive" } },
-    ];
-  }
-  if (opts?.status === "low")
-    where.quantity = { lte: prisma.product.fields.minThreshold };
-  if (opts?.status === "out") where.quantity = 0;
-  if (opts?.status === "available") where.isAvailable = true;
+export const getProducts = cache(
+  async (opts?: {
+    categoryId?: number;
+    supplierId?: number;
+    brandId?: number;
+    search?: string;
+    status?: string;
+  }) => {
+    const where: any = {};
+    if (opts?.categoryId) where.categoryId = opts.categoryId;
+    if (opts?.supplierId) where.supplierId = opts.supplierId;
+    if (opts?.brandId) where.brandId = opts.brandId;
+    if (opts?.search) {
+      where.OR = [
+        { productName: { contains: opts.search, mode: "insensitive" } },
+      ];
+    }
+    if (opts?.status === "low")
+      where.quantity = { lte: prisma.product.fields.minThreshold };
+    if (opts?.status === "out") where.quantity = 0;
+    if (opts?.status === "available") where.isAvailable = true;
 
-  return withTimeout(
-    prisma.product.findMany({
-      where,
-      orderBy: { updatedAt: "desc" },
-      include: { categoryRel: true, supplierRel: true },
-    }),
-    DB_TIMEOUT,
-    "Loading products",
-  );
-});
+    return withTimeout(
+      prisma.product.findMany({
+        where,
+        orderBy: { updatedAt: "desc" },
+        include: { categoryRel: true, supplierRel: true, brandRel: true },
+      }),
+      DB_TIMEOUT,
+      "Loading products",
+    );
+  },
+);
 
 export async function getProduct(id: number) {
   return prisma.product.findUnique({
     where: { id },
-    include: { categoryRel: true, supplierRel: true },
+    include: { categoryRel: true, supplierRel: true, brandRel: true },
   });
 }
 
@@ -67,6 +71,7 @@ export async function createProduct(data: {
   category: string;
   supplierId?: number;
   supplierName: string;
+  brandId?: number;
   unitPrice?: number;
   sellingPrice: number;
   quantity: number;
@@ -111,6 +116,7 @@ export async function updateProduct(
     category: string;
     supplierId: number;
     supplierName: string;
+    brandId: number;
     unitPrice: number;
     sellingPrice: number;
     quantity: number;
@@ -191,36 +197,66 @@ export async function deleteProduct(id: number) {
 
 export const getCategories = cache(async () => {
   return prisma.category.findMany({
+    where: { parentCategoryId: null },
+    orderBy: { name: "asc" },
+    include: {
+      _count: { select: { products: true } },
+      children: {
+        orderBy: { name: "asc" },
+        include: { _count: { select: { products: true } } },
+      },
+    },
+  });
+});
+
+export const getAllCategories = cache(async () => {
+  return prisma.category.findMany({
     orderBy: { name: "asc" },
     include: { _count: { select: { products: true } } },
   });
 });
 
-export async function createCategory(name: string) {
+export async function createCategory(name: string, parentCategoryId?: number) {
   await requireAdmin();
   try {
     const cat = await prisma.category.create({
-      data: { name },
+      data: { name, parentCategoryId: parentCategoryId || null },
     });
-    await logAudit("InventoryPanel", "Add Category", `${cat.name} created`);
+    await logAudit(
+      "InventoryPanel",
+      "Add Category",
+      parentCategoryId
+        ? `Subcategory "${name}" created under #${parentCategoryId}`
+        : `${cat.name} created`,
+    );
     revalidatePath("/inventory");
     revalidatePath("/categories");
     revalidateTag("categories", "default");
     return cat;
   } catch (e: any) {
     if (e?.code === "P2002") {
-      throw new Error(`A category named "${name}" already exists.`);
+      throw new Error(
+        `A category named "${name}" already exists in this parent.`,
+      );
     }
     throw e;
   }
 }
 
-export async function editCategory(id: number, name: string) {
+export async function editCategory(
+  id: number,
+  name: string,
+  parentCategoryId?: number,
+) {
   await requireAdmin();
   try {
     const cat = await prisma.category.update({
       where: { id },
-      data: { name },
+      data: {
+        name,
+        parentCategoryId:
+          parentCategoryId !== undefined ? parentCategoryId || null : undefined,
+      },
     });
     await logAudit(
       "InventoryPanel",
@@ -233,7 +269,9 @@ export async function editCategory(id: number, name: string) {
     return cat;
   } catch (e: any) {
     if (e?.code === "P2002") {
-      throw new Error(`A category named "${name}" already exists.`);
+      throw new Error(
+        `A category named "${name}" already exists in this parent.`,
+      );
     }
     throw e;
   }
@@ -241,6 +279,14 @@ export async function editCategory(id: number, name: string) {
 
 export async function deleteCategory(id: number) {
   await requireAdmin();
+  const children = await prisma.category.count({
+    where: { parentCategoryId: id },
+  });
+  if (children > 0) {
+    throw new Error(
+      `Cannot delete category: it has ${children} subcategory(ies). Remove them first.`,
+    );
+  }
   const linked = await prisma.product.count({ where: { categoryId: id } });
   if (linked > 0) {
     throw new Error(
@@ -257,6 +303,73 @@ export async function deleteCategory(id: number) {
   revalidatePath("/inventory");
   revalidatePath("/categories");
   revalidateTag("categories", "default");
+}
+
+// ─────────── Brands ───────────
+
+export const getBrands = cache(async () => {
+  return prisma.brand.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { products: true } } },
+  });
+});
+
+export async function createBrand(name: string) {
+  await requireAdmin();
+  try {
+    const brand = await prisma.brand.create({ data: { name } });
+    await logAudit("InventoryPanel", "Add Brand", `${brand.name} created`);
+    revalidatePath("/inventory");
+    revalidatePath("/brands");
+    revalidateTag("brands", "default");
+    return brand;
+  } catch (e: any) {
+    if (e?.code === "P2002") {
+      throw new Error(`A brand named "${name}" already exists.`);
+    }
+    throw e;
+  }
+}
+
+export async function editBrand(id: number, name: string) {
+  await requireAdmin();
+  try {
+    const brand = await prisma.brand.update({ where: { id }, data: { name } });
+    await logAudit(
+      "InventoryPanel",
+      "Edit Brand",
+      `Brand #${id} renamed to "${name}"`,
+    );
+    revalidatePath("/inventory");
+    revalidatePath("/brands");
+    revalidateTag("brands", "default");
+    return brand;
+  } catch (e: any) {
+    if (e?.code === "P2002") {
+      throw new Error(`A brand named "${name}" already exists.`);
+    }
+    throw e;
+  }
+}
+
+export async function deleteBrand(id: number) {
+  await requireAdmin();
+  const linked = await prisma.product.count({ where: { brandId: id } });
+  if (linked > 0) {
+    throw new Error(
+      `Cannot delete brand: ${linked} product(s) are linked to it. Remove or reassign them first.`,
+    );
+  }
+  const brand = await prisma.brand.findUniqueOrThrow({ where: { id } });
+  await prisma.brand.delete({ where: { id } });
+  await logAudit(
+    "InventoryPanel",
+    "Delete Brand",
+    `${brand.name} (#${id}) deleted`,
+  );
+  revalidatePath("/inventory");
+  revalidatePath("/brands");
+  revalidateTag("brands", "default");
 }
 
 // ─────────── Suppliers ───────────
@@ -760,7 +873,10 @@ export async function getReturnTransaction(receiptNumber: number) {
   };
 }
 
-export async function updateTransactionInvoice(id: number, invoiceNumber: string) {
+export async function updateTransactionInvoice(
+  id: number,
+  invoiceNumber: string,
+) {
   await requireAdmin();
   const txn = await prisma.transaction.findUniqueOrThrow({
     where: { id },
@@ -967,7 +1083,11 @@ export async function markCreditAsPaid(id: number) {
     where: { id },
     data: { creditPaidAt: new Date() },
   });
-  await logAudit("Transactions", "Mark Credit Paid", `#${txn.receiptNumber} credit marked as paid`);
+  await logAudit(
+    "Transactions",
+    "Mark Credit Paid",
+    `#${txn.receiptNumber} credit marked as paid`,
+  );
   revalidatePath("/transactions");
   return updated;
 }
@@ -1622,20 +1742,25 @@ export async function getCashFlowTrend(
 ) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  const start = startDate || (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - days);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  })();
-  const end = endDate || (() => {
-    const d = new Date();
-    d.setHours(23, 59, 59, 999);
-    return d;
-  })();
-  const effectiveDays = startDate && endDate
-    ? Math.round((end.getTime() - start.getTime()) / 86400000) + 1
-    : days;
+  const start =
+    startDate ||
+    (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    })();
+  const end =
+    endDate ||
+    (() => {
+      const d = new Date();
+      d.setHours(23, 59, 59, 999);
+      return d;
+    })();
+  const effectiveDays =
+    startDate && endDate
+      ? Math.round((end.getTime() - start.getTime()) / 86400000) + 1
+      : days;
   const [revenues, expenses] = await Promise.all([
     prisma.transaction.findMany({
       where: {
@@ -1671,11 +1796,13 @@ export async function getCashFlowTrend(
     net: number;
   }[] = [];
   for (let i = effectiveDays - 1; i >= 0; i--) {
-    const d = endDate ? new Date(end.getTime() - i * 86400000) : (() => {
-      const d2 = new Date();
-      d2.setDate(d2.getDate() - i);
-      return d2;
-    })();
+    const d = endDate
+      ? new Date(end.getTime() - i * 86400000)
+      : (() => {
+          const d2 = new Date();
+          d2.setDate(d2.getDate() - i);
+          return d2;
+        })();
     const dateStr = d.toISOString().split("T")[0];
     const rev = revMap.get(dateStr) || 0;
     const exp = expMap.get(dateStr) || 0;
@@ -1701,11 +1828,13 @@ export async function getTopProductsByRevenue(
 ) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  const start = startDate || (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - days);
-    return d;
-  })();
+  const start =
+    startDate ||
+    (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      return d;
+    })();
   const items = await prisma.transactionItem.findMany({
     where: {
       transaction: {
@@ -1797,7 +1926,10 @@ export async function getPaginatedAuditLogs(
   const where: any = {};
   if (opts?.startDate) where.logTime = { gte: new Date(opts.startDate) };
   if (opts?.endDate)
-    where.logTime = { ...where.logTime, lte: new Date(opts.endDate + "T23:59:59") };
+    where.logTime = {
+      ...where.logTime,
+      lte: new Date(opts.endDate + "T23:59:59"),
+    };
   if (opts?.panel) where.panel = opts.panel;
   if (opts?.sellerId) where.sellerId = opts.sellerId;
   if (opts?.search)
@@ -1825,10 +1957,12 @@ export async function getAuditLogUsers() {
     distinct: ["sellerId"],
     select: { sellerId: true, seller: { select: { sellerName: true } } },
   });
-  return result.filter((r) => r.seller).map((r) => ({
-    id: r.sellerId!,
-    sellerName: r.seller!.sellerName,
-  }));
+  return result
+    .filter((r) => r.seller)
+    .map((r) => ({
+      id: r.sellerId!,
+      sellerName: r.seller!.sellerName,
+    }));
 }
 
 // ─────────── Data Import ───────────
@@ -1931,7 +2065,9 @@ export async function importData(
     case "products":
     case "inventory": {
       for (const row of validation.preview) {
-        const sellingPrice = parseFloat(row.sellingPrice || row.unitPrice || "0");
+        const sellingPrice = parseFloat(
+          row.sellingPrice || row.unitPrice || "0",
+        );
         const costPrice = parseFloat(row.costPrice || "0") || undefined;
         const quantity = parseInt(row.quantity);
         const minThreshold = parseInt(row.minThreshold || "0");
@@ -2133,7 +2269,9 @@ export async function deleteUser(id: number) {
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new Error("User not found");
   if (user.role === "ADMIN") {
-    throw new Error("Cannot deactivate ADMIN users. Change role to STAFF first.");
+    throw new Error(
+      "Cannot deactivate ADMIN users. Change role to STAFF first.",
+    );
   }
   await prisma.user.update({
     where: { id },

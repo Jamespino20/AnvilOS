@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 7, 2026
+Last Update Date: June 12, 2026
 */
 
 "use client";
@@ -346,11 +346,17 @@ export default function SettingsPage() {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      onClick={() =>
+                        setShowCurrentPassword(!showCurrentPassword)
+                      }
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#0e212c]"
                       tabIndex={-1}
                     >
-                      {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showCurrentPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -372,7 +378,11 @@ export default function SettingsPage() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#0e212c]"
                       tabIndex={-1}
                     >
-                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -390,11 +400,17 @@ export default function SettingsPage() {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#0e212c]"
                       tabIndex={-1}
                     >
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </div>

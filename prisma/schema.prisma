@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 7, 2026
+Last Update Date: June 12, 2026
 */
 
 generator client {
@@ -112,16 +112,20 @@ model EmailToken {
   @@map("email_tokens")
 }
 
-/// Product categories
+/// Product categories (supports one level of subcategories)
 model Category {
-  id          Int       @id @default(autoincrement()) @map("CATEGORY_ID")
-  name        String    @unique @map("CATEGORY")
-  isAvailable Boolean   @default(true) @map("IS_AVAILABLE")
-  createdAt   DateTime? @map("CREATED_AT")
-  updatedAt   DateTime  @default(now()) @updatedAt @map("UPDATED_AT")
+  id              Int       @id @default(autoincrement()) @map("CATEGORY_ID")
+  name            String    @map("CATEGORY")
+  parentCategoryId Int?     @map("PARENT_CATEGORY_ID")
+  isAvailable     Boolean   @default(true) @map("IS_AVAILABLE")
+  createdAt       DateTime? @map("CREATED_AT")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("UPDATED_AT")
 
+  parent   Category?  @relation("CategoryTree", fields: [parentCategoryId], references: [id])
+  children Category[] @relation("CategoryTree")
   products Product[]
 
+  @@unique([name, parentCategoryId])
   @@map("categories")
 }
 
@@ -141,6 +145,20 @@ model Supplier {
   @@map("suppliers")
 }
 
+/// Product brands
+model Brand {
+  id          Int       @id @default(autoincrement()) @map("BRAND_ID")
+  name        String    @map("BRAND_NAME")
+  isAvailable Boolean   @default(true) @map("IS_AVAILABLE")
+  createdAt   DateTime? @map("CREATED_AT")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("UPDATED_AT")
+
+  products Product[]
+
+  @@unique([name])
+  @@map("brands")
+}
+
 /// Inventory items / stock keeping units
 model Product {
   id             Int      @id @default(autoincrement()) @map("PRODUCT_ID")
@@ -149,6 +167,7 @@ model Product {
   category       String   @map("CATEGORY")
   supplierId     Int?     @map("SUPPLIER_ID")
   supplierName   String   @map("SUPPLIER_NAME")
+  brandId        Int?     @map("BRAND_ID")
   unitPrice      Decimal? @db.Decimal(10, 2) @map("UNIT_PRICE")
   sellingPrice   Decimal  @db.Decimal(10, 2) @map("SELLING_PRICE")
   quantity       Int      @map("QUANTITY")
@@ -165,10 +184,12 @@ model Product {
 
   categoryRel    Category?         @relation(fields: [categoryId], references: [id])
   supplierRel    Supplier?         @relation(fields: [supplierId], references: [id])
+  brandRel       Brand?            @relation(fields: [brandId], references: [id])
   transactionItems TransactionItem[]
 
   @@index([categoryId])
   @@index([supplierId])
+  @@index([brandId])
   @@map("products")
 }
 

@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 7, 2026
+Last Update Date: June 12, 2026
 */
 
 export function formatMoney(
@@ -33,7 +33,8 @@ export const DATE_SCOPES = [
 export function getDateScopeStart(scope: string): string | undefined {
   const now = new Date();
   switch (scope) {
-    case "today": return now.toISOString().split("T")[0];
+    case "today":
+      return now.toISOString().split("T")[0];
     case "lastWeek": {
       const d = new Date(now);
       const day = d.getDay();
@@ -48,16 +49,22 @@ export function getDateScopeStart(scope: string): string | undefined {
       d.setDate(diff);
       return d.toISOString().split("T")[0];
     }
-    case "month": return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-    case "year": return new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0];
-    default: return undefined;
+    case "month":
+      return new Date(now.getFullYear(), now.getMonth(), 1)
+        .toISOString()
+        .split("T")[0];
+    case "year":
+      return new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0];
+    default:
+      return undefined;
   }
 }
 
 export function getDateScopeEnd(scope: string): string | undefined {
   const now = new Date();
   switch (scope) {
-    case "today": return now.toISOString().split("T")[0];
+    case "today":
+      return now.toISOString().split("T")[0];
     case "lastWeek": {
       const d = new Date(now);
       const day = d.getDay();
@@ -72,6 +79,7 @@ export function getDateScopeEnd(scope: string): string | undefined {
       d.setDate(diff);
       return d.toISOString().split("T")[0];
     }
-    default: return undefined;
+    default:
+      return undefined;
   }
 }

@@ -25,7 +25,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportButton } from "@/components/import-button";
-import type { Product, Category, Supplier } from "@prisma/client";
+import type { Product, Category, Supplier, Brand } from "@prisma/client";
 import { toast } from "sonner";
 import { formatMoney, formatReportMoney } from "@/lib/format";
 
@@ -33,11 +33,13 @@ interface Props {
   products: (Product & {
     categoryRel: Category | null;
     supplierRel: Supplier | null;
+    brandRel: Brand | null;
   })[];
   categories: (Category & {
     _count: { products: number };
   })[];
   suppliers: (Supplier & { _count: { products: number } })[];
+  brands: (Brand & { _count: { products: number } })[];
   role?: string | null;
 }
 
@@ -45,6 +47,7 @@ export function InventoryClient({
   products: initialProducts,
   categories,
   suppliers,
+  brands,
   role,
 }: Props) {
   const router = useRouter();
@@ -64,6 +67,7 @@ export function InventoryClient({
     categoryId: "",
     supplierName: "",
     supplierId: "",
+    brandId: "",
     sellingPrice: "",
     costPrice: "",
     quantity: "",
@@ -80,6 +84,7 @@ export function InventoryClient({
     categoryId: "",
     supplierName: "",
     supplierId: "",
+    brandId: "",
     sellingPrice: "",
     costPrice: "",
     quantity: "",
@@ -211,6 +216,7 @@ export function InventoryClient({
         categoryId: Number(form.categoryId) || undefined,
         supplierName: form.supplierName || "Unknown",
         supplierId: Number(form.supplierId) || undefined,
+        brandId: Number(form.brandId) || undefined,
         unitPrice: Number(form.costPrice) || undefined,
         sellingPrice: Number(form.sellingPrice) || 0,
         quantity: Number(form.quantity) || 0,
@@ -240,6 +246,7 @@ export function InventoryClient({
       categoryId: String(product.categoryId ?? ""),
       supplierName: product.supplierName,
       supplierId: String(product.supplierId ?? ""),
+      brandId: String((product as any).brandId ?? ""),
       sellingPrice: String(product.sellingPrice),
       costPrice: String(product.unitPrice ?? ""),
       quantity: String(product.quantity),
@@ -264,6 +271,7 @@ export function InventoryClient({
         categoryId: Number(form.categoryId) || undefined,
         supplierName: form.supplierName || "Unknown",
         supplierId: Number(form.supplierId) || undefined,
+        brandId: Number(form.brandId) || undefined,
         unitPrice: Number(form.costPrice) || undefined,
         sellingPrice: Number(form.sellingPrice) || undefined,
         minThreshold: Number(form.minThreshold) || 5,
@@ -357,6 +365,7 @@ export function InventoryClient({
               { key: "productName", label: "Product Name" },
               { key: "category", label: "Category" },
               { key: "supplierName", label: "Supplier" },
+              { key: "brandName", label: "Brand" },
               { key: "sellingPrice", label: "Selling Price" },
               { key: "costPrice", label: "Cost Price" },
               { key: "quantity", label: "Quantity" },
@@ -372,6 +381,7 @@ export function InventoryClient({
                 if (key === "productName") return p.productName;
                 if (key === "category") return p.category;
                 if (key === "supplierName") return p.supplierName;
+                if (key === "brandName") return (p as any).brandRel?.name || "";
                 if (key === "sellingPrice") return formatReportMoney(p.sellingPrice);
                 if (key === "costPrice") return p.unitPrice ? formatReportMoney(p.unitPrice) : "";
                 if (key === "quantity") return String(p.quantity);
@@ -420,6 +430,9 @@ export function InventoryClient({
                 </th>
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Supplier
+                </th>
+                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  Brand
                 </th>
                 <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Selling Price
@@ -474,6 +487,9 @@ export function InventoryClient({
                     <td className="p-4 text-[#64748b]">{product.category}</td>
                     <td className="p-4 text-[#64748b]">
                       {product.supplierName}
+                    </td>
+                    <td className="p-4 text-[#64748b]">
+                      {(product as any).brandRel?.name || "—"}
                     </td>
                     <td className="p-4 text-right font-mono text-[#0e212c]">
                       {formatMoney(product.sellingPrice)}
@@ -540,7 +556,7 @@ export function InventoryClient({
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={isAdmin ? 11 : 10} className="p-8 text-center text-[#94a3b8]">
+                  <td colSpan={isAdmin ? 12 : 11} className="p-8 text-center text-[#94a3b8]">
                     No products found
                   </td>
                 </tr>
@@ -647,6 +663,29 @@ export function InventoryClient({
                       .map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.supplierName}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Brand
+                  </label>
+                  <select
+                    value={form.brandId}
+                    onChange={(e) =>
+                      setForm({ ...form, brandId: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                  >
+                    <option value="">Select brand</option>
+                    {brands
+                      .filter((b) => b.isAvailable)
+                      .map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
                         </option>
                       ))}
                   </select>
@@ -897,6 +936,29 @@ export function InventoryClient({
                       .map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.supplierName}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Brand
+                  </label>
+                  <select
+                    value={form.brandId}
+                    onChange={(e) =>
+                      setForm({ ...form, brandId: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                  >
+                    <option value="">Select brand</option>
+                    {brands
+                      .filter((b) => b.isAvailable)
+                      .map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
                         </option>
                       ))}
                   </select>

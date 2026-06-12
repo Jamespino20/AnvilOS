@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 7, 2026
+Last Update Date: June 12, 2026
 */
 
 "use client";
@@ -136,7 +136,16 @@ export default function TransactionsPage() {
       setLoading(false);
       setInitialLoad(false);
     });
-  }, [statusFilter, typeFilter, paymentFilter, search, page, dateScope, sortBy, sortDir]);
+  }, [
+    statusFilter,
+    typeFilter,
+    paymentFilter,
+    search,
+    page,
+    dateScope,
+    sortBy,
+    sortDir,
+  ]);
 
   async function quickStatusChange(
     id: number,
@@ -303,7 +312,12 @@ export default function TransactionsPage() {
             }
             label="Export"
             title="Export transactions"
-            filterLabel={dateScope !== "all" ? DATE_SCOPES.find((s) => s.value === dateScope)?.label || dateScope : undefined}
+            filterLabel={
+              dateScope !== "all"
+                ? DATE_SCOPES.find((s) => s.value === dateScope)?.label ||
+                  dateScope
+                : undefined
+            }
           />
           <ImportButton
             table="transactions"
@@ -323,356 +337,372 @@ export default function TransactionsPage() {
           <TableSkeleton rows={10} cols={10} />
         ) : (
           <div className="overflow-x-auto scrollbar-hide">
-          <table className="w-full text-sm min-w-[800px] lg:min-w-0">
-            <thead>
-              <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                <th
-                  className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
-                  onClick={() => {
-                    if (sortBy === "receiptNumber") {
-                      setSortDir(sortDir === "asc" ? "desc" : "asc");
-                    } else {
-                      setSortBy("receiptNumber");
-                      setSortDir("desc");
-                    }
-                  }}
-                >
-                  Receipt #
-                  {sortBy === "receiptNumber" && (
-                    <span className="ml-1">
-                      {sortDir === "asc" ? "\u25B2" : "\u25BC"}
-                    </span>
-                  )}
-                </th>
-                <th
-                  className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
-                  onClick={() => {
-                    if (sortBy === "invoiceNumber") {
-                      setSortDir(sortDir === "asc" ? "desc" : "asc");
-                    } else {
-                      setSortBy("invoiceNumber");
-                      setSortDir("desc");
-                    }
-                  }}
-                >
-                  Invoice #
-                  {sortBy === "invoiceNumber" && (
-                    <span className="ml-1">
-                      {sortDir === "asc" ? "\u25B2" : "\u25BC"}
-                    </span>
-                  )}
-                </th>
-                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Buyer
-                </th>
-                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Vendor
-                </th>
-                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Payment
-                </th>
-                <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Total
-                </th>
-                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e2e8f0]">
-              {transactions.map((t, i) => (
-                <>
-                  <tr
-                    key={t.id}
-                    className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} hover:bg-[#f1f5f9] transition-colors cursor-pointer`}
-                    onClick={() =>
-                      setExpandedId(expandedId === t.id ? null : t.id)
-                    }
+            <table className="w-full text-sm min-w-[800px] lg:min-w-0">
+              <thead>
+                <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                  <th
+                    className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
+                    onClick={() => {
+                      if (sortBy === "receiptNumber") {
+                        setSortDir(sortDir === "asc" ? "desc" : "asc");
+                      } else {
+                        setSortBy("receiptNumber");
+                        setSortDir("desc");
+                      }
+                    }}
                   >
-                    <td className="p-4 font-mono text-sm text-[#0e212c]">
-                      #{t.receiptNumber}
-                    </td>
-                    <td
-                      className="p-4 text-sm text-[#0e212c] cursor-pointer"
-                      onClick={(e) => {
-                        if (editingInvoice?.id !== t.id) {
-                          e.stopPropagation();
-                          setEditingInvoice({
-                            id: t.id,
-                            value: t.invoiceNumber || "",
-                          });
-                        }
-                      }}
+                    Receipt #
+                    <span
+                      className={`ml-1 ${sortBy === "receiptNumber" ? "text-[#fd761a]" : "text-[#cbd5e1]"}`}
                     >
-                      {editingInvoice?.id === t.id ? (
-                        <input
-                          type="text"
-                          value={editingInvoice.value}
-                          autoFocus
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) =>
+                      {sortBy === "receiptNumber" && sortDir === "asc"
+                        ? "\u25B2"
+                        : sortBy === "receiptNumber" && sortDir === "desc"
+                          ? "\u25BC"
+                          : "\u25B2"}
+                    </span>
+                  </th>
+                  <th
+                    className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
+                    onClick={() => {
+                      if (sortBy === "invoiceNumber") {
+                        setSortDir(sortDir === "asc" ? "desc" : "asc");
+                      } else {
+                        setSortBy("invoiceNumber");
+                        setSortDir("desc");
+                      }
+                    }}
+                  >
+                    Invoice #
+                    <span
+                      className={`ml-1 ${sortBy === "invoiceNumber" ? "text-[#fd761a]" : "text-[#cbd5e1]"}`}
+                    >
+                      {sortBy === "invoiceNumber" && sortDir === "asc"
+                        ? "\u25B2"
+                        : sortBy === "invoiceNumber" && sortDir === "desc"
+                          ? "\u25BC"
+                          : "\u25B2"}
+                    </span>
+                  </th>
+                  <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                    Buyer
+                  </th>
+                  <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                    Vendor
+                  </th>
+                  <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                    Payment
+                  </th>
+                  <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                    Total
+                  </th>
+                  <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#e2e8f0]">
+                {transactions.map((t, i) => (
+                  <>
+                    <tr
+                      key={t.id}
+                      className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} hover:bg-[#f1f5f9] transition-colors cursor-pointer`}
+                      onClick={() =>
+                        setExpandedId(expandedId === t.id ? null : t.id)
+                      }
+                    >
+                      <td className="p-4 font-mono text-sm text-[#0e212c]">
+                        #{t.receiptNumber}
+                      </td>
+                      <td
+                        className="p-4 text-sm text-[#0e212c] cursor-pointer"
+                        onClick={(e) => {
+                          if (editingInvoice?.id !== t.id) {
+                            e.stopPropagation();
                             setEditingInvoice({
-                              ...editingInvoice,
-                              value: e.target.value,
-                            })
+                              id: t.id,
+                              value: t.invoiceNumber || "",
+                            });
                           }
-                          onBlur={() => {
-                            updateTransactionInvoice(
-                              editingInvoice.id,
-                              editingInvoice.value,
-                            );
-                            setEditingInvoice(null);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              (e.target as HTMLInputElement).blur();
+                        }}
+                      >
+                        {editingInvoice?.id === t.id ? (
+                          <input
+                            type="text"
+                            value={editingInvoice.value}
+                            autoFocus
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) =>
+                              setEditingInvoice({
+                                ...editingInvoice,
+                                value: e.target.value,
+                              })
                             }
-                            if (e.key === "Escape") {
+                            onBlur={() => {
+                              updateTransactionInvoice(
+                                editingInvoice.id,
+                                editingInvoice.value,
+                              );
                               setEditingInvoice(null);
-                            }
-                          }}
-                          className="w-full max-w-[160px] px-2 py-1 text-xs border border-[#fd761a] rounded focus:outline-none"
-                        />
-                      ) : (
-                        <span className="text-[#64748b]">
-                          {t.invoiceNumber || "\u2014"}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-4 font-medium text-[#0e212c]">
-                      {t.buyerName}
-                    </td>
-                    <td className="p-4 text-[#64748b]">
-                      {(t as any).seller?.sellerName || "\u2014"}
-                    </td>
-                    <td className="p-4 text-[#64748b]">
-                      {t.transactionType.replace(/([A-Z])/g, " $1").trim()}
-                    </td>
-                    <td className="p-4 text-[#64748b]">
-                      {new Date(t.transactionDate).toLocaleDateString("en-PH", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </td>
-                    <td className="p-4 text-[#64748b]">
-                      <div className="flex items-center gap-2">
-                        <span>{t.paymentMethod || "\u2014"}</span>
-                        {(t as any).isCredit && (
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            (t as any).creditPaidAt
-                              ? "bg-green-100 text-green-700"
-                              : "bg-amber-100 text-amber-700"
-                          }`}>
-                            {(t as any).creditPaidAt ? "Paid" : "Unpaid"}
-                            {(t as any).creditDueDate && (
-                              <span className="text-[9px] opacity-70">
-                                Due: {new Date((t as any).creditDueDate).toLocaleDateString("en-PH")}
-                              </span>
-                            )}
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                (e.target as HTMLInputElement).blur();
+                              }
+                              if (e.key === "Escape") {
+                                setEditingInvoice(null);
+                              }
+                            }}
+                            className="w-full max-w-[160px] px-2 py-1 text-xs border border-[#fd761a] rounded focus:outline-none"
+                          />
+                        ) : (
+                          <span className="text-[#64748b]">
+                            {t.invoiceNumber || "\u2014"}
                           </span>
                         )}
-                        {(t as any).isCredit && !(t as any).creditPaidAt && (
-                          <button
-                            onClick={() => markCreditAsPaid(t.id)}
-                            className="px-2 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded hover:bg-blue-700"
-                          >
-                            Mark Paid
-                          </button>
+                      </td>
+                      <td className="p-4 font-medium text-[#0e212c]">
+                        {t.buyerName}
+                      </td>
+                      <td className="p-4 text-[#64748b]">
+                        {(t as any).seller?.sellerName || "\u2014"}
+                      </td>
+                      <td className="p-4 text-[#64748b]">
+                        {t.transactionType.replace(/([A-Z])/g, " $1").trim()}
+                      </td>
+                      <td className="p-4 text-[#64748b]">
+                        {new Date(t.transactionDate).toLocaleDateString(
+                          "en-PH",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          },
                         )}
-                      </div>
-                    </td>
-                    <td className="p-4 text-right font-mono text-[#0e212c] font-semibold">
-                      {Number(t.grandTotal || 0).toLocaleString("en-PH", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="p-4 text-center">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${statusBadge(t.transactionStatus)}`}
-                      >
-                        {t.transactionStatus}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        {t.transactionStatus === "Ongoing" && (
-                          <>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                quickStatusChange(t.id, "Processing");
-                              }}
-                              className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-md transition-all"
-                              title="Mark as Processing"
+                      </td>
+                      <td className="p-4 text-[#64748b]">
+                        <div className="flex items-center gap-2">
+                          <span>{t.paymentMethod || "\u2014"}</span>
+                          {(t as any).isCredit && (
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                (t as any).creditPaidAt
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-amber-100 text-amber-700"
+                              }`}
                             >
-                              <Package className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                quickStatusChange(t.id, "Cancelled");
-                              }}
-                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-all"
-                              title="Cancel transaction"
-                            >
-                              <XCircle className="h-3.5 w-3.5" />
-                            </button>
-                          </>
-                        )}
-                        {t.transactionStatus === "Processing" && (
-                          <>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                quickStatusChange(t.id, "OnTheWay");
-                              }}
-                              className="p-1.5 text-sky-600 hover:bg-sky-50 rounded-md transition-all"
-                              title="Mark as On the Way"
-                            >
-                              <Truck className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                quickStatusChange(t.id, "Cancelled");
-                              }}
-                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-all"
-                              title="Cancel transaction"
-                            >
-                              <XCircle className="h-3.5 w-3.5" />
-                            </button>
-                          </>
-                        )}
-                        {t.transactionStatus === "OnTheWay" && (
-                          <>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                quickStatusChange(t.id, "Completed");
-                              }}
-                              className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"
-                              title="Mark as completed"
-                            >
-                              <CheckCircle className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                quickStatusChange(t.id, "Cancelled");
-                              }}
-                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-all"
-                              title="Cancel transaction"
-                            >
-                              <XCircle className="h-3.5 w-3.5" />
-                            </button>
-                          </>
-                        )}
-                        {(t.transactionStatus === "Completed" ||
-                          t.transactionStatus === "Cancelled") && (
-                          <span className="w-7" />
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedId(expandedId === t.id ? null : t.id);
-                          }}
-                          className="p-1.5 text-[#94a3b8] hover:bg-[#f1f5f9] rounded-md transition-all"
-                        >
-                          {expandedId === t.id ? (
-                            <ChevronUp className="h-3.5 w-3.5" />
-                          ) : (
-                            <ChevronDown className="h-3.5 w-3.5" />
+                              {(t as any).creditPaidAt ? "Paid" : "Unpaid"}
+                              {(t as any).creditDueDate && (
+                                <span className="text-[9px] opacity-70">
+                                  Due:{" "}
+                                  {new Date(
+                                    (t as any).creditDueDate,
+                                  ).toLocaleDateString("en-PH")}
+                                </span>
+                              )}
+                            </span>
                           )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  {expandedId === t.id && (
-                    <tr key={`${t.id}-items`}>
-                      <td colSpan={10} className="bg-[#f8fafc] p-4">
-                        <div className="max-w-xl">
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                                <th className="text-left pb-2">Product</th>
-                                <th className="text-right pb-2">Qty</th>
-                                <th className="text-right pb-2">Price</th>
-                                <th className="text-right pb-2">Total</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[#e2e8f0]">
-                              {t.items.map((item) => (
-                                <tr key={item.id}>
-                                  <td className="py-1.5 text-[#0e212c] font-medium">
-                                    {products.find(
-                                      (p) => p.id === item.productId,
-                                    )?.productName || `#${item.productId}`}
-                                  </td>
-                                  <td className="py-1.5 text-right text-[#64748b]">
-                                    {item.quantity}
-                                  </td>
-                                  <td className="py-1.5 text-right font-mono text-[#64748b]">
-                                    {Number(item.unitPrice).toLocaleString(
-                                      "en-PH",
-                                      {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                      },
-                                    )}
-                                  </td>
-                                  <td className="py-1.5 text-right font-mono text-[#0e212c] font-semibold">
-                                    {Number(item.totalPrice).toLocaleString(
-                                      "en-PH",
-                                      {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                      },
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          <div className="flex gap-4 mt-3 text-xs text-[#94a3b8]">
-                            <span>Delivery: {t.deliveryMethod}</span>
-                            <span>Payment: {t.paymentMethod || "—"}</span>
-                            {t.returnForReceiptNumber && (
-                              <span>
-                                {t.transactionType === "Return"
-                                  ? "Return of"
-                                  : t.transactionType === "Damage"
-                                    ? "Damage ref"
-                                    : "Adjustment ref"}
-                                : #{t.returnForReceiptNumber}
-                              </span>
+                          {(t as any).isCredit && !(t as any).creditPaidAt && (
+                            <button
+                              onClick={() => markCreditAsPaid(t.id)}
+                              className="px-2 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              Mark Paid
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4 text-right font-mono text-[#0e212c] font-semibold">
+                        {Number(t.grandTotal || 0).toLocaleString("en-PH", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </td>
+                      <td className="p-4 text-center">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${statusBadge(t.transactionStatus)}`}
+                        >
+                          {t.transactionStatus}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {t.transactionStatus === "Ongoing" && (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  quickStatusChange(t.id, "Processing");
+                                }}
+                                className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-md transition-all"
+                                title="Mark as Processing"
+                              >
+                                <Package className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  quickStatusChange(t.id, "Cancelled");
+                                }}
+                                className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-all"
+                                title="Cancel transaction"
+                              >
+                                <XCircle className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          )}
+                          {t.transactionStatus === "Processing" && (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  quickStatusChange(t.id, "OnTheWay");
+                                }}
+                                className="p-1.5 text-sky-600 hover:bg-sky-50 rounded-md transition-all"
+                                title="Mark as On the Way"
+                              >
+                                <Truck className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  quickStatusChange(t.id, "Cancelled");
+                                }}
+                                className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-all"
+                                title="Cancel transaction"
+                              >
+                                <XCircle className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          )}
+                          {t.transactionStatus === "OnTheWay" && (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  quickStatusChange(t.id, "Completed");
+                                }}
+                                className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"
+                                title="Mark as completed"
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  quickStatusChange(t.id, "Cancelled");
+                                }}
+                                className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-all"
+                                title="Cancel transaction"
+                              >
+                                <XCircle className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          )}
+                          {(t.transactionStatus === "Completed" ||
+                            t.transactionStatus === "Cancelled") && (
+                            <span className="w-7" />
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedId(expandedId === t.id ? null : t.id);
+                            }}
+                            className="p-1.5 text-[#94a3b8] hover:bg-[#f1f5f9] rounded-md transition-all"
+                          >
+                            {expandedId === t.id ? (
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronDown className="h-3.5 w-3.5" />
                             )}
-                          </div>
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </>
-              ))}
-              {transactions.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="p-8 text-center text-[#94a3b8]">
-                    No transactions found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    {expandedId === t.id && (
+                      <tr key={`${t.id}-items`}>
+                        <td colSpan={10} className="bg-[#f8fafc] p-4">
+                          <div className="max-w-xl">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                                  <th className="text-left pb-2">Product</th>
+                                  <th className="text-right pb-2">Qty</th>
+                                  <th className="text-right pb-2">Price</th>
+                                  <th className="text-right pb-2">Total</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-[#e2e8f0]">
+                                {t.items.map((item) => (
+                                  <tr key={item.id}>
+                                    <td className="py-1.5 text-[#0e212c] font-medium">
+                                      {products.find(
+                                        (p) => p.id === item.productId,
+                                      )?.productName || `#${item.productId}`}
+                                    </td>
+                                    <td className="py-1.5 text-right text-[#64748b]">
+                                      {item.quantity}
+                                    </td>
+                                    <td className="py-1.5 text-right font-mono text-[#64748b]">
+                                      {Number(item.unitPrice).toLocaleString(
+                                        "en-PH",
+                                        {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        },
+                                      )}
+                                    </td>
+                                    <td className="py-1.5 text-right font-mono text-[#0e212c] font-semibold">
+                                      {Number(item.totalPrice).toLocaleString(
+                                        "en-PH",
+                                        {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        },
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            <div className="flex gap-4 mt-3 text-xs text-[#94a3b8]">
+                              <span>Delivery: {t.deliveryMethod}</span>
+                              <span>Payment: {t.paymentMethod || "—"}</span>
+                              {t.returnForReceiptNumber && (
+                                <span>
+                                  {t.transactionType === "Return"
+                                    ? "Return of"
+                                    : t.transactionType === "Damage"
+                                      ? "Damage ref"
+                                      : "Adjustment ref"}
+                                  : #{t.returnForReceiptNumber}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                ))}
+                {transactions.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="p-8 text-center text-[#94a3b8]">
+                      No transactions found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
