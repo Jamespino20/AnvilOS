@@ -108,7 +108,7 @@ export function InventoryClient({
 
   const [page, setPage] = useState(1);
   const perPage = 15;
-  const isAdmin = role === "ADMIN";
+  const isAdmin = role === "ADMIN" || role === "SUPERADMIN";
 
   // Inline quantity editing
   const [editQtyId, setEditQtyId] = useState<number | null>(null);

@@ -43,7 +43,7 @@ const PER_PAGE = 10;
 export default function BrandsPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const isAdmin = (session?.user as any)?.role === "ADMIN";
+  const isAdmin = (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "SUPERADMIN";
   const [brands, setBrands] = useState<
     (Brand & { _count: { products: number } })[]
   >([]);

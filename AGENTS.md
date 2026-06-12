@@ -67,7 +67,7 @@
 - **Payment breakdown excludes non-sales** — returns/damages/adjustments don't inflate method totals.
 - **₱ removed from all UI** — only applied centrally in report/export formatting for consistency.
 - **Cache headers** prevent stale page data across sessions.
-- **SUPERADMIN role** — Only SUPERADMIN can edit ADMIN users. Admins cannot affect other admins.
+- **SUPERADMIN role** — Only SUPERADMIN can edit ADMIN users. Admins cannot affect other admins. `isAdminRole()` includes SUPERADMIN. All `isAdmin` checks in UI (inventory, categories, brands) use `isAdminRole()` or equivalent to ensure SUPERADMIN has full admin access.
 - **Draggable cart pane** — Width constrained 280px-550px via mouse drag on left edge handle.
 
 ## Next Steps
