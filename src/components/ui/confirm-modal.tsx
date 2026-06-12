@@ -16,7 +16,7 @@ interface ConfirmModalProps {
 export function ConfirmModal({ open, onClose, onConfirm, title, message, confirmLabel = "Confirm", variant = "danger", children }: ConfirmModalProps) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center">
       <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-sm mx-4 p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start gap-4">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${variant === "danger" ? "bg-rose-50 text-rose-500" : "bg-amber-50 text-amber-500"}`}>

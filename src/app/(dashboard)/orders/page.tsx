@@ -341,7 +341,7 @@ export default function OrdersPage() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            placeholder="Search by buyer or receipt..."
+            placeholder="Search by buyer name, receipt #, delivery ref..."
             className="w-full h-10 pl-10 pr-4 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
         </div>

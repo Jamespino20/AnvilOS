@@ -201,7 +201,7 @@ export default function TransactionsPage() {
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search receipt..."
+            placeholder="Search by receipt #, buyer name..."
             className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
         </div>
@@ -676,7 +676,7 @@ export default function TransactionsPage() {
                             </table>
                             <div className="flex gap-4 mt-3 text-xs text-[#94a3b8]">
                               <span>Delivery: {t.deliveryMethod}</span>
-                              <span>Payment: {t.paymentMethod || "—"}</span>
+                              <span>Payment: {t.paymentMethod || "\u2014"}</span>
                               {t.returnForReceiptNumber && (
                                 <span>
                                   {t.transactionType === "Return"
@@ -686,6 +686,33 @@ export default function TransactionsPage() {
                                       : "Adjustment ref"}
                                   : #{t.returnForReceiptNumber}
                                 </span>
+                              )}
+                              {(t as any).isCredit && (
+                                <>
+                                  <span className="font-semibold text-amber-600">
+                                    Credit Sale
+                                  </span>
+                                  {(t as any).creditDueDate && (
+                                    <span>
+                                      Due:{" "}
+                                      {new Date(
+                                        (t as any).creditDueDate,
+                                      ).toLocaleDateString("en-PH")}
+                                    </span>
+                                  )}
+                                  {(t as any).creditPaidAt ? (
+                                    <span className="text-emerald-600">
+                                      Paid{" "}
+                                      {new Date(
+                                        (t as any).creditPaidAt,
+                                      ).toLocaleDateString("en-PH")}
+                                    </span>
+                                  ) : (
+                                    <span className="text-rose-600 font-semibold">
+                                      Unpaid
+                                    </span>
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>

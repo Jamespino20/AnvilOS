@@ -118,7 +118,7 @@ export function ImportButton({ table, onImported, title }: Props) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
               <h2 className="text-lg font-bold text-[#0e212c]">{config?.label || table} — Import</h2>

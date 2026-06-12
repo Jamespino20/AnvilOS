@@ -253,7 +253,7 @@ export default function CategoriesPage() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            placeholder="Search categories..."
+            placeholder="Search by category name..."
             className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
         </div>
@@ -355,7 +355,8 @@ export default function CategoriesPage() {
                 return (
                   <React.Fragment key={cat.id}>
                     <tr
-                      className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} hover:bg-[#f1f5f9] transition-colors`}
+                      className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} ${hasChildren ? "cursor-pointer" : ""} hover:bg-[#f1f5f9] transition-colors`}
+                      onClick={hasChildren ? () => toggleExpand(cat.id) : undefined}
                     >
                       <td className="p-4">
                         <div className="flex items-center gap-3">
@@ -431,8 +432,9 @@ export default function CategoriesPage() {
                           key={child.id}
                           className="bg-[#fafbfc] hover:bg-[#f1f5f9] transition-colors"
                         >
-                          <td className="p-4 pl-12">
+                          <td className="p-4 pl-16">
                             <div className="flex items-center gap-3">
+                              <span className="text-[#e2e8f0] text-xs select-none">\u2514</span>
                               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fd761a]/5 to-transparent flex items-center justify-center">
                                 <FolderTree className="h-3.5 w-3.5 text-[#fd761a]/60" />
                               </div>
@@ -593,7 +595,7 @@ export default function CategoriesPage() {
                   className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
                 >
                   <option value="">None (Top-level)</option>
-                  {categories.map((c) => (
+                  {categories.filter((c) => !c.parentCategoryId).map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -701,7 +703,12 @@ export default function CategoriesPage() {
                 >
                   <option value="">None (Top-level)</option>
                   {categories
-                    .filter((c) => c.id !== editId)
+                    .filter((c) => {
+                      if (c.id === editId) return false;
+                      const currentCat = categories.find((cc) => cc.id === editId);
+                      if (currentCat?.parentCategoryId === c.id) return false;
+                      return true;
+                    })
                     .map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}

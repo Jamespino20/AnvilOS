@@ -14,6 +14,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
+  MoreVertical,
+  Zap,
+  Weight,
+  Box,
 } from "lucide-react";
 import {
   createProduct,
@@ -55,6 +59,9 @@ export function InventoryClient({
   const [filterCategory, setFilterCategory] = useState("");
   const [filterSupplier, setFilterSupplier] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [sortBy, setSortBy] = useState<string>("");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [menuOpen, setMenuOpen] = useState<number | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
@@ -141,7 +148,23 @@ export function InventoryClient({
     )
       return false;
     if (filterStatus === "out" && p.quantity !== 0) return false;
+    if (filterStatus === "fast" && !p.isFastMoving) return false;
+    if (filterStatus === "weight" && !p.sellByWeight) return false;
+    if (filterStatus === "box" && !p.sellByBox) return false;
     return true;
+  }).sort((a, b) => {
+    if (!sortBy) return 0;
+    const dir = sortDir === "asc" ? 1 : -1;
+    switch (sortBy) {
+      case "productName": return a.productName.localeCompare(b.productName) * dir;
+      case "category": return (a.category || "").localeCompare(b.category || "") * dir;
+      case "supplier": return (a.supplierName || "").localeCompare(b.supplierName || "") * dir;
+      case "brand": return ((a as any).brandRel?.name || "").localeCompare((b as any).brandRel?.name || "") * dir;
+      case "sellingPrice": return (Number(a.sellingPrice) - Number(b.sellingPrice)) * dir;
+      case "costPrice": return (Number(a.unitPrice || 0) - Number(b.unitPrice || 0)) * dir;
+      case "quantity": return (a.quantity - b.quantity) * dir;
+      default: return 0;
+    }
   });
 
   const totalPages = Math.ceil(filtered.length / perPage);
@@ -356,6 +379,9 @@ export function InventoryClient({
             <option value="">Status</option>
             <option value="low">Low Stock</option>
             <option value="out">Out of Stock</option>
+            <option value="fast">Fast Moving</option>
+            <option value="weight">Sell by Weight</option>
+            <option value="box">Sell by Box</option>
           </select>
         </div>
         <div className="flex gap-2 w-full lg:w-auto">
@@ -422,17 +448,41 @@ export function InventoryClient({
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
                 <th className="p-4 w-12"></th>
-                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                <th
+                  className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
+                  onClick={() => { if (sortBy === "productName") setSortDir(sortDir === "asc" ? "desc" : "asc"); else { setSortBy("productName"); setSortDir("asc"); } }}
+                >
                   Product Name
+                  <span className={`ml-1 ${sortBy === "productName" ? "text-[#fd761a]" : "text-[#cbd5e1]"}`}>
+                    {sortBy === "productName" && sortDir === "desc" ? "\u25BC" : "\u25B2"}
+                  </span>
                 </th>
-                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                <th
+                  className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
+                  onClick={() => { if (sortBy === "category") setSortDir(sortDir === "asc" ? "desc" : "asc"); else { setSortBy("category"); setSortDir("asc"); } }}
+                >
                   Category
+                  <span className={`ml-1 ${sortBy === "category" ? "text-[#fd761a]" : "text-[#cbd5e1]"}`}>
+                    {sortBy === "category" && sortDir === "desc" ? "\u25BC" : "\u25B2"}
+                  </span>
                 </th>
-                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                <th
+                  className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
+                  onClick={() => { if (sortBy === "supplier") setSortDir(sortDir === "asc" ? "desc" : "asc"); else { setSortBy("supplier"); setSortDir("asc"); } }}
+                >
                   Supplier
+                  <span className={`ml-1 ${sortBy === "supplier" ? "text-[#fd761a]" : "text-[#cbd5e1]"}`}>
+                    {sortBy === "supplier" && sortDir === "desc" ? "\u25BC" : "\u25B2"}
+                  </span>
                 </th>
-                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                <th
+                  className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
+                  onClick={() => { if (sortBy === "brand") setSortDir(sortDir === "asc" ? "desc" : "asc"); else { setSortBy("brand"); setSortDir("asc"); } }}
+                >
                   Brand
+                  <span className={`ml-1 ${sortBy === "brand" ? "text-[#fd761a]" : "text-[#cbd5e1]"}`}>
+                    {sortBy === "brand" && sortDir === "desc" ? "\u25BC" : "\u25B2"}
+                  </span>
                 </th>
                 <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Selling Price
@@ -482,7 +532,26 @@ export function InventoryClient({
                       )}
                     </td>
                     <td className="p-4 font-medium text-[#0e212c]">
-                      {product.productName}
+                      <div className="flex items-center gap-2">
+                        {product.productName}
+                        <div className="flex gap-1">
+                          {product.isFastMoving && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              <Zap className="h-2.5 w-2.5" /> Fast
+                            </span>
+                          )}
+                          {product.sellByWeight && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              <Weight className="h-2.5 w-2.5" /> Weight
+                            </span>
+                          )}
+                          {product.sellByBox && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                              <Box className="h-2.5 w-2.5" /> Box
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="p-4 text-[#64748b]">{product.category}</td>
                     <td className="p-4 text-[#64748b]">
@@ -533,23 +602,30 @@ export function InventoryClient({
                     <td className="p-4 text-right text-xs font-mono text-[#94a3b8]">
                       {product.lastRestockedAt ? new Date(product.lastRestockedAt).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "\u2014"}
                     </td>
-                    {isAdmin && <td className="p-4 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => openEdit(product)}
-                          className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all"
-                          title="Edit product details"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(product.id)}
-                          className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all"
-                          title="Delete product"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                    {isAdmin && <td className="p-4 text-center relative">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === product.id ? null : product.id); }}
+                        className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#0e212c] hover:bg-[#f1f5f9] transition-all"
+                        title="Actions"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                      {menuOpen === product.id && (
+                        <div className="absolute right-4 top-full mt-1 w-36 bg-white border border-[#e2e8f0] rounded-lg shadow-xl z-30 py-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openEdit(product); setMenuOpen(null); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#0e212c] hover:bg-[#f1f5f9] transition-colors"
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-[#64748b]" /> Edit
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(product.id); setMenuOpen(null); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Delete
+                          </button>
+                        </div>
+                      )}
                     </td>}
                   </tr>
                 );

@@ -229,7 +229,7 @@ export default function BrandsPage() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            placeholder="Search brands..."
+            placeholder="Search by brand name..."
             className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
         </div>

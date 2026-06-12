@@ -100,7 +100,7 @@ export function POSClient({ products, buyers, categories }: Props) {
   const [chequeNumber, setChequeNumber] = useState("");
   const [bankName, setBankName] = useState("");
   const [chequeDate, setChequeDate] = useState("");
-  const [payeeName, setPayeeName] = useState("CWL Hardware");
+  const [payeeName, setPayeeName] = useState("");
   const [done, setDone] = useState<{
     receipt: number;
     items: any[];
@@ -365,7 +365,7 @@ export function POSClient({ products, buyers, categories }: Props) {
       setChequeNumber("");
       setBankName("");
       setChequeDate("");
-      setPayeeName("CWL Hardware");
+      setPayeeName("");
       setPaymentMethod("Cash");
       setDeliveryMethod("WalkIn");
       setTimeout(() => {
@@ -492,7 +492,7 @@ export function POSClient({ products, buyers, categories }: Props) {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search products..."
+                placeholder="Search by product name, SKU..."
                 className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
               />
             </div>
@@ -529,7 +529,7 @@ export function POSClient({ products, buyers, categories }: Props) {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 content-start">
+          <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 content-start max-w-[800px]">
             {filtered.map((product) => (
               <button
                 key={product.id}
@@ -828,7 +828,7 @@ export function POSClient({ products, buyers, categories }: Props) {
                         type="text"
                         value={payeeName}
                         onChange={(e) => setPayeeName(e.target.value)}
-                        placeholder="Payee Name"
+                        placeholder={buyerName || "Payee Name"}
                         className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
                       />
                     </div>
@@ -847,6 +847,11 @@ export function POSClient({ products, buyers, categories }: Props) {
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-semibold text-[#0e212c] truncate">
                     {item.product.productName}
+                    {(item.product as any).brandRel?.name && (
+                      <span className="text-[10px] font-normal text-[#94a3b8] ml-1">
+                        {(item.product as any).brandRel.name}
+                      </span>
+                    )}
                   </p>
                   <p className="text-[10px] text-[#94a3b8] truncate">
                     {categoryDisplay(item.product)}

@@ -120,7 +120,7 @@ export default function AuditLogPage() {
         <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input type="text" value={search} onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Search actions, details..."
+            placeholder="Search by action, panel, user..."
             className="w-full h-10 pl-10 pr-4 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
         </div>
         <div className="flex gap-2 w-full lg:w-auto flex-wrap">

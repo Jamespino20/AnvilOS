@@ -180,7 +180,7 @@ export default function RestocksPage() {
       <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
         <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search restocks..."
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by supplier name, receipt #..."
             className="w-full h-10 pl-10 pr-4 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10" />
         </div>
         <div className="flex gap-2 w-full lg:w-auto flex-wrap">
@@ -336,7 +336,7 @@ export default function RestocksPage() {
 
       {/* New Restock Modal - POS Cart Layout */}
       {showNew && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center" onClick={() => { setShowNew(false); setCart([]); setRestockSearch(""); }}>
+        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-8 py-6 border-b border-[#e2e8f0]">
               <h2 className="text-lg font-bold text-[#0e212c] flex items-center gap-2">
