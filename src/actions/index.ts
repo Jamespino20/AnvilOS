@@ -38,7 +38,7 @@ export const getProducts = cache(
     if (opts?.brandId) where.brandId = opts.brandId;
     if (opts?.search) {
       where.OR = [
-        { productName: { contains: opts.search, mode: "insensitive" } },
+        { productName: { contains: opts.search } },
       ];
     }
     if (opts?.status === "low")
@@ -508,7 +508,7 @@ function buildTransactionWhere(opts?: {
   }
   if (opts?.search) {
     where.OR = [
-      { buyerName: { contains: opts.search, mode: "insensitive" } },
+      { buyerName: { contains: opts.search } },
       { receiptNumber: parseInt(opts.search) || undefined },
     ].filter(Boolean);
   }
@@ -1169,9 +1169,9 @@ export async function getAuditLogs(opts?: {
   if (opts?.panel) where.panel = opts.panel;
   if (opts?.search) {
     where.OR = [
-      { action: { contains: opts.search, mode: "insensitive" } },
-      { details: { contains: opts.search, mode: "insensitive" } },
-      { panel: { contains: opts.search, mode: "insensitive" } },
+      { action: { contains: opts.search } },
+      { details: { contains: opts.search } },
+      { panel: { contains: opts.search } },
     ];
   }
 
@@ -1934,9 +1934,9 @@ export async function getAuditLogCount(opts?: {
   if (opts?.panel) where.panel = opts.panel;
   if (opts?.search)
     where.OR = [
-      { action: { contains: opts.search, mode: "insensitive" } },
-      { details: { contains: opts.search, mode: "insensitive" } },
-      { panel: { contains: opts.search, mode: "insensitive" } },
+      { action: { contains: opts.search } },
+      { details: { contains: opts.search } },
+      { panel: { contains: opts.search } },
     ];
   return prisma.auditLog.count({ where });
 }
@@ -1963,9 +1963,9 @@ export async function getPaginatedAuditLogs(
   if (opts?.sellerId) where.sellerId = opts.sellerId;
   if (opts?.search)
     where.OR = [
-      { action: { contains: opts.search, mode: "insensitive" } },
-      { details: { contains: opts.search, mode: "insensitive" } },
-      { panel: { contains: opts.search, mode: "insensitive" } },
+      { action: { contains: opts.search } },
+      { details: { contains: opts.search } },
+      { panel: { contains: opts.search } },
     ];
   const [logs, total] = await Promise.all([
     prisma.auditLog.findMany({
@@ -2102,7 +2102,7 @@ export async function importData(
         const minThreshold = parseInt(row.minThreshold || "0");
         let categoryId: number | undefined;
         const cat = await prisma.category.findFirst({
-          where: { name: { contains: row.category, mode: "insensitive" } },
+          where: { name: { contains: row.category } },
         });
         if (cat) categoryId = cat.id;
         await prisma.product.create({
@@ -2184,9 +2184,9 @@ export async function getUsers(opts?: {
   const where: any = {};
   if (opts?.search) {
     where.OR = [
-      { sellerName: { contains: opts.search, mode: "insensitive" } },
-      { username: { contains: opts.search, mode: "insensitive" } },
-      { email: { contains: opts.search, mode: "insensitive" } },
+      { sellerName: { contains: opts.search } },
+      { username: { contains: opts.search } },
+      { email: { contains: opts.search } },
     ];
   }
   const take = opts?.perPage || 20;
@@ -2233,8 +2233,8 @@ export async function createUser(data: {
   const exists = await prisma.user.findFirst({
     where: {
       OR: [
-        { username: { equals: data.username, mode: "insensitive" } },
-        { email: { equals: data.email, mode: "insensitive" } },
+        { username: { equals: data.username } },
+        { email: { equals: data.email } },
       ],
     },
   });
