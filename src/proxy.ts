@@ -14,7 +14,7 @@ import type { NextAuthRequest } from "next-auth";
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|images|login|register|forgot-password).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|images|login|register|forgot-password|manifest\\.webmanifest|sw\\.js).*)",
   ],
 };
 

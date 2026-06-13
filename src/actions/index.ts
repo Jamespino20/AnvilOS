@@ -8,7 +8,7 @@ Last Update Date: June 13, 2026
 
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, invalidateUserCache } from "@/lib/prisma";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { logAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
@@ -1437,6 +1437,7 @@ export async function updateProfile(data: { name: string; imageUrl?: string }) {
     where: { id: Number(session.user.id) },
     data: updateData,
   });
+  invalidateUserCache(Number(session.user.id));
   await logAudit("Settings", "Update Profile", `Name changed to ${data.name}`);
   revalidatePath("/settings");
   return user;
@@ -1457,6 +1458,7 @@ export async function updatePassword(newPassword: string) {
       passwordHash,
     },
   });
+  invalidateUserCache(Number(session.user.id));
   await logAudit("Settings", "Change Password", "Password changed");
   revalidatePath("/settings");
   return user;
@@ -1470,6 +1472,7 @@ export async function startTotpSetup() {
     where: { id: userId },
     data: { totpSecret: secret, totpEnabled: false },
   });
+  invalidateUserCache(userId);
   await logAudit("Settings", "Start TOTP Setup", "Authenticator setup started");
   return { secret };
 }
@@ -1488,6 +1491,7 @@ export async function confirmTotpSetup(code: string) {
     where: { id: userId },
     data: { totpEnabled: true },
   });
+  invalidateUserCache(userId);
   await logAudit("Settings", "Enable TOTP", "Authenticator app enabled");
   return { success: true };
 }
@@ -1499,6 +1503,7 @@ export async function disableTotp() {
     where: { id: userId },
     data: { totpEnabled: false, totpSecret: null },
   });
+  invalidateUserCache(userId);
   await logAudit("Settings", "Disable TOTP", "Authenticator app disabled");
   return { success: true };
 }
@@ -2305,6 +2310,7 @@ export async function updateUser(
     updateData.passwordHash = await bcrypt.hash(data.password, 10);
   }
   const user = await prisma.user.update({ where: { id }, data: updateData });
+  invalidateUserCache(id);
   await logAudit(
     "User Management",
     "Update User",
@@ -2334,6 +2340,7 @@ export async function deleteUser(id: number) {
     where: { id },
     data: { isActive: !user.isActive },
   });
+  invalidateUserCache(id);
   const action = user.isActive ? "Deactivated" : "Activated";
   await logAudit(
     "User Management",

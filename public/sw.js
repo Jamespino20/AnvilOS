@@ -6,7 +6,7 @@ URL: https://github.com/Jamespino20
 Last Update Date: June 13, 2026
 */
 
-const CACHE_NAME = "cwl-hardware-v1";
+const CACHE_NAME = "cwl-hardware-v2";
 const STATIC_ASSETS = [
   "/",
   "/dashboard",
@@ -37,12 +37,27 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+function isHttpUrl(url) {
+  try {
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  const url = new URL(request.url);
 
   if (request.method !== "GET") return;
-  if (url.protocol !== "http:" && url.protocol !== "https:") return;
+
+  let url;
+  try {
+    url = new URL(request.url);
+  } catch {
+    return;
+  }
+
+  if (!isHttpUrl(url)) return;
 
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
@@ -61,15 +76,17 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
     caches.match(request).then((cached) => {
-      const fetched = fetch(request).then((response) => {
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, clone);
-          });
-        }
-        return response;
-      });
+      const fetched = fetch(request)
+        .then((response) => {
+          if (response && response.status === 200 && isHttpUrl(url)) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, clone).catch(() => {});
+            });
+          }
+          return response;
+        })
+        .catch(() => cached);
       return cached || fetched;
     }),
   );
