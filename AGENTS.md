@@ -9,7 +9,7 @@
 - Custom theme: #0e212c blue, #fd761a orange, 4px radius
 - File header comment block required on every source file
 - No emojis in source files unless explicitly requested
-- **Hostinger MySQL**: `max_connections_per_hour: 500`. Pool params in DATABASE_URL: `connectionLimit=3&idleTimeout=120&acquireTimeout=10`. Keep pool small.
+- **Hostinger MySQL**: `max_connections_per_hour: 500`. Default pool (10 conns, 60s idle) is fine. No URL params — MariaDB driver uses ms, not seconds.
 
 ## Progress
 
