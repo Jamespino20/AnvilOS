@@ -18,7 +18,11 @@ export async function GET() {
 
   try {
     const rows = await prisma.$queryRawUnsafe("SHOW PROCESSLIST");
-    return NextResponse.json({ processes: rows });
+    const safe = (rows as any[]).map((r) => ({
+      ...r,
+      Id: Number(r.Id),
+    }));
+    return NextResponse.json({ processes: safe });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
