@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 12, 2026
+Last Update Date: June 13, 2026
 */
 
 "use server";
@@ -37,9 +37,7 @@ export const getProducts = cache(
     if (opts?.supplierId) where.supplierId = opts.supplierId;
     if (opts?.brandId) where.brandId = opts.brandId;
     if (opts?.search) {
-      where.OR = [
-        { productName: { contains: opts.search } },
-      ];
+      where.OR = [{ productName: { contains: opts.search } }];
     }
     if (opts?.status === "low")
       where.quantity = { lte: prisma.product.fields.minThreshold };
@@ -1548,7 +1546,12 @@ export async function processRestock(transactionId: number) {
 
 export async function updateBuyerInfo(
   buyerName: string,
-  data: { buyerAddress?: string; buyerContact?: string; buyerEmail?: string; imageUrl?: string | null },
+  data: {
+    buyerAddress?: string;
+    buyerContact?: string;
+    buyerEmail?: string;
+    imageUrl?: string | null;
+  },
 ) {
   await requireAdmin();
   const session = await auth();
@@ -2275,21 +2278,21 @@ export async function updateUser(
   await requireAdmin();
   const session = await auth();
   const currentRole = (session?.user as any)?.role;
-  
+
   // Check if target user is ADMIN
   const targetUser = await prisma.user.findUnique({ where: { id } });
   if (!targetUser) throw new Error("User not found");
-  
+
   // Only SUPERADMIN can edit ADMIN users
   if (targetUser.role === "ADMIN" && currentRole !== "SUPERADMIN") {
     throw new Error("Only SUPERADMIN can edit ADMIN users");
   }
-  
+
   // Only SUPERADMIN can promote to SUPERADMIN
   if (data.role === "SUPERADMIN" && currentRole !== "SUPERADMIN") {
     throw new Error("Only SUPERADMIN can promote to SUPERADMIN");
   }
-  
+
   const updateData: any = {};
   if (data.sellerName !== undefined) updateData.sellerName = data.sellerName;
   if (data.username !== undefined) updateData.username = data.username;
@@ -2317,12 +2320,12 @@ export async function deleteUser(id: number) {
   const currentRole = (session?.user as any)?.role;
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new Error("User not found");
-  
+
   // Only SUPERADMIN can deactivate ADMIN users
   if (user.role === "ADMIN" && currentRole !== "SUPERADMIN") {
     throw new Error("Only SUPERADMIN can deactivate ADMIN users");
   }
-  
+
   // Cannot deactivate SUPERADMIN
   if (user.role === "SUPERADMIN") {
     throw new Error("Cannot deactivate SUPERADMIN users");

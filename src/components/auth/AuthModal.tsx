@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 12, 2026
+Last Update Date: June 13, 2026
 */
 
 import { useState, useEffect } from "react";
@@ -117,9 +117,7 @@ export function AuthModal({
   return (
     <>
       {isOpen && (
-        <div
-          className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center"
-        >
+        <div className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center">
           <div
             className="bg-white w-full max-w-[440px] mx-4 rounded-xl shadow-2xl border border-[#e2e8f0] overflow-hidden"
             onClick={(e) => e.stopPropagation()}

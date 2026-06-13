@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 12, 2026
+Last Update Date: June 13, 2026
 */
 
 "use client";
@@ -552,8 +552,6 @@ export default function OrdersPage() {
                 </div>
               </div>
 
-
-
               {isEditing && (
                 <div className="border-t border-[#e2e8f0] p-5 space-y-4 bg-[#f8fafc]">
                   <div className="flex items-center justify-between">
@@ -985,11 +983,14 @@ export default function OrdersPage() {
                       Order #{order.receiptNumber}
                     </h3>
                     <p className="text-[10px] text-[#94a3b8] mt-0.5">
-                      {new Date(order.transactionDate).toLocaleDateString("en-PH", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
+                      {new Date(order.transactionDate).toLocaleDateString(
+                        "en-PH",
+                        {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        },
+                      )}
                     </p>
                   </div>
                   <button
@@ -1134,7 +1135,9 @@ export default function OrdersPage() {
                     </span>
                   </div>
 
-                  {(order.deliveryRef || order.deliveryNotes || order.delivererName) && (
+                  {(order.deliveryRef ||
+                    order.deliveryNotes ||
+                    order.delivererName) && (
                     <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-[#e2e8f0]">
                       {order.delivererName && (
                         <>

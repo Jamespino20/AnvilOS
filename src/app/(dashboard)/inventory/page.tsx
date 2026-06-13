@@ -3,10 +3,15 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 12, 2026
+Last Update Date: June 13, 2026
 */
 
-import { getProducts, getAllCategories, getSuppliers, getBrands } from "@/actions";
+import {
+  getProducts,
+  getAllCategories,
+  getSuppliers,
+  getBrands,
+} from "@/actions";
 import { InventoryClient } from "./client";
 import { auth } from "@/lib/auth";
 

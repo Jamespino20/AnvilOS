@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 12, 2026
+Last Update Date: June 13, 2026
 */
 
 "use client";
@@ -68,7 +68,8 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
 
   function canEditUser(targetUser: UserRow) {
     if (currentUserRole === "SUPERADMIN") return true;
-    if (currentUserRole === "ADMIN" && targetUser.role === "ADMIN") return false;
+    if (currentUserRole === "ADMIN" && targetUser.role === "ADMIN")
+      return false;
     return true;
   }
 
@@ -353,9 +354,11 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
                   <td className="p-4 text-center">
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                        u.role === "SUPERADMIN" ? "bg-amber-50 text-amber-700 border border-amber-200" :
-                        u.role === "ADMIN" ? "bg-violet-50 text-violet-700 border border-violet-200" :
-                        "bg-blue-50 text-blue-700 border border-blue-200"
+                        u.role === "SUPERADMIN"
+                          ? "bg-amber-50 text-amber-700 border border-amber-200"
+                          : u.role === "ADMIN"
+                            ? "bg-violet-50 text-violet-700 border border-violet-200"
+                            : "bg-blue-50 text-blue-700 border border-blue-200"
                       }`}
                     >
                       {u.role}
@@ -387,7 +390,11 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
                         onClick={() => openEdit(u)}
                         disabled={!canEditUser(u)}
                         className={`p-1.5 rounded-md transition-all ${canEditUser(u) ? "text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50" : "text-[#e2e8f0] cursor-not-allowed"}`}
-                        title={canEditUser(u) ? "Edit user" : "Only SUPERADMIN can edit ADMIN users"}
+                        title={
+                          canEditUser(u)
+                            ? "Edit user"
+                            : "Only SUPERADMIN can edit ADMIN users"
+                        }
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -395,7 +402,13 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
                         onClick={() => setToggleTarget(u)}
                         disabled={!canEditUser(u)}
                         className={`p-1.5 rounded-md transition-all ${!canEditUser(u) ? "text-[#e2e8f0] cursor-not-allowed" : u.isActive ? "text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50" : "text-[#94a3b8] hover:text-emerald-600 hover:bg-emerald-50"}`}
-                        title={!canEditUser(u) ? "Only SUPERADMIN can modify ADMIN users" : u.isActive ? "Deactivate user" : "Activate user"}
+                        title={
+                          !canEditUser(u)
+                            ? "Only SUPERADMIN can modify ADMIN users"
+                            : u.isActive
+                              ? "Deactivate user"
+                              : "Activate user"
+                        }
                       >
                         {u.isActive ? (
                           <ToggleRight className="h-4 w-4" />
@@ -528,7 +541,10 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        role: e.target.value as "SUPERADMIN" | "ADMIN" | "STAFF",
+                        role: e.target.value as
+                          | "SUPERADMIN"
+                          | "ADMIN"
+                          | "STAFF",
                       })
                     }
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
@@ -642,10 +658,16 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        role: e.target.value as "SUPERADMIN" | "ADMIN" | "STAFF",
+                        role: e.target.value as
+                          | "SUPERADMIN"
+                          | "ADMIN"
+                          | "STAFF",
                       })
                     }
-                    disabled={showEdit !== null && !canEditUser(initialUsers.find(u => u.id === showEdit)!)}
+                    disabled={
+                      showEdit !== null &&
+                      !canEditUser(initialUsers.find((u) => u.id === showEdit)!)
+                    }
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] disabled:bg-[#f8fafc] disabled:text-[#94a3b8]"
                   >
                     <option value="STAFF">Staff</option>

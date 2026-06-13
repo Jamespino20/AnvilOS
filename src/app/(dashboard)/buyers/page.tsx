@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 12, 2026
+Last Update Date: June 13, 2026
 */
 
 "use client";
@@ -532,7 +532,9 @@ export default function BuyersPage() {
                       />
                     </label>
                   </div>
-                  <span className="text-xs text-[#94a3b8]">Hover to upload photo</span>
+                  <span className="text-xs text-[#94a3b8]">
+                    Hover to upload photo
+                  </span>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">

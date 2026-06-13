@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 12, 2026
+Last Update Date: June 13, 2026
 */
 
 import { prisma } from "./prisma";
@@ -44,14 +44,21 @@ let auditBatchTimer: NodeJS.Timeout | null = null;
 const AUDIT_BATCH_DELAY = 500;
 
 function formatAuditEntry(entry: AuditEntry): string {
-  const actor = entry.sellerId ? entry.fingerprint : `System [SYSTEM #${entry.sellerId}]`;
+  const actor = entry.sellerId
+    ? entry.fingerprint
+    : `System [SYSTEM #${entry.sellerId}]`;
   const timestamp = entry.timestamp.toISOString();
 
   let details = entry.details;
   if (entry.oldValues && entry.newValues) {
     const changes: string[] = [];
     Object.keys({ ...entry.oldValues, ...entry.newValues }).forEach((key) => {
-      if (entry.oldValues && key in entry.oldValues && entry.newValues && key in entry.newValues) {
+      if (
+        entry.oldValues &&
+        key in entry.oldValues &&
+        entry.newValues &&
+        key in entry.newValues
+      ) {
         const oldVal = entry.oldValues[key];
         const newVal = entry.newValues[key];
         if (oldVal !== newVal) {
@@ -69,9 +76,10 @@ function formatAuditEntry(entry: AuditEntry): string {
     }
   }
 
-  const groupedTimestamp = entry.oldValues || entry.newValues
-    ? `[${timestamp.slice(0, 19)}] ${timestamp.slice(11, 23)}`
-    : timestamp;
+  const groupedTimestamp =
+    entry.oldValues || entry.newValues
+      ? `[${timestamp.slice(0, 19)}] ${timestamp.slice(11, 23)}`
+      : timestamp;
 
   return `[${groupedTimestamp}] ${actor} | ${entry.panel} | ${entry.action} | ${details}`;
 }

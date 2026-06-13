@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 12, 2026
+Last Update Date: June 13, 2026
 */
 
 "use client";
@@ -710,157 +710,264 @@ export default function TransactionsPage() {
       </div>
 
       {/* Transaction Detail Modal */}
-      {expandedId && (() => {
-        const t = transactions.find((tx) => tx.id === expandedId);
-        if (!t) return null;
-        return (
-          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0] shrink-0">
-                <div>
-                  <h2 className="text-lg font-bold text-[#0e212c]">Transaction #{t.receiptNumber}</h2>
-                  <p className="text-xs text-[#64748b] mt-0.5">
-                    {new Date(t.transactionDate).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                  </p>
+      {expandedId &&
+        (() => {
+          const t = transactions.find((tx) => tx.id === expandedId);
+          if (!t) return null;
+          return (
+            <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
+              <div
+                className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-2xl max-h-[85vh] flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0] shrink-0">
+                  <div>
+                    <h2 className="text-lg font-bold text-[#0e212c]">
+                      Transaction #{t.receiptNumber}
+                    </h2>
+                    <p className="text-xs text-[#64748b] mt-0.5">
+                      {new Date(t.transactionDate).toLocaleDateString("en-PH", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setExpandedId(null)}
+                    className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
-                <button onClick={() => setExpandedId(null)} className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-5">
-                {/* Header Info */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Buyer</span>
-                    <p className="text-[#0e212c] font-medium">{t.buyerName}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Seller</span>
-                    <p className="text-[#0e212c] font-medium">{(t as any).seller?.sellerName || "\u2014"}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Type</span>
-                    <p className="text-[#0e212c] font-medium">{t.transactionType}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Status</span>
-                    <p className="text-[#0e212c] font-medium">{t.transactionStatus}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Delivery</span>
-                    <p className="text-[#0e212c] font-medium">{t.deliveryMethod}</p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Payment</span>
-                    <p className="text-[#0e212c] font-medium">{t.paymentMethod || "\u2014"}</p>
-                  </div>
-                  {t.invoiceNumber && (
-                    <div>
-                      <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Invoice #</span>
-                      <p className="text-[#0e212c] font-medium">{t.invoiceNumber}</p>
-                    </div>
-                  )}
-                  {t.returnForReceiptNumber && (
+                <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                  {/* Header Info */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                        {t.transactionType === "Return" ? "Return of" : t.transactionType === "Damage" ? "Damage ref" : "Adjustment ref"}
+                        Buyer
                       </span>
-                      <p className="text-[#0e212c] font-medium">#{t.returnForReceiptNumber}</p>
+                      <p className="text-[#0e212c] font-medium">
+                        {t.buyerName}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Seller
+                      </span>
+                      <p className="text-[#0e212c] font-medium">
+                        {(t as any).seller?.sellerName || "\u2014"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Type
+                      </span>
+                      <p className="text-[#0e212c] font-medium">
+                        {t.transactionType}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Status
+                      </span>
+                      <p className="text-[#0e212c] font-medium">
+                        {t.transactionStatus}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Delivery
+                      </span>
+                      <p className="text-[#0e212c] font-medium">
+                        {t.deliveryMethod}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Payment
+                      </span>
+                      <p className="text-[#0e212c] font-medium">
+                        {t.paymentMethod || "\u2014"}
+                      </p>
+                    </div>
+                    {t.invoiceNumber && (
+                      <div>
+                        <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                          Invoice #
+                        </span>
+                        <p className="text-[#0e212c] font-medium">
+                          {t.invoiceNumber}
+                        </p>
+                      </div>
+                    )}
+                    {t.returnForReceiptNumber && (
+                      <div>
+                        <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                          {t.transactionType === "Return"
+                            ? "Return of"
+                            : t.transactionType === "Damage"
+                              ? "Damage ref"
+                              : "Adjustment ref"}
+                        </span>
+                        <p className="text-[#0e212c] font-medium">
+                          #{t.returnForReceiptNumber}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Credit Info */}
+                  {(t as any).isCredit && (
+                    <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 text-sm">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-semibold text-amber-700">
+                          Credit Sale
+                        </span>
+                        {(t as any).creditDueDate && (
+                          <span className="text-amber-600">
+                            Due:{" "}
+                            {new Date(
+                              (t as any).creditDueDate,
+                            ).toLocaleDateString("en-PH")}
+                          </span>
+                        )}
+                        {(t as any).creditPaidAt ? (
+                          <span className="text-emerald-600 font-semibold">
+                            Paid{" "}
+                            {new Date(
+                              (t as any).creditPaidAt,
+                            ).toLocaleDateString("en-PH")}
+                          </span>
+                        ) : (
+                          <span className="text-rose-600 font-semibold">
+                            Unpaid
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
-                </div>
 
-                {/* Credit Info */}
-                {(t as any).isCredit && (
-                  <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 text-sm">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="font-semibold text-amber-700">Credit Sale</span>
-                      {(t as any).creditDueDate && (
-                        <span className="text-amber-600">Due: {new Date((t as any).creditDueDate).toLocaleDateString("en-PH")}</span>
-                      )}
-                      {(t as any).creditPaidAt ? (
-                        <span className="text-emerald-600 font-semibold">Paid {new Date((t as any).creditPaidAt).toLocaleDateString("en-PH")}</span>
-                      ) : (
-                        <span className="text-rose-600 font-semibold">Unpaid</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Cheque Details */}
-                {(t as any).chequeNumber && (
-                  <div className="border border-[#e2e8f0] rounded-lg p-4 space-y-2 bg-[#f8fafc]">
-                    <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">Cheque Details</p>
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                      <div>
-                        <span className="text-[10px] text-[#94a3b8]">Cheque/Ref #</span>
-                        <p className="text-[#0e212c] font-medium">{(t as any).chequeNumber}</p>
-                      </div>
-                      {(t as any).chequeBankName && (
-                        <div>
-                          <span className="text-[10px] text-[#94a3b8]">Bank Name</span>
-                          <p className="text-[#0e212c] font-medium">{(t as any).chequeBankName}</p>
-                        </div>
-                      )}
-                      {(t as any).chequeDate && (
-                        <div>
-                          <span className="text-[10px] text-[#94a3b8]">Cheque Date</span>
-                          <p className="text-[#0e212c] font-medium">{new Date((t as any).chequeDate).toLocaleDateString("en-PH")}</p>
-                        </div>
-                      )}
-                      {(t as any).chequePayeeName && (
-                        <div>
-                          <span className="text-[10px] text-[#94a3b8]">Payee Name</span>
-                          <p className="text-[#0e212c] font-medium">{(t as any).chequePayeeName}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Items Table */}
-                <div>
-                  <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider mb-2">Items</p>
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                        <th className="text-left p-3 text-[10px] font-semibold text-[#64748b] uppercase">Product</th>
-                        <th className="text-right p-3 text-[10px] font-semibold text-[#64748b] uppercase">Qty</th>
-                        <th className="text-right p-3 text-[10px] font-semibold text-[#64748b] uppercase">Price</th>
-                        <th className="text-right p-3 text-[10px] font-semibold text-[#64748b] uppercase">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#e2e8f0]">
-                      {t.items.map((item) => (
-                        <tr key={item.id}>
-                          <td className="p-3 text-[#0e212c] font-medium">
-                            {products.find((p) => p.id === item.productId)?.productName || `#${item.productId}`}
-                          </td>
-                          <td className="p-3 text-right text-[#64748b]">{item.quantity}</td>
-                          <td className="p-3 text-right font-mono text-[#64748b]">
-                            {Number(item.unitPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                          <td className="p-3 text-right font-mono text-[#0e212c] font-semibold">
-                            {Number(item.totalPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div className="flex justify-end mt-3 pt-3 border-t border-[#e2e8f0]">
-                    <div className="text-right">
-                      <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Grand Total</span>
-                      <p className="text-lg font-bold text-[#0e212c] font-mono">
-                        {Number(t.grandTotal).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {/* Cheque Details */}
+                  {(t as any).chequeNumber && (
+                    <div className="border border-[#e2e8f0] rounded-lg p-4 space-y-2 bg-[#f8fafc]">
+                      <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
+                        Cheque Details
                       </p>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                        <div>
+                          <span className="text-[10px] text-[#94a3b8]">
+                            Cheque/Ref #
+                          </span>
+                          <p className="text-[#0e212c] font-medium">
+                            {(t as any).chequeNumber}
+                          </p>
+                        </div>
+                        {(t as any).chequeBankName && (
+                          <div>
+                            <span className="text-[10px] text-[#94a3b8]">
+                              Bank Name
+                            </span>
+                            <p className="text-[#0e212c] font-medium">
+                              {(t as any).chequeBankName}
+                            </p>
+                          </div>
+                        )}
+                        {(t as any).chequeDate && (
+                          <div>
+                            <span className="text-[10px] text-[#94a3b8]">
+                              Cheque Date
+                            </span>
+                            <p className="text-[#0e212c] font-medium">
+                              {new Date(
+                                (t as any).chequeDate,
+                              ).toLocaleDateString("en-PH")}
+                            </p>
+                          </div>
+                        )}
+                        {(t as any).chequePayeeName && (
+                          <div>
+                            <span className="text-[10px] text-[#94a3b8]">
+                              Payee Name
+                            </span>
+                            <p className="text-[#0e212c] font-medium">
+                              {(t as any).chequePayeeName}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Items Table */}
+                  <div>
+                    <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider mb-2">
+                      Items
+                    </p>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                          <th className="text-left p-3 text-[10px] font-semibold text-[#64748b] uppercase">
+                            Product
+                          </th>
+                          <th className="text-right p-3 text-[10px] font-semibold text-[#64748b] uppercase">
+                            Qty
+                          </th>
+                          <th className="text-right p-3 text-[10px] font-semibold text-[#64748b] uppercase">
+                            Price
+                          </th>
+                          <th className="text-right p-3 text-[10px] font-semibold text-[#64748b] uppercase">
+                            Total
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#e2e8f0]">
+                        {t.items.map((item) => (
+                          <tr key={item.id}>
+                            <td className="p-3 text-[#0e212c] font-medium">
+                              {products.find((p) => p.id === item.productId)
+                                ?.productName || `#${item.productId}`}
+                            </td>
+                            <td className="p-3 text-right text-[#64748b]">
+                              {item.quantity}
+                            </td>
+                            <td className="p-3 text-right font-mono text-[#64748b]">
+                              {Number(item.unitPrice).toLocaleString("en-PH", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </td>
+                            <td className="p-3 text-right font-mono text-[#0e212c] font-semibold">
+                              {Number(item.totalPrice).toLocaleString("en-PH", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="flex justify-end mt-3 pt-3 border-t border-[#e2e8f0]">
+                      <div className="text-right">
+                        <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                          Grand Total
+                        </span>
+                        <p className="text-lg font-bold text-[#0e212c] font-mono">
+                          {Number(t.grandTotal).toLocaleString("en-PH", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
     </div>
   );
 }
