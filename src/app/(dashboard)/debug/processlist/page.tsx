@@ -20,20 +20,25 @@ export default async function ProcessListPage() {
     redirect("/dashboard");
   }
 
-  const rows = await prisma.$queryRawUnsafe(
-    "SHOW PROCESSLIST",
-  ) as any[];
+  let processes: any[] = [];
+  try {
+    const rows = await prisma.$queryRawUnsafe(
+      "SHOW PROCESSLIST",
+    ) as any[];
 
-  const processes = rows.map((r: any) => ({
-    Id: Number(r.Id),
-    User: r.User,
-    Host: r.Host,
-    db: r.db,
-    Command: r.Command,
-    Time: Number(r.Time),
-    State: r.State,
-    Info: r.Info,
-  }));
+    processes = rows.map((r: any) => ({
+      Id: Number(r.Id),
+      User: r.User,
+      Host: r.Host,
+      db: r.db,
+      Command: r.Command,
+      Time: Number(r.Time),
+      State: r.State,
+      Info: r.Info,
+    }));
+  } catch {
+    processes = [];
+  }
 
   return <ProcessListClient initial={processes} />;
 }

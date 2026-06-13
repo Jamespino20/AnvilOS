@@ -25,12 +25,24 @@ import {
 } from "lucide-react";
 
 export default async function DashboardPage() {
-  const [kpis, revenueTrend, recentTransactions, charts] = await Promise.all([
-    getDashboardKpis(),
-    getRevenueTrend(7),
-    getTransactions({ status: "Completed" }),
-    getDashboardCharts(),
-  ]);
+  let kpis, revenueTrend, recentTransactions, charts;
+  try {
+    [kpis, revenueTrend, recentTransactions, charts] = await Promise.all([
+      getDashboardKpis(),
+      getRevenueTrend(7),
+      getTransactions({ status: "Completed" }),
+      getDashboardCharts(),
+    ]);
+  } catch {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="text-center space-y-2">
+          <p className="text-lg font-semibold text-[#0e212c]">Database Unavailable</p>
+          <p className="text-sm text-[#94a3b8]">Please try again in a few moments.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

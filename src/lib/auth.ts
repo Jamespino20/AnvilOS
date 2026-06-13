@@ -81,7 +81,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           };
         } catch (error) {
           console.error("Database error during authorize:", error);
-          throw error;
+          return null;
         }
       },
     }),

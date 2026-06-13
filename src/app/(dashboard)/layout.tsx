@@ -20,11 +20,16 @@ export default async function DashboardLayout({
   if (!session?.user) redirect("/login");
 
   const userId = Number(session.user.id);
-  const totalNotifs = await prisma.notification.count();
-  const readNotifs = await prisma.notificationRead.count({
-    where: { userId },
-  });
-  const unreadCount = totalNotifs - readNotifs;
+  let unreadCount = 0;
+  try {
+    const totalNotifs = await prisma.notification.count();
+    const readNotifs = await prisma.notificationRead.count({
+      where: { userId },
+    });
+    unreadCount = totalNotifs - readNotifs;
+  } catch {
+    unreadCount = 0;
+  }
 
   return (
     <DashboardShell user={session.user} unreadCount={unreadCount}>
