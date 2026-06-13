@@ -26,7 +26,7 @@ export default function ProcessListClient({ initial }: { initial: Process[] }) {
   const router = useRouter();
   const [processes, setProcesses] = useState<Process[]>([]);
   const [mounted, setMounted] = useState(false);
-  const [lastFetch, setLastFetch] = useState<Date>(new Date());
+  const [lastFetch, setLastFetch] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [intervalSec, setIntervalSec] = useState(10);
 
@@ -120,7 +120,7 @@ export default function ProcessListClient({ initial }: { initial: Process[] }) {
           Refresh now
         </button>
         <span style={{ color: "#888" }}>
-          Last: {lastFetch.toLocaleTimeString()}
+          Last: {lastFetch ? lastFetch.toLocaleTimeString() : "—"}
         </span>
       </div>
 

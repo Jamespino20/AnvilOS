@@ -1009,7 +1009,10 @@ export function POSClient({ products, buyers, categories }: Props) {
                       className="flex justify-between items-center text-[11px] py-0.5"
                     >
                       <span className="flex-1 text-[#0e212c] font-medium truncate pr-1">
-                        {item.product.productName}
+                        {(() => {
+                          const brand = (item.product as any).brandRel?.name;
+                          return brand ? `${item.product.productName} (${brand})` : item.product.productName;
+                        })()}
                       </span>
                       <span className="w-20 text-right text-[#94a3b8] truncate hidden sm:block">
                         {categoryDisplay(item.product)}

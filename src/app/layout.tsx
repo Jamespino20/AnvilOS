@@ -11,11 +11,16 @@ import { JetBrains_Mono, Montserrat } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-sans" });
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700"],
+});
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {

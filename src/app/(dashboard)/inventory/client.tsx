@@ -698,9 +698,6 @@ export function InventoryClient({
                 <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Status
                 </th>
-                <th className="text-right p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
-                  Last Restocked
-                </th>
                 {isAdmin && (
                   <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-24">
                     Actions
@@ -814,14 +811,6 @@ export function InventoryClient({
                         {badge.label}
                       </span>
                     </td>
-                    <td className="p-4 text-right text-xs font-mono text-[#94a3b8]">
-                      {product.lastRestockedAt
-                        ? new Date(product.lastRestockedAt).toLocaleDateString(
-                            "en-PH",
-                            { month: "short", day: "numeric", year: "numeric" },
-                          )
-                        : "\u2014"}
-                    </td>
                     {isAdmin && (
                       <td className="p-4 text-center relative">
                         <button
@@ -869,7 +858,7 @@ export function InventoryClient({
               {filtered.length === 0 && (
                 <tr>
                   <td
-                    colSpan={isAdmin ? 12 : 11}
+                    colSpan={isAdmin ? 11 : 10}
                     className="p-8 text-center text-[#94a3b8]"
                   >
                     No products found
