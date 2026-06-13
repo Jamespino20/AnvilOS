@@ -252,7 +252,7 @@ export function DashboardSidebar({ collapsed, onToggle, role }: Props) {
 
   return (
     <>
-      <div className="hidden md:flex fixed left-0 top-0 h-full z-50">
+      <div className="hidden md:flex fixed left-0 top-0 h-full z-50 overflow-hidden">
         {sidebarContent}
       </div>
 

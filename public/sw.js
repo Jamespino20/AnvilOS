@@ -39,10 +39,12 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+  const url = new URL(request.url);
 
   if (request.method !== "GET") return;
+  if (url.protocol !== "http:" && url.protocol !== "https:") return;
 
-  if (request.url.includes("/api/")) {
+  if (url.pathname.startsWith("/api/")) {
     event.respondWith(
       fetch(request).catch(() => {
         return new Response(

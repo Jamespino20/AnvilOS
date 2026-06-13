@@ -31,14 +31,14 @@ export function DashboardShell({ children, user, unreadCount }: Props) {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-background overflow-x-hidden">
+    <div className="flex min-h-screen bg-background" style={{ overflowX: "clip" }}>
       <DashboardSidebar collapsed={!sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} role={user.role} />
       <div className={cn(
         "flex-1 flex flex-col min-h-screen transition-all duration-300 min-w-0",
         sidebarOpen ? "md:ml-[260px]" : "md:ml-[64px]"
       )}>
         <DashboardTopbar user={user} unreadCount={unreadCount} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 p-4 md:p-6 overflow-x-hidden overflow-y-auto">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto" style={{ overflowX: "clip" }}>
           {children}
         </main>
       </div>

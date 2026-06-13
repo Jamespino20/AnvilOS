@@ -55,10 +55,11 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       className={cn(
-        "font-sans overflow-x-hidden",
+        "font-sans",
         montserrat.variable,
         instrumentSansHeading.variable,
       )}
+      style={{ overflowX: "clip" }}
     >
       <head>
         <meta
@@ -69,7 +70,8 @@ export default function RootLayout({
         <meta httpEquiv="expires" content="0" />
       </head>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} font-inter antialiased overflow-x-hidden`}
+        className={`${inter.variable} ${jetbrainsMono.variable} font-inter antialiased`}
+        style={{ overflowX: "clip" }}
       >
         <Providers>{children}</Providers>
         <ServiceWorkerRegistration />
