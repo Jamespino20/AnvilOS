@@ -7,26 +7,11 @@ Last Update Date: June 13, 2026
 */
 
 import type { Metadata } from "next";
-import {
-  Inter,
-  JetBrains_Mono,
-  Montserrat,
-  Instrument_Sans,
-} from "next/font/google";
+import { JetBrains_Mono, Montserrat } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const instrumentSansHeading = Instrument_Sans({
-  subsets: ["latin"],
-  variable: "--font-heading",
-});
-
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-sans" });
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -53,11 +38,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn(
-        "font-sans",
-        montserrat.variable,
-        instrumentSansHeading.variable,
-      )}
+      className={cn("font-sans", montserrat.variable)}
       style={{ overflowX: "clip" }}
     >
       <head>
@@ -69,7 +50,7 @@ export default function RootLayout({
         <meta httpEquiv="expires" content="0" />
       </head>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} font-inter antialiased`}
+        className={`${jetbrainsMono.variable} antialiased`}
         style={{ overflowX: "clip" }}
       >
         <Providers>{children}</Providers>
