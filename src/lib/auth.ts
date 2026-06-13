@@ -1,4 +1,4 @@
-﻿/*
+/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -6,6 +6,7 @@ URL: https://github.com/Jamespino20
 Last Update Date: June 13, 2026
 */
 
+import "./diagnostics";
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";

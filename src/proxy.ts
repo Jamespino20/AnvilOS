@@ -1,4 +1,4 @@
-﻿/*
+/*
 App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
@@ -6,6 +6,7 @@ URL: https://github.com/Jamespino20
 Last Update Date: June 13, 2026
 */
 
+import "./lib/diagnostics";
 import { auth } from "@/lib/auth";
 import { canAccessPath } from "@/lib/access";
 import { NextResponse } from "next/server";
