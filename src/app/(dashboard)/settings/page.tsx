@@ -220,15 +220,15 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="flex gap-6">
-        <nav className="w-56 shrink-0 space-y-1">
+      <div className="flex flex-col md:flex-row gap-6">
+        <nav className="w-full md:w-56 shrink-0 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible gap-1 md:gap-0 md:space-y-1 pb-2 md:pb-0 border-b md:border-b-0 border-[#e2e8f0]">
           {sections.map((s) => {
             const isActive = active === s.id;
             return (
               <button
                 key={s.id}
                 onClick={() => setActive(s.id)}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap shrink-0 ${
                   isActive
                     ? "bg-[#fd761a]/10 text-[#fd761a] shadow-sm"
                     : "text-[#64748b] hover:bg-white hover:text-[#0e212c]"

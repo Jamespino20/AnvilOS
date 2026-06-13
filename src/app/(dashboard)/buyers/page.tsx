@@ -329,7 +329,7 @@ export default function BuyersPage() {
                     >
                       <Receipt className="h-4 w-4" />
                     </div>
-                    <div className="flex-1 grid grid-cols-4 gap-3 text-sm">
+                    <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                       <div>
                         <p className="text-[10px] font-semibold text-[#94a3b8] uppercase">
                           Receipt

@@ -370,7 +370,7 @@ export default function CategoriesPage() {
                           {hasChildren ? (
                             <button
                               onClick={() => toggleExpand(cat.id)}
-                              className="p-0.5 rounded hover:bg-[#f1f5f9] transition-colors"
+                              className="p-1.5 rounded hover:bg-[#f1f5f9] transition-colors"
                             >
                               {isExpanded ? (
                                 <ChevronDown className="h-4 w-4 text-[#64748b]" />

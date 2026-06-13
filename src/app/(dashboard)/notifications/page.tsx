@@ -61,7 +61,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <PageHeader
           title="Notifications"
           subtitle={`${notifications.length} notification${notifications.length !== 1 ? "s" : ""}${unread > 0 ? ` · ${unread} unread` : ""}`}

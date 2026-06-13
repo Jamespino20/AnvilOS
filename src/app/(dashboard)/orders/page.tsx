@@ -423,7 +423,7 @@ export default function OrdersPage() {
                 >
                   <Package className="h-5 w-5" />
                 </div>
-                <div className="flex-1 min-w-0 grid grid-cols-6 gap-3 text-sm items-center">
+                <div className="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm items-center">
                   <div>
                     <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
                       Receipt
@@ -565,7 +565,7 @@ export default function OrdersPage() {
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
                         Buyer
@@ -600,7 +600,7 @@ export default function OrdersPage() {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
                         Delivery Reference
@@ -624,7 +624,7 @@ export default function OrdersPage() {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
                         Deliverer
@@ -1002,7 +1002,7 @@ export default function OrdersPage() {
                 </div>
 
                 <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
                         Buyer

@@ -43,6 +43,7 @@ export const metadata: Metadata = {
 };
 
 import { Providers } from "@/components/providers";
+import { ServiceWorkerRegistration } from "@/components/service-worker";
 
 export default function RootLayout({
   children,
@@ -54,7 +55,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       className={cn(
-        "font-sans",
+        "font-sans overflow-x-hidden",
         montserrat.variable,
         instrumentSansHeading.variable,
       )}
@@ -68,9 +69,10 @@ export default function RootLayout({
         <meta httpEquiv="expires" content="0" />
       </head>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} font-inter antialiased`}
+        className={`${inter.variable} ${jetbrainsMono.variable} font-inter antialiased overflow-x-hidden`}
       >
         <Providers>{children}</Providers>
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

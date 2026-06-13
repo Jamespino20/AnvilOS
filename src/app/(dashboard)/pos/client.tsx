@@ -923,7 +923,7 @@ export function POSClient({ products, buyers, categories }: Props) {
                   <button
                     onClick={() => updateQuantity(item.product.id, -1)}
                     title="Decrease quantity"
-                    className="w-9 h-9 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors"
+                    className="w-10 h-10 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors"
                     aria-label="Decrease quantity"
                   >
                     <Minus className="h-3.5 w-3.5" />
@@ -944,7 +944,7 @@ export function POSClient({ products, buyers, categories }: Props) {
                           setEditingQty(null);
                         }
                       }}
-                      className="w-16 h-9 text-center text-xs font-bold text-[#0e212c] border border-[#fd761a] rounded-lg focus:outline-none"
+                      className="w-16 h-10 text-center text-xs font-bold text-[#0e212c] border border-[#fd761a] rounded-lg focus:outline-none"
                     />
                   ) : (
                     <button
@@ -952,7 +952,7 @@ export function POSClient({ products, buyers, categories }: Props) {
                       onClick={() =>
                         startQtyEdit(item.product.id, item.quantity)
                       }
-                      className="min-w-[40px] h-9 text-center text-xs font-bold text-[#0e212c] px-2 hover:bg-white rounded-lg transition-colors"
+                      className="min-w-[40px] h-10 text-center text-xs font-bold text-[#0e212c] px-2 hover:bg-white rounded-lg transition-colors"
                       aria-label="Edit quantity"
                     >
                       {item.quantity}
@@ -961,7 +961,7 @@ export function POSClient({ products, buyers, categories }: Props) {
                   <button
                     onClick={() => updateQuantity(item.product.id, 1)}
                     title="Increase quantity"
-                    className="w-9 h-9 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors"
+                    className="w-10 h-10 flex items-center justify-center bg-white border border-[#e2e8f0] rounded-lg text-[#64748b] active:bg-[#fd761a] active:text-white transition-colors"
                     aria-label="Increase quantity"
                   >
                     <Plus className="h-3.5 w-3.5" />
@@ -970,7 +970,7 @@ export function POSClient({ products, buyers, categories }: Props) {
                 <button
                   onClick={() => removeFromCart(item.product.id)}
                   title="Remove from cart"
-                  className="w-9 h-9 flex items-center justify-center text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"
+                  className="w-10 h-10 flex items-center justify-center text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"
                   aria-label="Remove item"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
