@@ -1,16 +1,20 @@
 ## Goal
+
 - Port Java desktop POS/inventory system (HardwareHub → AnvilOS) to Next.js web app on Vercel + NeonDB; resolve all remaining issues before SaaS transition
 
 ## Constraints & Preferences
+
 - Next.js 16.2.6 (App Router) + Prisma 7.8.0 + MySQL (Hostinger) + Tailwind CSS 4 + TypeScript + shadcn/ui (radix-sera preset)
 - Auth.js v5 (credentials provider, JWT strategy)
 - Custom theme: #0e212c blue, #fd761a orange, 4px radius
 - File header comment block required on every source file
 - No emojis in source files unless explicitly requested
-- `StocksX/` directory (Laravel + Filament PHP) kept in-repo as reference
+- **Hostinger MySQL**: `max_connections_per_hour: 500`. Pool params in DATABASE_URL: `connectionLimit=3&idleTimeout=120&acquireTimeout=10`. Keep pool small.
 
 ## Progress
+
 ### Done
+
 - **Error 494 root cause fixed**: JWT was 224KB because `token.imageUrl = user.imageUrl` stored base64 profile photo in JWT. Removed `imageUrl` from JWT — session callback fetches via `prisma.user.findUnique()` (fast PK lookup). JWT now ~400 bytes, no chunking.
 - **Three-layer accumulated cookie clearing**: (1) `src/app/api/clear-cookies/route.ts` — GET endpoint not behind middleware. (2) Login page fetches it on mount. (3) `src/proxy.ts` wraps `auth()` to send clearing headers on every protected request.
 - **auth.ts**: Removed custom cookies config — relies on Auth.js v5 stable defaults. Now supports login via username or email, dual-password hashing (current + legacy), and optional TOTP code verification with -1/0/+1 window drift.
@@ -46,6 +50,7 @@
 - **Dark mode** — Improved initialization and toaster theme syncing.
 
 ### Done
+
 - **Profile pictures** — Buyer, User, and Audit Log models support profile images. Buyers page has image upload in edit modal. Users table shows profile pictures. Audit Log modal shows user profile pictures.
 - **Superadmin role** — `SUPERADMIN` added to UserRole enum. `isSuperAdminRole()` in access.ts. Users page restricts admin operations: only SUPERADMIN can edit ADMIN users. Server-side guards in updateUser/deleteUser actions.
 - **POS brand name in receipt** — Receipt items include brand name in parentheses when available.
@@ -53,9 +58,11 @@
 - **POS grid sizing** — Product grid has `min-w-0` for proper flex behavior across screen sizes.
 
 ### Blocked
+
 - (none)
 
 ## Key Decisions
+
 - **imageUrl excluded from JWT** — base64 photos too large. Fetched from DB in session callback.
 - **No custom cookies config** in auth.ts — rely on Auth.js v5 stable defaults.
 - **RBAC enforced at middleware + server action level** — middleware redirects, actions use `isAdminRole(session)` guard.
@@ -69,15 +76,18 @@
 - **Cache headers** prevent stale page data across sessions.
 - **SUPERADMIN role** — Only SUPERADMIN can edit ADMIN users. Admins cannot affect other admins. `isAdminRole()` includes SUPERADMIN. All `isAdmin` checks in UI (inventory, categories, brands) use `isAdminRole()` or equivalent to ensure SUPERADMIN has full admin access.
 - **Draggable cart pane** — Width constrained 280px-550px via mouse drag on left edge handle.
+- **Mobile responsiveness** — Settings sidebar horizontal tabs on mobile, POS/Restocks cart buttons 40px touch targets, Orders/Buyers/Restocks card grids responsive, Notifications header wraps, Categories expand toggle 40px, overflowX: clip on html/body/shell.
+- **PWA** — manifest.ts, service worker (sw.js), registration component. App installable on mobile.
+- **User cache** — In-memory 5-minute cache for session callback (avoids DB hit on every request). Cache invalidated on profile/role/TOTP changes.
+- **Connection pool** — MariaDB pool params in DATABASE_URL: `connectionLimit=3&idleTimeout=120&acquireTimeout=10`. Prevents max_connections_per_hour exhaustion.
 
 ## Next Steps
-- Set up MySQL database on Hostinger
-- Configure DATABASE_URL in Hostinger environment variables
-- Run `npx prisma db push` to sync schema to MySQL
-- Deploy to Hostinger
+
+- Deploy and verify Hostinger pool stability
 
 ## Relevant Files
-- `prisma/schema.prisma`: MySQL provider, UserRole enum (SUPERADMIN, ADMIN, STAFF), User (role, totpSecret, totpEnabled, emailVerified, notif*, imageUrl), Buyer (imageUrl), EmailToken model, delivery fields, costPrice, oldPasswordHash
+
+- `prisma/schema.prisma`: MySQL provider, UserRole enum (SUPERADMIN, ADMIN, STAFF), User (role, totpSecret, totpEnabled, emailVerified, notif\*, imageUrl), Buyer (imageUrl), EmailToken model, delivery fields, costPrice, oldPasswordHash
 - `src/lib/prisma.ts`: Standard Prisma Client instantiation (no adapter)
 - `src/lib/auth.ts`: JWT fix, dual-password hash, TOTP verification, username/email login
 - `src/lib/access.ts`: `canAccessPath()`, `isAdminRole()`, `isSuperAdminRole()`, `actionFingerprint()`, STAFF_PATHS
@@ -114,4 +124,3 @@
 - `src/app/(dashboard)/buyers/page.tsx`: Profile pictures, image upload
 - `src/app/(dashboard)/audit-log/page.tsx`: Profile pictures in table and modal
 - `src/components/dashboard-export.tsx`: No ₱ in values
-- `StocksX/`: Laravel + Filament PHP reference app
