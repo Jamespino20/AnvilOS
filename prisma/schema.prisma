@@ -7,7 +7,8 @@ Last Update Date: June 13, 2026
 */
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {

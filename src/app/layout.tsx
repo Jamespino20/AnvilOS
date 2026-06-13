@@ -43,7 +43,6 @@ export const metadata: Metadata = {
 };
 
 import { Providers } from "@/components/providers";
-import { ServiceWorkerRegistration } from "@/components/service-worker";
 
 export default function RootLayout({
   children,
@@ -74,7 +73,6 @@ export default function RootLayout({
         style={{ overflowX: "clip" }}
       >
         <Providers>{children}</Providers>
-        <ServiceWorkerRegistration />
       </body>
     </html>
   );

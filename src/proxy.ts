@@ -6,7 +6,6 @@ URL: https://github.com/Jamespino20
 Last Update Date: June 13, 2026
 */
 
-import "./lib/diagnostics";
 import { auth } from "@/lib/auth";
 import { canAccessPath } from "@/lib/access";
 import { NextResponse } from "next/server";
@@ -15,7 +14,7 @@ import type { NextAuthRequest } from "next-auth";
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|images|login|register|forgot-password|manifest\\.webmanifest|sw\\.js).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|images|login|register|forgot-password).*)",
   ],
 };
 

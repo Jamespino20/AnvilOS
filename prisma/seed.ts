@@ -7,12 +7,10 @@ Last Update Date: June 13, 2026
 */
 
 import { PrismaClient } from "@prisma/client";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import bcrypt from "bcryptjs";
 import { auditLogs } from "./seed-data/audit-logs";
 
-const adapter = new PrismaMariaDb(process.env.DATABASE_URL!);
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
   console.log("Clearing existing data...");

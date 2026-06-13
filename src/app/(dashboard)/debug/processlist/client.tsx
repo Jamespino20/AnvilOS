@@ -24,10 +24,11 @@ interface Process {
 
 export default function ProcessListClient({ initial }: { initial: Process[] }) {
   const router = useRouter();
-  const [processes, setProcesses] = useState<Process[]>(initial);
+  const [processes, setProcesses] = useState<Process[]>([]);
+  const [mounted, setMounted] = useState(false);
   const [lastFetch, setLastFetch] = useState<Date>(new Date());
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [intervalSec, setIntervalSec] = useState(3);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [intervalSec, setIntervalSec] = useState(10);
 
   const refresh = useCallback(() => {
     router.refresh();
@@ -36,6 +37,8 @@ export default function ProcessListClient({ initial }: { initial: Process[] }) {
 
   useEffect(() => {
     setProcesses(initial);
+    setLastFetch(new Date());
+    setMounted(true);
   }, [initial]);
 
   useEffect(() => {
@@ -98,10 +101,9 @@ export default function ProcessListClient({ initial }: { initial: Process[] }) {
               padding: "2px 4px",
             }}
           >
-            <option value={1}>1s</option>
-            <option value={3}>3s</option>
             <option value={5}>5s</option>
             <option value={10}>10s</option>
+            <option value={30}>30s</option>
           </select>
         </label>
         <button
@@ -225,7 +227,7 @@ export default function ProcessListClient({ initial }: { initial: Process[] }) {
           {processes.length === 0 && (
             <tr>
               <td colSpan={8} style={{ ...cell, textAlign: "center" }}>
-                No processes
+                {mounted ? "No processes" : "Loading..."}
               </td>
             </tr>
           )}
