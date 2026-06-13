@@ -9,6 +9,7 @@ Last Update Date: June 13, 2026
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 interface Process {
   Id: number;
@@ -21,46 +22,35 @@ interface Process {
   Info: string | null;
 }
 
-export default function ProcessListPage() {
-  const [processes, setProcesses] = useState<Process[]>([]);
-  const [error, setError] = useState("");
-  const [lastFetch, setLastFetch] = useState<Date | null>(null);
+export default function ProcessListClient({ initial }: { initial: Process[] }) {
+  const router = useRouter();
+  const [processes, setProcesses] = useState<Process[]>(initial);
+  const [lastFetch, setLastFetch] = useState<Date>(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [intervalSec, setIntervalSec] = useState(3);
 
-  const fetchProcesses = useCallback(async () => {
-    try {
-      const res = await fetch("/api/debug/processlist");
-      const data = await res.json();
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setProcesses(data.processes);
-        setError("");
-      }
-      setLastFetch(new Date());
-    } catch (e: any) {
-      setError(e.message);
-    }
-  }, []);
+  const refresh = useCallback(() => {
+    router.refresh();
+    setLastFetch(new Date());
+  }, [router]);
 
   useEffect(() => {
-    fetchProcesses();
-  }, [fetchProcesses]);
+    setProcesses(initial);
+  }, [initial]);
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const id = setInterval(fetchProcesses, intervalSec * 1000);
+    const id = setInterval(refresh, intervalSec * 1000);
     return () => clearInterval(id);
-  }, [autoRefresh, intervalSec, fetchProcesses]);
+  }, [autoRefresh, intervalSec, refresh]);
 
   const appProcesses = processes.filter(
     (p) => p.User === "u774175064_kloudexa" && p.Info !== "SHOW PROCESSLIST",
   );
   const queryCount = appProcesses.filter((p) => p.Command === "Query").length;
   const sleepCount = appProcesses.filter((p) => p.Command === "Sleep").length;
-  const maxConn = 500;
   const usage = appProcesses.length;
+  const maxConn = 500;
 
   return (
     <div
@@ -115,7 +105,7 @@ export default function ProcessListPage() {
           </select>
         </label>
         <button
-          onClick={fetchProcesses}
+          onClick={refresh}
           style={{
             padding: "4px 12px",
             cursor: "pointer",
@@ -127,11 +117,9 @@ export default function ProcessListPage() {
         >
           Refresh now
         </button>
-        {lastFetch && (
-          <span style={{ color: "#888" }}>
-            Last: {lastFetch.toLocaleTimeString()}
-          </span>
-        )}
+        <span style={{ color: "#888" }}>
+          Last: {lastFetch.toLocaleTimeString()}
+        </span>
       </div>
 
       <div
@@ -147,7 +135,9 @@ export default function ProcessListPage() {
       >
         <span>
           <strong>Total:</strong>{" "}
-          <span style={{ color: usage > 100 ? "#f44" : usage > 50 ? "#fa0" : "#4f4" }}>
+          <span
+            style={{ color: usage > 100 ? "#f44" : usage > 50 ? "#fa0" : "#4f4" }}
+          >
             {usage}
           </span>{" "}
           / {maxConn}
@@ -167,12 +157,6 @@ export default function ProcessListPage() {
           {usage > 100 ? "DANGER" : usage > 50 ? "WARNING" : "OK"}
         </span>
       </div>
-
-      {error && (
-        <div style={{ color: "#f44", marginBottom: "8px" }}>
-          Error: {error}
-        </div>
-      )}
 
       <table
         style={{
@@ -238,10 +222,10 @@ export default function ProcessListPage() {
               </tr>
             );
           })}
-          {processes.length === 0 && !error && (
+          {processes.length === 0 && (
             <tr>
               <td colSpan={8} style={{ ...cell, textAlign: "center" }}>
-                Loading...
+                No processes
               </td>
             </tr>
           )}
