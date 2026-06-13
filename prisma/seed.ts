@@ -11,18 +11,7 @@ import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import bcrypt from "bcryptjs";
 import { auditLogs } from "./seed-data/audit-logs";
 
-const url = new URL(process.env.DATABASE_URL!);
-const adapter = new PrismaMariaDb({
-  host: url.hostname,
-  port: Number(url.port) || 3306,
-  user: url.username,
-  password: url.password,
-  database: url.pathname.replace(/^\//, ""),
-  connectionLimit: 3,
-  connectTimeout: 10_000,
-  acquireTimeout: 30_000,
-  idleTimeout: 30_000,
-});
+const adapter = new PrismaMariaDb(process.env.DATABASE_URL!);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {

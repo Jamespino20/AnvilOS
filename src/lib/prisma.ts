@@ -14,19 +14,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
-  const url = new URL(process.env.DATABASE_URL!);
-  const adapter = new PrismaMariaDb({
-    host: url.hostname,
-    port: Number(url.port) || 3306,
-    user: url.username,
-    password: url.password,
-    database: url.pathname.replace(/^\//, ""),
-    connectionLimit: 3,
-    connectTimeout: 10_000,
-    acquireTimeout: 10_000,
-    idleTimeout: 15_000,
-    minimumIdle: 1,
-  });
+  const adapter = new PrismaMariaDb(process.env.DATABASE_URL!);
   return new PrismaClient({
     adapter,
     log:
