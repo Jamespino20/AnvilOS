@@ -26,15 +26,13 @@ export function SupportModal({ open, onClose }: Props) {
     {
       icon: Mail,
       label: "Email Support",
-      desc: "anvilos.saas@gmail.com",
-      href: "mailto:anvilos.saas@gmail.com",
+      desc: "admin@kloudexa.com",
+      href: "mailto:admin@kloudexa.com",
     },
   ];
 
   return (
-    <div
-      className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center"
-    >
+    <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center">
       <div
         className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-sm mx-4"
         onClick={(e) => e.stopPropagation()}
@@ -80,7 +78,3 @@ export function SupportModal({ open, onClose }: Props) {
     </div>
   );
 }
-
-
-
-

@@ -161,9 +161,6 @@ export default function LoginPage() {
             >
               Forgot Password?
             </Link>
-            <Link href="/register" className="text-primary hover:underline">
-              No account? Register
-            </Link>
           </div>
         </form>
       </div>

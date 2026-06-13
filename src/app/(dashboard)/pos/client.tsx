@@ -324,7 +324,8 @@ export function POSClient({ products, buyers, categories }: Props) {
             ? Number(returnReceipt) || undefined
             : undefined,
         chequeDetails:
-          paymentMethod === "Credit" && (chequeNumber || bankName || chequeDate || payeeName)
+          paymentMethod === "Credit" &&
+          (chequeNumber || bankName || chequeDate || payeeName)
             ? {
                 chequeNumber: chequeNumber || undefined,
                 bankName: bankName || undefined,
@@ -351,7 +352,9 @@ export function POSClient({ products, buyers, categories }: Props) {
           .map((c) => {
             const brand = (c.product as any).brandRel?.name;
             return {
-              productName: brand ? `${c.product.productName} (${brand})` : c.product.productName,
+              productName: brand
+                ? `${c.product.productName} (${brand})`
+                : c.product.productName,
               quantity: c.quantity,
               unitPrice: Number(c.product.sellingPrice),
               totalPrice: Number(c.product.sellingPrice) * c.quantity,
@@ -555,7 +558,13 @@ export function POSClient({ products, buyers, categories }: Props) {
               disabled={parentCategory === "" || childCategories.length === 0}
               className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <option value="">{parentCategory === "" ? "Select parent first" : childCategories.length === 0 ? "No subcategories" : "All Subcategories"}</option>
+              <option value="">
+                {parentCategory === ""
+                  ? "Select Subcategory"
+                  : childCategories.length === 0
+                    ? "No subcategories"
+                    : "All Subcategories"}
+              </option>
               {childCategories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}

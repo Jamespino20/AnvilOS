@@ -22,13 +22,44 @@ interface AuditEntry {
 function parseDetails(details: string | null): { text: string; deltas: { before: string; after: string }[] } {
   if (!details) return { text: "", deltas: [] };
   const deltas: { before: string; after: string }[] = [];
-  const arrowRegex = /([^→]+)\s*→\s*([^,;\n]+)/g;
-  let match;
+
+  const timestampRegex = /^\[([^\]]+)\]\s*/;
+  const actorRegex = /\s*\|\s*[^|]+\s*\|\s*[^|]+\s*\|\s*/;
+
   let text = details;
-  while ((match = arrowRegex.exec(details)) !== null) {
-    deltas.push({ before: match[1].trim(), after: match[2].trim() });
-    text = text.replace(match[0], `${match[1].trim()} → ${match[2].trim()}`);
+
+  const timestampMatch = timestampRegex.exec(text);
+  if (timestampMatch) text = text.substring(timestampMatch[0].length);
+
+  const actorMatch = actorRegex.exec(text);
+  if (actorMatch) text = text.substring(actorMatch[0].length);
+
+  const changesMatch = /Changes:\s*([^|]+)(?=\s*\| Actor:|$)/.exec(text);
+  if (changesMatch) {
+    const changesText = changesMatch[1];
+    const changeItems = changesText.split(/,\s*/);
+    changeItems.forEach((item) => {
+      const arrowMatch = /([^:]+)\s*:\s*(\[added\]\s*→\s*)?([^→]*)(?:\s*→\s*([^|]+))?/;
+      const match = item.match(arrowMatch);
+      if (match) {
+        const key = match[1].trim();
+        const afterAdded = match[2];
+        const afterValue = match[3];
+        const beforeValue = match[4];
+
+        if (beforeValue && afterValue) {
+          deltas.push({ before: `${key}: ${beforeValue}`, after: `${key}: ${afterValue}` });
+        } else if (afterAdded && afterValue) {
+          deltas.push({ before: `${key}: [removed]`, after: `${key}: ${afterValue}` });
+        } else if (afterValue) {
+          deltas.push({ before: `${key}: [removed]`, after: `${key}: ${afterValue}` });
+        }
+      }
+    });
+
+    text = text.replace(changesMatch[0], "").trim();
   }
+
   return { text, deltas };
 }
 
