@@ -290,6 +290,18 @@ export default function FinancePage() {
                       const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
                       const netH = maxFlow > 0 ? (Math.abs(d.net) / maxFlow) * 200 : 0;
                       const showLabel = !showLabels || i % Math.ceil(count / 15) === 0;
+
+                      // Format label based on content
+                      let label = d.date;
+                      if (/^\d{2}:00$/.test(d.date)) {
+                        // Hourly: "12:00" → "12a", "13:00" → "1p"
+                        const h = parseInt(d.date.split(":")[0]);
+                        label = h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`;
+                      } else if (/^[A-Z][a-z]+ [A-Z][a-z]+ \d+$/.test(d.date)) {
+                        // Daily: "Mon Jun 5" → "Jun 5"
+                        label = d.date.split(" ").slice(1).join(" ");
+                      }
+
                       return (
                         <div key={i} className={`flex-shrink-0 ${barWidth} flex flex-col items-center justify-end h-full gap-[2px] group relative`}>
                           <div className="w-full flex flex-col items-center gap-[2px] justify-end" style={{ height: "200px" }}>
@@ -297,7 +309,7 @@ export default function FinancePage() {
                             <div className="w-full bg-rose-400/40 rounded-t-sm transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                             <div className={`w-full ${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-sm transition-all group-hover:opacity-80`} style={{ height: `${netH}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                           </div>
-                          {showLabel && <span className="text-[8px] text-[#94a3b8] rotate-45 origin-left whitespace-nowrap mt-1">{d.date.split(" ")[0]}</span>}
+                          {showLabel && <span className="text-[9px] text-[#94a3b8] whitespace-nowrap mt-1">{label}</span>}
                         </div>
                       );
                     })}

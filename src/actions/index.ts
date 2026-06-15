@@ -1741,7 +1741,7 @@ export async function getFinancialDashboard(period?: {
     period: {
       start: start.toISOString(),
       end: end.toISOString(),
-      label: `${start.toLocaleDateString("en-PH", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`,
+      label: `${start.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })} – ${end.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}`,
     },
     grossSales: gross,
     returnsTotal,
