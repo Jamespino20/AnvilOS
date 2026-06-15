@@ -119,7 +119,7 @@ export function POSClient({ products, buyers, categories }: Props) {
   const [error, setError] = useState("");
   const [editingQty, setEditingQty] = useState<number | null>(null);
   const [qtyInput, setQtyInput] = useState("");
-  const [cartWidth, setCartWidth] = useState(380);
+  const [cartWidth, setCartWidth] = useState(550);
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragStart = (e: React.MouseEvent) => {
@@ -353,7 +353,7 @@ export function POSClient({ products, buyers, categories }: Props) {
             const brand = (c.product as any).brandRel?.name;
             return {
               productName: brand
-                ? `${c.product.productName} (${brand})`
+                ? `${brand} ${c.product.productName}`
                 : c.product.productName,
               quantity: c.quantity,
               unitPrice: Number(c.product.sellingPrice),
@@ -897,14 +897,11 @@ export function POSClient({ products, buyers, categories }: Props) {
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-semibold text-[#0e212c] truncate">
-                    {item.product.productName}
-                    {(item.product as any).brandRel?.name && (
-                      <span className="text-[10px] font-normal text-[#94a3b8] ml-1">
-                        {(item.product as any).brandRel.name}
-                      </span>
-                    )}
+                    {(item.product as any).brandRel?.name
+                      ? `${(item.product as any).brandRel.name} ${item.product.productName}`
+                      : item.product.productName}
                   </p>
-                  <p className="text-[10px] text-[#94a3b8] truncate">
+                  <p className="text-[10px] text-[#94a3b8] break-words">
                     {categoryDisplay(item.product)}
                   </p>
                   <p className="text-[10px] text-[#94a3b8] font-mono">
@@ -1011,7 +1008,7 @@ export function POSClient({ products, buyers, categories }: Props) {
                       <span className="flex-1 text-[#0e212c] font-medium truncate pr-1">
                         {(() => {
                           const brand = (item.product as any).brandRel?.name;
-                          return brand ? `${item.product.productName} (${brand})` : item.product.productName;
+                          return brand ? `${brand} ${item.product.productName}` : item.product.productName;
                         })()}
                       </span>
                       <span className="w-20 text-right text-[#94a3b8] truncate hidden sm:block">

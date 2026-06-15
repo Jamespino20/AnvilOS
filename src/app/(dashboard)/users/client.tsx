@@ -70,6 +70,8 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
     if (currentUserRole === "SUPERADMIN") return true;
     if (currentUserRole === "ADMIN" && targetUser.role === "ADMIN")
       return false;
+    if (currentUserRole === "ADMIN" && targetUser.role === "SUPERADMIN")
+      return false;
     return true;
   }
 
@@ -393,7 +395,7 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
                         title={
                           canEditUser(u)
                             ? "Edit user"
-                            : "Only SUPERADMIN can edit ADMIN users"
+                            : "Only SUPERADMIN can edit this user"
                         }
                       >
                         <Pencil className="h-4 w-4" />
@@ -404,7 +406,7 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
                         className={`p-1.5 rounded-md transition-all ${!canEditUser(u) ? "text-[#e2e8f0] cursor-not-allowed" : u.isActive ? "text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50" : "text-[#94a3b8] hover:text-emerald-600 hover:bg-emerald-50"}`}
                         title={
                           !canEditUser(u)
-                            ? "Only SUPERADMIN can modify ADMIN users"
+                            ? "Only SUPERADMIN can modify this user"
                             : u.isActive
                               ? "Deactivate user"
                               : "Activate user"

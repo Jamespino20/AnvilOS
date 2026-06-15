@@ -110,6 +110,7 @@ export function InventoryClient({
   const [page, setPage] = useState(1);
   const perPage = 15;
   const isAdmin = role === "ADMIN" || role === "SUPERADMIN";
+  const isSuperAdmin = role === "SUPERADMIN";
 
   // Inline quantity editing
   const [editQtyId, setEditQtyId] = useState<number | null>(null);
@@ -419,8 +420,8 @@ export function InventoryClient({
         subtitle="Manage your product catalog — add, edit, and remove stock items. Track quantities and thresholds for each product."
       />
 
-      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-3 items-center">
-        <div className="relative w-full lg:flex-1 min-w-0">
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row flex-wrap gap-3 items-center">
+        <div className="relative w-full lg:flex-1 lg:min-w-[240px] min-w-0">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input
             type="text"
@@ -589,7 +590,7 @@ export function InventoryClient({
         </div>
       </div>
 
-      <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden relative group">
+      <div className="bg-white border border-[#e2e8f0] rounded-xl relative group">
         <div className="absolute top-1/2 right-4 -translate-y-1/2 px-2 py-4 bg-white/80 border border-[#e2e8f0] rounded-l-lg shadow-sm z-10 lg:hidden pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="flex flex-col items-center gap-1">
             <span className="text-[10px] font-bold text-[#64748b] uppercase vertical-text">
@@ -767,7 +768,7 @@ export function InventoryClient({
                     <td
                       className={`p-4 text-right font-mono ${product.quantity <= product.minThreshold ? "text-[#fd761a] font-bold" : "text-[#0e212c]"}`}
                     >
-                      {isAdmin && editQtyId === product.id ? (
+                      {isSuperAdmin && editQtyId === product.id ? (
                         <span className="inline-flex items-center gap-1">
                           <input
                             ref={editQtyRef}
@@ -786,7 +787,7 @@ export function InventoryClient({
                             <Loader2 className="h-3 w-3 animate-spin text-[#64748b]" />
                           )}
                         </span>
-                      ) : isAdmin ? (
+                      ) : isSuperAdmin ? (
                         <button
                           onClick={() => {
                             setEditQtyId(product.id);

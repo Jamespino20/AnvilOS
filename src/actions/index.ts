@@ -15,7 +15,7 @@ import { auth } from "@/lib/auth";
 import { withTimeout } from "@/lib/timeout";
 import { IMPORT_CONFIGS } from "@/lib/import-configs";
 import { actionFingerprint } from "@/lib/access";
-import { requireAdmin, requireUser } from "@/lib/server-access";
+import { requireAdmin, requireSuperAdmin, requireUser } from "@/lib/server-access";
 import { formatMoney } from "@/lib/format";
 import { createTotpSecret, verifyTotp } from "@/lib/totp";
 import { cache } from "react";
@@ -140,7 +140,7 @@ export async function updateProduct(
 }
 
 export async function adjustStock(productId: number, newQuantity: number) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const product = await prisma.product.findUniqueOrThrow({
     where: { id: productId },
   });
@@ -1776,6 +1776,7 @@ export async function getCashFlowTrend(
   days: number = 30,
   startDate?: Date,
   endDate?: Date,
+  hourly?: boolean,
 ) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
@@ -1816,14 +1817,42 @@ export async function getCashFlowTrend(
       select: { transactionDate: true, grandTotal: true },
     }),
   ]);
+
+  if (hourly) {
+    const revMap = new Map<number, number>();
+    const expMap = new Map<number, number>();
+    for (const r of revenues) {
+      const h = r.transactionDate.getHours();
+      revMap.set(h, (revMap.get(h) || 0) + Number(r.grandTotal || 0));
+    }
+    for (const e of expenses) {
+      const h = e.transactionDate.getHours();
+      expMap.set(h, (expMap.get(h) || 0) + Number(e.grandTotal || 0));
+    }
+    const data: { date: string; revenue: number; expenses: number; net: number }[] = [];
+    for (let h = 0; h < 24; h++) {
+      const rev = revMap.get(h) || 0;
+      const exp = expMap.get(h) || 0;
+      data.push({
+        date: `${String(h).padStart(2, "0")}:00`,
+        revenue: rev,
+        expenses: exp,
+        net: rev - exp,
+      });
+    }
+    return data;
+  }
+
   const revMap = new Map<string, number>();
   for (const r of revenues) {
-    const key = r.transactionDate.toISOString().split("T")[0];
+    const d = r.transactionDate;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     revMap.set(key, (revMap.get(key) || 0) + Number(r.grandTotal || 0));
   }
   const expMap = new Map<string, number>();
   for (const e of expenses) {
-    const key = e.transactionDate.toISOString().split("T")[0];
+    const d = e.transactionDate;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     expMap.set(key, (expMap.get(key) || 0) + Number(e.grandTotal || 0));
   }
   const data: {
@@ -1840,9 +1869,9 @@ export async function getCashFlowTrend(
           d2.setDate(d2.getDate() - i);
           return d2;
         })();
-    const dateStr = d.toISOString().split("T")[0];
-    const rev = revMap.get(dateStr) || 0;
-    const exp = expMap.get(dateStr) || 0;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const rev = revMap.get(key) || 0;
+    const exp = expMap.get(key) || 0;
     data.push({
       date: d.toLocaleDateString("en-US", {
         weekday: "short",
@@ -2291,6 +2320,11 @@ export async function updateUser(
   // Only SUPERADMIN can edit ADMIN users
   if (targetUser.role === "ADMIN" && currentRole !== "SUPERADMIN") {
     throw new Error("Only SUPERADMIN can edit ADMIN users");
+  }
+
+  // Only SUPERADMIN can edit SUPERADMIN users
+  if (targetUser.role === "SUPERADMIN" && currentRole !== "SUPERADMIN") {
+    throw new Error("Only SUPERADMIN can edit SUPERADMIN users");
   }
 
   // Only SUPERADMIN can promote to SUPERADMIN

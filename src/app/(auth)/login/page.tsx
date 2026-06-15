@@ -154,7 +154,7 @@ export default function LoginPage() {
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-center text-sm">
             <Link
               href="/forgot-password"
               className="text-primary hover:underline"

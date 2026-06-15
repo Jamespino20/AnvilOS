@@ -19,6 +19,13 @@ const PERIODS = [
   { label: "This Year", value: "thisYear" },
 ];
 
+function formatDate(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function periodDates(period: string, customStart?: string, customEnd?: string) {
   if (period === "custom" && customStart && customEnd) {
     return { start: customStart, end: customEnd };
@@ -29,73 +36,42 @@ function periodDates(period: string, customStart?: string, customEnd?: string) {
   const d = now.getDate();
   const dow = now.getDay(); // 0=Sun
 
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(d - dow);
-  const endOfWeek = new Date(now);
-  endOfWeek.setDate(d - dow + 6);
+  const startOfWeek = new Date(y, m, d - dow);
+  const endOfWeek = new Date(y, m, d - dow + 6);
 
   switch (period) {
     case "today":
-      return {
-        start: now.toISOString().split("T")[0],
-        end: now.toISOString().split("T")[0],
-      };
+      return { start: formatDate(now), end: formatDate(now) };
     case "lastYear":
-      return {
-        start: `${y - 1}-01-01`,
-        end: `${y - 1}-12-31`,
-      };
+      return { start: `${y - 1}-01-01`, end: `${y - 1}-12-31` };
     case "lastQuarter": {
       const q = Math.floor(m / 3) * 3;
       const prevQStart = new Date(y, q - 3, 1);
       const prevQEnd = new Date(y, q, 0);
-      return {
-        start: prevQStart.toISOString().split("T")[0],
-        end: prevQEnd.toISOString().split("T")[0],
-      };
+      return { start: formatDate(prevQStart), end: formatDate(prevQEnd) };
     }
     case "lastMonth":
       return {
-        start: new Date(y, m - 1, 1).toISOString().split("T")[0],
-        end: new Date(y, m, 0).toISOString().split("T")[0],
+        start: formatDate(new Date(y, m - 1, 1)),
+        end: formatDate(new Date(y, m, 0)),
       };
     case "lastWeek": {
-      const lwEnd = new Date(now);
-      lwEnd.setDate(d - dow - 1);
-      const lwStart = new Date(now);
-      lwStart.setDate(d - dow - 7);
-      return {
-        start: lwStart.toISOString().split("T")[0],
-        end: lwEnd.toISOString().split("T")[0],
-      };
+      const lastSunday = new Date(y, m, d - dow);
+      const lastMonday = new Date(y, m, d - dow - 6);
+      return { start: formatDate(lastMonday), end: formatDate(lastSunday) };
     }
     case "thisWeek":
-      return {
-        start: startOfWeek.toISOString().split("T")[0],
-        end: endOfWeek.toISOString().split("T")[0],
-      };
+      return { start: formatDate(startOfWeek), end: formatDate(endOfWeek) };
     case "thisMonth":
-      return {
-        start: new Date(y, m, 1).toISOString().split("T")[0],
-        end: now.toISOString().split("T")[0],
-      };
+      return { start: formatDate(new Date(y, m, 1)), end: formatDate(now) };
     case "thisQuarter": {
       const q = Math.floor(m / 3) * 3;
-      return {
-        start: new Date(y, q, 1).toISOString().split("T")[0],
-        end: now.toISOString().split("T")[0],
-      };
+      return { start: formatDate(new Date(y, q, 1)), end: formatDate(now) };
     }
     case "thisYear":
-      return {
-        start: `${y}-01-01`,
-        end: now.toISOString().split("T")[0],
-      };
+      return { start: `${y}-01-01`, end: formatDate(now) };
     default:
-      return {
-        start: new Date(y, m, 1).toISOString().split("T")[0],
-        end: now.toISOString().split("T")[0],
-      };
+      return { start: formatDate(new Date(y, m, 1)), end: formatDate(now) };
   }
 }
 
@@ -121,7 +97,7 @@ export default function FinancePage() {
       const endDate = dates ? new Date(dates.end + "T23:59:59") : undefined;
       const [finance, flow, products] = await Promise.all([
         getFinancialDashboard(dates),
-        getCashFlowTrend(30, startDate, endDate),
+        getCashFlowTrend(30, startDate, endDate, period === "today"),
         getTopProductsByRevenue(30, 50, startDate, endDate),
       ]);
       setFin(finance);
@@ -287,13 +263,13 @@ export default function FinancePage() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2"><LineChart className="h-4 w-4 text-[#fd761a]" /> Cash Flow ({fin.period.label})</h3>
               </div>
-              <div className="h-64 flex items-end gap-[3px]">
+              <div className="h-64 overflow-x-auto scrollbar-hide flex items-end gap-[3px]">
                 {cashFlow.map((d, i) => {
                   const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
                   const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
                   const netH = maxFlow > 0 ? (Math.abs(d.net) / maxFlow) * 200 : 0;
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-[2px] group relative">
+                    <div key={i} className="flex-shrink-0 w-2 flex flex-col items-center justify-end h-full gap-[2px] group relative">
                       <div className="w-full flex flex-col items-center gap-[2px] justify-end" style={{ height: "200px" }}>
                         <div className="w-full bg-emerald-400/40 rounded-t-sm transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                         <div className="w-full bg-rose-400/40 rounded-t-sm transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />

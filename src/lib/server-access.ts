@@ -7,12 +7,20 @@ Last Update Date: June 13, 2026
 */
 
 import { auth } from "@/lib/auth";
-import { isAdminRole } from "@/lib/access";
+import { isAdminRole, isSuperAdminRole } from "@/lib/access";
 
 export async function requireAdmin() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
   if (!isAdminRole((session.user as any).role)) throw new Error("Forbidden");
+  return session;
+}
+
+export async function requireSuperAdmin() {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (!isSuperAdminRole((session.user as any).role))
+    throw new Error("Forbidden: superadmin only");
   return session;
 }
 

@@ -55,7 +55,7 @@ export function DashboardTopbar({
           </button>
           <button
             onClick={() => setShowSupport(true)}
-            className="p-2.5 text-[#64748b] hover:bg-[#f1f5f9] rounded-lg transition-all duration-200 hover:text-[#0e212c]"
+            className="hidden p-2.5 text-[#64748b] hover:bg-[#f1f5f9] rounded-lg transition-all duration-200 hover:text-[#0e212c]"
           >
             <HelpCircle className="h-5 w-5" />
           </button>

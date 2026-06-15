@@ -8,6 +8,29 @@ Last Update Date: June 13, 2026
 
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+export default function RegisterPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/login");
+  }, [router]);
+
+  return (
+    <div className="auth-page min-h-screen flex items-center justify-center bg-[#F1F5F9]">
+      <p className="text-sm text-[#94a3b8]">Redirecting to login...</p>
+    </div>
+  );
+}
+
+/*
+--- REGISTRATION LOGIC (commented out for template use) ---
+--- Uncomment below and remove the redirect above to re-enable registration ---
+
+"use client";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
@@ -261,3 +284,5 @@ export default function RegisterPage() {
     </div>
   );
 }
+--- END REGISTRATION LOGIC ---
+*/
