@@ -331,7 +331,7 @@ export const getBrands = cache(async () => {
 export async function createBrand(name: string) {
   await requireAdmin();
   try {
-    const brand = await prisma.brand.create({ data: { name } });
+    const brand = await prisma.brand.create({ data: { name, createdAt: new Date() } });
     await logAudit("InventoryPanel", "Add Brand", `${brand.name} created`);
     revalidatePath("/inventory");
     revalidatePath("/brands");
@@ -1777,6 +1777,7 @@ export async function getCashFlowTrend(
   startDate?: Date,
   endDate?: Date,
   hourly?: boolean,
+  groupBy?: "hourly" | "daily" | "weekly" | "monthly",
 ) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
@@ -1818,7 +1819,10 @@ export async function getCashFlowTrend(
     }),
   ]);
 
-  if (hourly) {
+  const effectiveGroupBy = groupBy || (hourly ? "hourly" : "daily");
+
+  // ── Hourly grouping ──
+  if (effectiveGroupBy === "hourly") {
     const revMap = new Map<number, number>();
     const expMap = new Map<number, number>();
     for (const r of revenues) {
@@ -1843,6 +1847,72 @@ export async function getCashFlowTrend(
     return data;
   }
 
+  // ── Monthly grouping ──
+  if (effectiveGroupBy === "monthly") {
+    const revMap = new Map<string, number>();
+    const expMap = new Map<string, number>();
+    for (const r of revenues) {
+      const d = r.transactionDate;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      revMap.set(key, (revMap.get(key) || 0) + Number(r.grandTotal || 0));
+    }
+    for (const e of expenses) {
+      const d = e.transactionDate;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      expMap.set(key, (expMap.get(key) || 0) + Number(e.grandTotal || 0));
+    }
+    // Iterate month by month from start to end
+    const data: { date: string; revenue: number; expenses: number; net: number }[] = [];
+    const cur = new Date(start.getFullYear(), start.getMonth(), 1);
+    const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+    while (cur <= endMonth) {
+      const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`;
+      const label = cur.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+      const rev = revMap.get(key) || 0;
+      const exp = expMap.get(key) || 0;
+      data.push({ date: label, revenue: rev, expenses: exp, net: rev - exp });
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    return data;
+  }
+
+  // ── Weekly grouping ──
+  if (effectiveGroupBy === "weekly") {
+    const revMap = new Map<string, number>();
+    const expMap = new Map<string, number>();
+    for (const r of revenues) {
+      const d = r.transactionDate;
+      const dayOfWeek = d.getDay();
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - ((dayOfWeek + 6) % 7));
+      const key = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+      revMap.set(key, (revMap.get(key) || 0) + Number(r.grandTotal || 0));
+    }
+    for (const e of expenses) {
+      const d = e.transactionDate;
+      const dayOfWeek = d.getDay();
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - ((dayOfWeek + 6) % 7));
+      const key = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+      expMap.set(key, (expMap.get(key) || 0) + Number(e.grandTotal || 0));
+    }
+    // Iterate weeks from start to end
+    const data: { date: string; revenue: number; expenses: number; net: number }[] = [];
+    const dayOfWeek = start.getDay();
+    const cur = new Date(start);
+    cur.setDate(cur.getDate() - ((dayOfWeek + 6) % 7)); // align to Monday
+    while (cur <= end) {
+      const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
+      const label = cur.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const rev = revMap.get(key) || 0;
+      const exp = expMap.get(key) || 0;
+      data.push({ date: label, revenue: rev, expenses: exp, net: rev - exp });
+      cur.setDate(cur.getDate() + 7);
+    }
+    return data;
+  }
+
+  // ── Daily grouping (default) ──
   const revMap = new Map<string, number>();
   for (const r of revenues) {
     const d = r.transactionDate;

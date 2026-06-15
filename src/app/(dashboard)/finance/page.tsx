@@ -95,9 +95,25 @@ export default function FinancePage() {
         : periodDates(period);
       const startDate = dates ? new Date(dates.start) : undefined;
       const endDate = dates ? new Date(dates.end + "T23:59:59") : undefined;
+
+      // Determine grouping based on period or custom range
+      let groupBy: "hourly" | "daily" | "weekly" | "monthly" = "daily";
+      if (period === "today") {
+        groupBy = "hourly";
+      } else if (period === "thisYear" || period === "lastYear") {
+        groupBy = "monthly";
+      } else if (period === "thisQuarter" || period === "lastQuarter") {
+        groupBy = "weekly";
+      } else if (period === "custom" && startDate && endDate) {
+        const diffDays = Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
+        if (diffDays <= 14) groupBy = "daily";
+        else if (diffDays <= 90) groupBy = "weekly";
+        else groupBy = "monthly";
+      }
+
       const [finance, flow, products] = await Promise.all([
         getFinancialDashboard(dates),
-        getCashFlowTrend(30, startDate, endDate, period === "today"),
+        getCashFlowTrend(30, startDate, endDate, period === "today", groupBy),
         getTopProductsByRevenue(30, 50, startDate, endDate),
       ]);
       setFin(finance);
@@ -263,23 +279,31 @@ export default function FinancePage() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2"><LineChart className="h-4 w-4 text-[#fd761a]" /> Cash Flow ({fin.period.label})</h3>
               </div>
-              <div className="h-64 overflow-x-auto scrollbar-hide flex items-end gap-[3px]">
-                {cashFlow.map((d, i) => {
-                  const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
-                  const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
-                  const netH = maxFlow > 0 ? (Math.abs(d.net) / maxFlow) * 200 : 0;
-                  return (
-                    <div key={i} className="flex-shrink-0 w-2 flex flex-col items-center justify-end h-full gap-[2px] group relative">
-                      <div className="w-full flex flex-col items-center gap-[2px] justify-end" style={{ height: "200px" }}>
-                        <div className="w-full bg-emerald-400/40 rounded-t-sm transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                        <div className="w-full bg-rose-400/40 rounded-t-sm transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                        <div className={`w-full ${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-sm transition-all group-hover:opacity-80`} style={{ height: `${netH}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                      </div>
-                      <span className="text-[8px] text-[#94a3b8] rotate-45 origin-left whitespace-nowrap mt-1">{d.date.split(" ")[0]}</span>
-                    </div>
-                  );
-                })}
-              </div>
+              {(() => {
+                const count = cashFlow.length;
+                const barWidth = count <= 12 ? "w-8" : count <= 31 ? "w-4" : count <= 53 ? "w-3" : "w-2";
+                const showLabels = count <= 31 || (count <= 53 && count % 2 === 0);
+                return (
+                  <div className="h-64 overflow-x-auto scrollbar-hide flex items-end gap-[2px]">
+                    {cashFlow.map((d, i) => {
+                      const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
+                      const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
+                      const netH = maxFlow > 0 ? (Math.abs(d.net) / maxFlow) * 200 : 0;
+                      const showLabel = !showLabels || i % Math.ceil(count / 15) === 0;
+                      return (
+                        <div key={i} className={`flex-shrink-0 ${barWidth} flex flex-col items-center justify-end h-full gap-[2px] group relative`}>
+                          <div className="w-full flex flex-col items-center gap-[2px] justify-end" style={{ height: "200px" }}>
+                            <div className="w-full bg-emerald-400/40 rounded-t-sm transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                            <div className="w-full bg-rose-400/40 rounded-t-sm transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                            <div className={`w-full ${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-sm transition-all group-hover:opacity-80`} style={{ height: `${netH}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                          </div>
+                          {showLabel && <span className="text-[8px] text-[#94a3b8] rotate-45 origin-left whitespace-nowrap mt-1">{d.date.split(" ")[0]}</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
               <div className="flex items-center gap-4 mt-4 text-xs text-[#64748b]">
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-400/40" /> Revenue</span>
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-rose-400/40" /> Expenses</span>

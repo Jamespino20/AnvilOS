@@ -14,7 +14,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
-  MoreVertical,
   Zap,
   Weight,
   Box,
@@ -63,7 +62,6 @@ export function InventoryClient({
   const [filterStatus, setFilterStatus] = useState("");
   const [sortBy, setSortBy] = useState<string>("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [menuOpen, setMenuOpen] = useState<number | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
@@ -813,44 +811,23 @@ export function InventoryClient({
                       </span>
                     </td>
                     {isAdmin && (
-                      <td className="p-4 text-center relative">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuOpen(
-                              menuOpen === product.id ? null : product.id,
-                            );
-                          }}
-                          className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#0e212c] hover:bg-[#f1f5f9] transition-all"
-                          title="Actions"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
-                        {menuOpen === product.id && (
-                          <div className="absolute right-4 top-full mt-1 w-36 bg-white border border-[#e2e8f0] rounded-lg shadow-xl z-30 py-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEdit(product);
-                                setMenuOpen(null);
-                              }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#0e212c] hover:bg-[#f1f5f9] transition-colors"
-                            >
-                              <Pencil className="h-3.5 w-3.5 text-[#64748b]" />{" "}
-                              Edit
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteTarget(product.id);
-                                setMenuOpen(null);
-                              }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 transition-colors"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" /> Delete
-                            </button>
-                          </div>
-                        )}
+                      <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => openEdit(product)}
+                            className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all"
+                            title="Edit product"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(product.id)}
+                            className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all"
+                            title="Delete product"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     )}
                   </tr>
