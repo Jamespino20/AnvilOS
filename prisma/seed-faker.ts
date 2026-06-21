@@ -18,18 +18,18 @@ const prisma = new PrismaClient();
 const USERS = [
   {
     id: 1,
-    sellerName: "James Bryant",
-    username: "Jamespino",
-    passwordHash: bcrypt.hashSync("Bryant0920!", 10),
-    email: "espino.jamesbryant20@gmail.com",
+    sellerName: "Jones Itaka",
+    username: "SUPERADMIN",
+    passwordHash: bcrypt.hashSync("password123", 10),
+    email: "test@gmail.com",
     role: "SUPERADMIN" as const,
   },
   {
     id: 2,
-    sellerName: "Lala Ignacio",
-    username: "lala123",
+    sellerName: "Skya Aguilar",
+    username: "ADMIN  ",
     passwordHash: bcrypt.hashSync("password123", 10),
-    email: "la.ignacio34@yahoo.com.ph",
+    email: "test@yahoo.com.ph",
     role: "ADMIN" as const,
   },
   {
@@ -37,7 +37,7 @@ const USERS = [
     sellerName: "Juan De la Cruz",
     username: "juandlc3",
     passwordHash: bcrypt.hashSync("password123", 10),
-    email: "anvilos.saas@gmail.com",
+    email: "test@gmail.com",
     role: "STAFF" as const,
   },
 ];

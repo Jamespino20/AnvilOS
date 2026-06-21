@@ -51,14 +51,14 @@ type CategoryWithChildren = {
   id: number;
   name: string;
   parentCategoryId: number | null;
-  children: { id: number; name: string; parentCategoryId: number | null }[];
+  _count?: { products: number };
 };
 
 interface Props {
   products: Product[];
   buyers: BuyerInfo[];
   categories: CategoryWithChildren[];
-  suppliers: { id: number; name: string }[];
+  suppliers: { id: number; supplierName: string }[];
   brands: { id: number; name: string }[];
 }
 
@@ -161,10 +161,7 @@ export function POSClient({
     [buyerName, buyers],
   );
 
-  const parentCategories = useMemo(
-    () => categories.filter((c) => c.parentCategoryId === null),
-    [categories],
-  );
+  const parentCategories = categories;
 
   const filtered = products.filter((p) => {
     if (p.quantity <= 0) return false;
@@ -172,27 +169,14 @@ export function POSClient({
       return false;
     if (filterSupplier !== "" && p.supplierId !== filterSupplier) return false;
     if (filterBrand !== "" && (p as any).brandId !== filterBrand) return false;
-    if (parentCategory !== "" && p.categoryId === parentCategory) return true;
-    if (parentCategory !== "") {
-      const parent = categories.find((c) => c.id === parentCategory);
-      if (parent && p.category === parent.name) return true;
-      const childIds = (parent?.children || []).map((c) => c.id);
-      if (childIds.includes(p.categoryId ?? -1)) return true;
-      return false;
-    }
+    if (parentCategory !== "" && p.categoryId !== parentCategory) return false;
     return true;
   });
 
   function categoryDisplay(product: Product): string {
     if (!product.categoryId) return product.category || "";
-    const parent = categories.find(
-      (c) =>
-        c.id === product.categoryId ||
-        c.children.some((ch) => ch.id === product.categoryId),
-    );
-    if (!parent) return product.category || "";
-    if (parent.id === product.categoryId) return parent.name;
-    return `${parent.name} (${parent.children.find((ch) => ch.id === product.categoryId)?.name || ""})`;
+    const cat = categories.find((c) => c.id === product.categoryId);
+    return cat?.name || product.category || "";
   }
 
   function addToCart(product: Product) {
@@ -571,8 +555,8 @@ export function POSClient({
             >
               <option value="">All Suppliers</option>
               {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
+                <option key={s.id} value={s.id} style={{ color: "#0e212c" }}>
+                  {s.supplierName}
                 </option>
               ))}
             </select>

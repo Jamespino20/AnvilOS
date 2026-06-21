@@ -350,7 +350,7 @@ export default function FinancePage() {
               <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2"><LineChart className="h-4 w-4 text-[#fd761a]" /> Cash Flow ({fin.period.label})</h3>
             </div>
             <div className="overflow-x-auto">
-              <div className="min-w-[600px]">
+              <div>
                 {(() => {
                   const count = cashFlow.length;
                   const showLabels = count <= 31 || (count <= 53 && count % 2 === 0);
