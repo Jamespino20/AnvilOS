@@ -350,41 +350,72 @@ export default function FinancePage() {
               <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2"><LineChart className="h-4 w-4 text-[#fd761a]" /> Cash Flow ({fin.period.label})</h3>
             </div>
             <div className="overflow-x-auto">
-              <div style={{ minWidth: `${Math.max(cashFlow.length * 20, 100)}px` }}>
-                {(() => {
-                  const count = cashFlow.length;
-                  const showLabels = count <= 31 || (count <= 53 && count % 2 === 0);
-                  return (
-                    <div className="h-64 flex items-end gap-[2px]">
-                      {cashFlow.map((d, i) => {
-                        const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
-                        const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
-                        const netH = maxFlow > 0 ? (Math.abs(d.net) / maxFlow) * 200 : 0;
-                        const showLabel = !showLabels || i % Math.ceil(count / 15) === 0;
+              {(() => {
+                const count = cashFlow.length;
+                const isHourly = count === 24;
+                const isMonthly = count > 31;
+                const barWidth = isMonthly ? 28 : isHourly ? 14 : 24;
+                const gap = 2;
+                const totalBar = barWidth + gap;
+                const minW = count * totalBar;
+                const yearSet = new Set<number>();
+                cashFlow.forEach((d: any) => {
+                  const parts = d.date.split(/[\s,]+/);
+                  parts.forEach((p: string) => {
+                    const n = parseInt(p);
+                    if (!isNaN(n) && n >= 1000 && n <= 9999) yearSet.add(n);
+                  });
+                });
+                const years = Array.from(yearSet).sort();
+                const isMultiYear = years.length > 1;
 
-                        let label = d.date;
-                        if (/^\d{2}:00$/.test(d.date)) {
-                          const h = parseInt(d.date.split(":")[0]);
-                          label = h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`;
-                        } else if (/^[A-Z][a-z]+ [A-Z][a-z]+ \d+$/.test(d.date)) {
-                          label = d.date.split(" ").slice(1).join(" ");
-                        }
+                return (
+                  <div style={{ minWidth: `${Math.max(minW, 200)}px` }}>
+                    <div className="relative pt-6">
+                      <div className="h-64 flex items-end gap-0">
+                        {cashFlow.map((d, i) => {
+                          const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
+                          const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
+                          const netH = maxFlow > 0 ? (Math.abs(d.net) / maxFlow) * 200 : 0;
 
-                        return (
-                          <div key={i} className="flex-1 min-w-[12px] flex flex-col items-center justify-end h-full gap-[2px] group relative">
-                            <div className="w-full flex flex-col items-center gap-[2px] justify-end" style={{ height: "200px" }}>
-                              <div className="w-full bg-emerald-400/40 rounded-t-sm transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                              <div className="w-full bg-rose-400/40 rounded-t-sm transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                              <div className={`w-full ${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-sm transition-all group-hover:opacity-80`} style={{ height: `${netH}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                          let label = d.date;
+                          if (isHourly && /^\d{2}:00$/.test(d.date)) {
+                            const h = parseInt(d.date.split(":")[0]);
+                            label = h === 0 ? "12 AM" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`;
+                          }
+
+                          const showLabel = isMonthly
+                            ? i % 3 === 0
+                            : isHourly
+                              ? i % 4 === 0
+                              : i % Math.ceil(count / 12) === 0;
+
+                          return (
+                            <div key={i} className="flex flex-col items-center justify-end h-full group relative shrink-0" style={{ width: `${totalBar}px` }}>
+                              <div className="w-full flex flex-col items-center gap-[2px] justify-end" style={{ height: "200px" }}>
+                                <div className="bg-emerald-400/40 rounded-t-sm transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px`, width: `${barWidth}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                                <div className="bg-rose-400/40 rounded-t-sm transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px`, width: `${barWidth}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                                <div className={`${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-sm transition-all group-hover:opacity-80`} style={{ height: `${netH}px`, width: `${barWidth}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                              </div>
+                              {showLabel && <span className="text-[9px] text-[#94a3b8] whitespace-nowrap mt-1">{label}</span>}
                             </div>
-                            {showLabel && <span className="text-[9px] text-[#94a3b8] whitespace-nowrap mt-1">{label}</span>}
+                          );
+                        })}
+                      </div>
+                      {isMultiYear && years.map((year) => {
+                        const firstIdx = cashFlow.findIndex((d) => d.date.includes(String(year)));
+                        if (firstIdx === -1) return null;
+                        return (
+                          <div key={year} className="absolute top-0 flex flex-col items-center pointer-events-none" style={{ left: `${firstIdx * totalBar}px`, width: `${totalBar}px` }}>
+                            <span className="text-[11px] font-bold text-[#0e212c] px-1 rounded bg-white/90">{year}</span>
+                            <div className="w-[2px] bg-[#cbd5e1]" style={{ minHeight: "200px" }} />
                           </div>
                         );
                       })}
                     </div>
-                  );
-                })()}
-              </div>
+                  </div>
+                );
+              })()}
             </div>
             <div className="flex items-center gap-4 mt-4 text-xs text-[#64748b]">
               <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-400/40" /> Revenue</span>

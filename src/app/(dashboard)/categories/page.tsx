@@ -398,16 +398,18 @@ export default function CategoriesPage() {
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
-                        <button
-                          onClick={() => {
-                            setDeleteTarget(cat.id);
-                            setDeleteError("");
-                          }}
-                          className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all"
-                          title="Delete Category"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {cat._count.products === 0 && (
+                          <button
+                            onClick={() => {
+                              setDeleteTarget(cat.id);
+                              setDeleteError("");
+                            }}
+                            className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all"
+                            title="Delete Category"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   )}

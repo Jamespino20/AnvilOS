@@ -337,10 +337,10 @@ export function InventoryClient({
       await updateProduct(showEdit, {
         productName: form.productName,
         category: selectedCategoryName,
-        categoryId: selectedCategoryId || undefined,
+        categoryId: form.categoryId === "" ? null : (selectedCategoryId || undefined),
         supplierName: form.supplierName || "Unknown",
-        supplierId: Number(form.supplierId) || undefined,
-        brandId: Number(form.brandId) || undefined,
+        supplierId: form.supplierId === "" ? null : (Number(form.supplierId) || undefined),
+        brandId: form.brandId === "" ? null : (Number(form.brandId) || undefined),
         unitPrice: Number(form.costPrice) || undefined,
         sellingPrice: Number(form.sellingPrice) || undefined,
         minThreshold: Number(form.minThreshold) || 5,
@@ -732,7 +732,7 @@ export function InventoryClient({
                       {formatMoney(product.sellingPrice)}
                     </td>
                     <td className="p-4 text-right font-mono text-[#94a3b8]">
-                      {product.unitPrice
+                      {product.unitPrice != null
                         ? formatMoney(product.unitPrice)
                         : "\u2014"}
                     </td>

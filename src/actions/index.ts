@@ -110,11 +110,11 @@ export async function updateProduct(
   id: number,
   data: Partial<{
     productName: string;
-    categoryId: number;
+    categoryId: number | null;
     category: string;
-    supplierId: number;
+    supplierId: number | null;
     supplierName: string;
-    brandId: number;
+    brandId: number | null;
     unitPrice: number;
     sellingPrice: number;
     quantity: number;
