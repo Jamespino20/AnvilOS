@@ -310,7 +310,7 @@ export function InventoryClient({
       supplierName: product.supplierName,
       supplierId: String(product.supplierId ?? ""),
       brandId: String(
-        (product as any).brandRel?.id ?? (product as any).brandId ?? ""
+        (product as any).brandRel?.id ?? (product as any).brandId ?? "",
       ),
       sellingPrice: String(product.sellingPrice),
       costPrice: String(product.unitPrice ?? ""),
@@ -411,24 +411,9 @@ export function InventoryClient({
             className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
             <option value="">All Categories</option>
-            {categories.map((c) => (
+            {categories.map((c: any) => (
               <option key={c.id} value={c.id}>
                 {c.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filterSupplier}
-            onChange={(e) => {
-              setFilterSupplier(e.target.value);
-              setPage(1);
-            }}
-            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
-          >
-            <option value="">All Suppliers</option>
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.supplierName}
               </option>
             ))}
           </select>
@@ -444,6 +429,21 @@ export function InventoryClient({
             {brands.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filterSupplier}
+            onChange={(e) => {
+              setFilterSupplier(e.target.value);
+              setPage(1);
+            }}
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
+          >
+            <option value="">All Suppliers</option>
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.supplierName}
               </option>
             ))}
           </select>
@@ -530,7 +530,9 @@ export function InventoryClient({
                 if (!confirm(`Delete ${selected.size} product(s)?`)) return;
                 const result = await deleteProducts(Array.from(selected));
                 if (result.skipped > 0) {
-                  alert(`Deleted ${result.deleted}. Skipped ${result.skipped} product(s) (in use).`);
+                  alert(
+                    `Deleted ${result.deleted}. Skipped ${result.skipped} product(s) (in use).`,
+                  );
                 } else {
                   alert(`Deleted ${result.deleted} product(s).`);
                 }
@@ -563,10 +565,13 @@ export function InventoryClient({
                   <th className="px-3 py-3 text-left">
                     <input
                       type="checkbox"
-                      checked={filtered.length > 0 && filtered.every(p => selected.has(p.id))}
+                      checked={
+                        filtered.length > 0 &&
+                        filtered.every((p) => selected.has(p.id))
+                      }
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelected(new Set(filtered.map(p => p.id)));
+                          setSelected(new Set(filtered.map((p) => p.id)));
                         } else {
                           setSelected(new Set());
                         }

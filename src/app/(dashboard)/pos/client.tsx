@@ -79,7 +79,13 @@ const TXN_TYPES = [
   { value: "Adjustment" as const, label: "Adjustment", icon: Package },
 ];
 
-export function POSClient({ products, buyers, categories, suppliers, brands }: Props) {
+export function POSClient({
+  products,
+  buyers,
+  categories,
+  suppliers,
+  brands,
+}: Props) {
   const { data: session } = useSession();
   const [search, setSearch] = useState("");
   const [parentCategory, setParentCategory] = useState<number | "">("");
@@ -543,20 +549,6 @@ export function POSClient({ products, buyers, categories, suppliers, brands }: P
               ))}
             </select>
             <select
-              value={filterSupplier}
-              onChange={(e) =>
-                setFilterSupplier(e.target.value ? Number(e.target.value) : "")
-              }
-              className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-            >
-              <option value="">All Suppliers</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-            <select
               value={filterBrand}
               onChange={(e) =>
                 setFilterBrand(e.target.value ? Number(e.target.value) : "")
@@ -567,6 +559,20 @@ export function POSClient({ products, buyers, categories, suppliers, brands }: P
               {brands.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterSupplier}
+              onChange={(e) =>
+                setFilterSupplier(e.target.value ? Number(e.target.value) : "")
+              }
+              className="px-3 py-2.5 min-w-[200px] border border-[#e2e8f0] rounded-lg text-sm bg-white text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+            >
+              <option value="">All Suppliers</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
                 </option>
               ))}
             </select>

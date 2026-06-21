@@ -273,53 +273,57 @@ export default function FinancePage() {
             ))}
           </div>
 
-          {/* Cash Flow Trend & Payment Breakdown */}
+          {/* Top Products & Payment Methods */}
           <div className="grid grid-cols-12 gap-5">
-            <div className="col-span-12 lg:col-span-8 bg-white rounded-xl border border-[#e2e8f0] p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2"><LineChart className="h-4 w-4 text-[#fd761a]" /> Cash Flow ({fin.period.label})</h3>
-              </div>
-              {(() => {
-                const count = cashFlow.length;
-                const showLabels = count <= 31 || (count <= 53 && count % 2 === 0);
-                return (
-                  <div className="h-64 flex items-end gap-[2px]">
-                    {cashFlow.map((d, i) => {
-                      const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
-                      const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
-                      const netH = maxFlow > 0 ? (Math.abs(d.net) / maxFlow) * 200 : 0;
-                      const showLabel = !showLabels || i % Math.ceil(count / 15) === 0;
-
-                      let label = d.date;
-                      if (/^\d{2}:00$/.test(d.date)) {
-                        const h = parseInt(d.date.split(":")[0]);
-                        label = h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`;
-                      } else if (/^[A-Z][a-z]+ [A-Z][a-z]+ \d+$/.test(d.date)) {
-                        label = d.date.split(" ").slice(1).join(" ");
-                      }
-
-                      return (
-                        <div key={i} className="flex-1 min-w-[12px] flex flex-col items-center justify-end h-full gap-[2px] group relative">
-                          <div className="w-full flex flex-col items-center gap-[2px] justify-end" style={{ height: "200px" }}>
-                            <div className="w-full bg-emerald-400/40 rounded-t-sm transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                            <div className="w-full bg-rose-400/40 rounded-t-sm transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                            <div className={`w-full ${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-sm transition-all group-hover:opacity-80`} style={{ height: `${netH}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                          </div>
-                          {showLabel && <span className="text-[9px] text-[#94a3b8] whitespace-nowrap mt-1">{label}</span>}
-                        </div>
-                      );
-                    })}
+            <div className="col-span-12 sm:col-span-6 bg-white rounded-xl border border-[#e2e8f0] p-6">
+              <h3 className="text-sm font-bold text-[#0e212c] mb-4 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-[#fd761a]" /> Top Products by Revenue ({fin.period.label})</h3>
+              {topProducts.length > 0 ? (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider border-b border-[#e2e8f0]"><th className="text-left pb-3 font-semibold">Product</th><th className="text-right pb-3 font-semibold">Qty Sold</th><th className="text-right pb-3 font-semibold">Revenue</th><th className="w-1/2 pb-3"></th></tr></thead>
+                      <tbody className="divide-y divide-[#e2e8f0]">
+                        {topPaginated.map((p: any, i: number) => {
+                          const maxRev = topProducts[0]?.revenue || 1;
+                          const barW = (p.revenue / maxRev) * 100;
+                          return (
+                            <tr key={i} className="hover:bg-[#f8fafc] transition-colors">
+                              <td className="py-3 font-medium text-[#0e212c]">{p.name}</td>
+                              <td className="py-3 text-right text-[#64748b]">{p.quantity}</td>
+                              <td className="py-3 text-right font-mono font-semibold text-[#0e212c]">{p.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-3 pl-4"><div className="h-2.5 bg-[#f1f5f9] rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-[#fd761a] to-[#e56600] rounded-full" style={{ width: `${barW}%` }} /></div></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
-                );
-              })()}
-              <div className="flex items-center gap-4 mt-4 text-xs text-[#64748b]">
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-400/40" /> Revenue</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-rose-400/40" /> Expenses</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500/60" /> Net Profit</span>
-              </div>
+                  {topTotalPages > 1 && (
+                    <div className="flex items-center justify-between pt-4 border-t border-[#e2e8f0] mt-4">
+                      <span className="text-xs text-[#94a3b8]">{topProducts.length} total products</span>
+                      <div className="flex items-center gap-1">
+                        <button disabled={topPage === 1} onClick={() => setTopPage((p) => Math.max(1, p - 1))}
+                          className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        {Array.from({ length: topTotalPages }, (_, i) => i + 1).map((pg) => (
+                          <button key={pg} onClick={() => setTopPage(pg)}
+                            className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${pg === topPage ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
+                            {pg}
+                          </button>
+                        ))}
+                        <button disabled={topPage === topTotalPages} onClick={() => setTopPage((p) => Math.min(topTotalPages, p + 1))}
+                          className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : <p className="text-sm text-[#94a3b8] text-center py-8">No product sales data for this period</p>}
             </div>
 
-            <div className="col-span-12 sm:col-span-6 lg:col-span-4 bg-white rounded-xl border border-[#e2e8f0] p-6">
+            <div className="col-span-12 sm:col-span-6 bg-white rounded-xl border border-[#e2e8f0] p-6">
               <h3 className="text-sm font-bold text-[#0e212c] mb-4 flex items-center gap-2"><PieChart className="h-4 w-4 text-[#fd761a]" /> Payment Methods</h3>
               {fin.paymentBreakdown.length > 0 ? (
                 <div className="space-y-3">
@@ -340,53 +344,53 @@ export default function FinancePage() {
             </div>
           </div>
 
-          {/* Top Products by Revenue */}
+          {/* Cash Flow Trend */}
           <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
-            <h3 className="text-sm font-bold text-[#0e212c] mb-4 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-[#fd761a]" /> Top Products by Revenue ({fin.period.label})</h3>
-            {topProducts.length > 0 ? (
-              <>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead><tr className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider border-b border-[#e2e8f0]"><th className="text-left pb-3 font-semibold">Product</th><th className="text-right pb-3 font-semibold">Qty Sold</th><th className="text-right pb-3 font-semibold">Revenue</th><th className="w-1/2 pb-3"></th></tr></thead>
-                    <tbody className="divide-y divide-[#e2e8f0]">
-                      {topPaginated.map((p: any, i: number) => {
-                        const maxRev = topProducts[0]?.revenue || 1;
-                        const barW = (p.revenue / maxRev) * 100;
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2"><LineChart className="h-4 w-4 text-[#fd761a]" /> Cash Flow ({fin.period.label})</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <div className="min-w-[600px]">
+                {(() => {
+                  const count = cashFlow.length;
+                  const showLabels = count <= 31 || (count <= 53 && count % 2 === 0);
+                  return (
+                    <div className="h-64 flex items-end gap-[2px]">
+                      {cashFlow.map((d, i) => {
+                        const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
+                        const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
+                        const netH = maxFlow > 0 ? (Math.abs(d.net) / maxFlow) * 200 : 0;
+                        const showLabel = !showLabels || i % Math.ceil(count / 15) === 0;
+
+                        let label = d.date;
+                        if (/^\d{2}:00$/.test(d.date)) {
+                          const h = parseInt(d.date.split(":")[0]);
+                          label = h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`;
+                        } else if (/^[A-Z][a-z]+ [A-Z][a-z]+ \d+$/.test(d.date)) {
+                          label = d.date.split(" ").slice(1).join(" ");
+                        }
+
                         return (
-                          <tr key={i} className="hover:bg-[#f8fafc] transition-colors">
-                            <td className="py-3 font-medium text-[#0e212c]">{p.name}</td>
-                            <td className="py-3 text-right text-[#64748b]">{p.quantity}</td>
-                            <td className="py-3 text-right font-mono font-semibold text-[#0e212c]">{p.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="py-3 pl-4"><div className="h-2.5 bg-[#f1f5f9] rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-[#fd761a] to-[#e56600] rounded-full" style={{ width: `${barW}%` }} /></div></td>
-                          </tr>
+                          <div key={i} className="flex-1 min-w-[12px] flex flex-col items-center justify-end h-full gap-[2px] group relative">
+                            <div className="w-full flex flex-col items-center gap-[2px] justify-end" style={{ height: "200px" }}>
+                              <div className="w-full bg-emerald-400/40 rounded-t-sm transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                              <div className="w-full bg-rose-400/40 rounded-t-sm transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                              <div className={`w-full ${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-sm transition-all group-hover:opacity-80`} style={{ height: `${netH}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                            </div>
+                            {showLabel && <span className="text-[9px] text-[#94a3b8] whitespace-nowrap mt-1">{label}</span>}
+                          </div>
                         );
                       })}
-                    </tbody>
-                  </table>
-                </div>
-                {topTotalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4 border-t border-[#e2e8f0] mt-4">
-                    <span className="text-xs text-[#94a3b8]">{topProducts.length} total products</span>
-                    <div className="flex items-center gap-1">
-                      <button disabled={topPage === 1} onClick={() => setTopPage((p) => Math.max(1, p - 1))}
-                        className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                        <ChevronLeft className="h-4 w-4" />
-                      </button>
-                      {Array.from({ length: topTotalPages }, (_, i) => i + 1).map((pg) => (
-                        <button key={pg} onClick={() => setTopPage(pg)}
-                          className={`min-w-[28px] h-7 text-xs font-semibold rounded-md transition-all ${pg === topPage ? "bg-[#fd761a] text-white shadow-sm" : "text-[#64748b] hover:bg-[#f1f5f9]"}`}>
-                          {pg}
-                        </button>
-                      ))}
-                      <button disabled={topPage === topTotalPages} onClick={() => setTopPage((p) => Math.min(topTotalPages, p + 1))}
-                        className="p-1.5 rounded-md text-[#64748b] hover:bg-[#f1f5f9] disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
                     </div>
-                  </div>
-                )}
-              </>
-            ) : <p className="text-sm text-[#94a3b8] text-center py-8">No product sales data for this period</p>}
+                  );
+                })()}
+              </div>
+            </div>
+            <div className="flex items-center gap-4 mt-4 text-xs text-[#64748b]">
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-400/40" /> Revenue</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-rose-400/40" /> Expenses</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500/60" /> Net Profit</span>
+            </div>
           </div>
 
           <p className="text-xs text-[#94a3b8] text-center">{fin.period.label}</p>

@@ -209,15 +209,8 @@ export async function deleteProducts(ids: number[]) {
 
 export const getCategories = cache(async () => {
   return prisma.category.findMany({
-    where: { parentCategoryId: null },
     orderBy: { name: "asc" },
-    include: {
-      _count: { select: { products: true } },
-      children: {
-        orderBy: { name: "asc" },
-        include: { _count: { select: { products: true } } },
-      },
-    },
+    include: { _count: { select: { products: true } } },
   });
 });
 
@@ -232,7 +225,7 @@ export async function createCategory(name: string, parentCategoryId?: number) {
   await requireAdmin();
   try {
     const cat = await prisma.category.create({
-      data: { name, parentCategoryId: parentCategoryId || null },
+      data: { name, parentCategoryId: parentCategoryId || null, createdAt: new Date() },
     });
     await logAudit(
       "InventoryPanel",
