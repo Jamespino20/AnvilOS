@@ -1959,9 +1959,11 @@ export async function getCashFlowTrend(
     const data: { date: string; revenue: number; expenses: number; net: number }[] = [];
     const cur = new Date(start.getFullYear(), start.getMonth(), 1);
     const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+    const totalSpanMonths = Math.round((end.getTime() - start.getTime()) / (30 * 86400000));
+    const useFullYear = totalSpanMonths > 24;
     while (cur <= endMonth) {
       const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`;
-      const label = cur.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+      const label = cur.toLocaleDateString("en-US", { month: "short", year: useFullYear ? "numeric" : "2-digit" });
       const rev = revMap.get(key) || 0;
       const exp = expMap.get(key) || 0;
       data.push({ date: label, revenue: rev, expenses: exp, net: rev - exp });
@@ -1995,9 +1997,11 @@ export async function getCashFlowTrend(
     const dayOfWeek = start.getDay();
     const cur = new Date(start);
     cur.setDate(cur.getDate() - ((dayOfWeek + 6) % 7)); // align to Monday
+    const totalSpanMonthsW = Math.round((end.getTime() - start.getTime()) / (30 * 86400000));
+    const useFullYearW = totalSpanMonthsW > 24;
     while (cur <= end) {
       const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
-      const label = cur.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const label = cur.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(useFullYearW ? { year: "numeric" } : {}) });
       const rev = revMap.get(key) || 0;
       const exp = expMap.get(key) || 0;
       data.push({ date: label, revenue: rev, expenses: exp, net: rev - exp });
@@ -2025,6 +2029,8 @@ export async function getCashFlowTrend(
     expenses: number;
     net: number;
   }[] = [];
+  const totalSpanMonthsD = Math.round((end.getTime() - start.getTime()) / (30 * 86400000));
+  const useFullYearD = totalSpanMonthsD > 24;
   for (let i = effectiveDays - 1; i >= 0; i--) {
     const d = endDate
       ? new Date(end.getTime() - i * 86400000)
@@ -2041,6 +2047,7 @@ export async function getCashFlowTrend(
         weekday: "short",
         month: "short",
         day: "numeric",
+        ...(useFullYearD ? { year: "numeric" } : {}),
       }),
       revenue: rev,
       expenses: exp,

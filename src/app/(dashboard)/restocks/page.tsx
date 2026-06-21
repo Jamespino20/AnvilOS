@@ -6,7 +6,7 @@ import { Search, ArrowDownUp, Loader2, ChevronDown, ChevronUp, CheckCircle, Plus
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
-import { ImportButton } from "@/components/import-button";
+
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 import { toast } from "sonner";
 
@@ -218,7 +218,7 @@ export default function RestocksPage() {
             title="Export restocks"
             filterLabel={dateScope !== "all" ? DATE_SCOPES.find((s) => s.value === dateScope)?.label : undefined}
           />
-          <ImportButton table="transactions" onImported={() => window.location.reload()} title="Import restocks from CSV or XLSX" />
+
           <button onClick={() => setShowNew(true)}
             className="h-10 flex items-center justify-center gap-2 px-5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all active:scale-[0.98]">
             <Plus className="h-4 w-4" /> New Restock

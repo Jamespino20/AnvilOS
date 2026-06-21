@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { getPaginatedAuditLogs, getAuditLogUsers } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
-import { ImportButton } from "@/components/import-button";
 import { ExportDialog } from "@/components/export-dialog";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Shield, ChevronDown, ChevronUp, Search, Loader2, ChevronLeft, ChevronRight, X } from "lucide-react";
@@ -192,7 +191,6 @@ export default function AuditLogPage() {
             title="Export audit logs as CSV, XLSX, or PDF"
             filterLabel={dateScope !== "all" ? DATE_SCOPES.find((s) => s.value === dateScope)?.label : undefined}
           />
-          <ImportButton table="audit-logs" onImported={() => {}} title="Import audit logs from CSV or XLSX" />
         </div>
       </div>
 
