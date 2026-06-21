@@ -281,29 +281,25 @@ export default function FinancePage() {
               </div>
               {(() => {
                 const count = cashFlow.length;
-                const barWidth = count <= 12 ? "w-8" : count <= 31 ? "w-4" : count <= 53 ? "w-3" : "w-2";
                 const showLabels = count <= 31 || (count <= 53 && count % 2 === 0);
                 return (
-                  <div className="h-64 overflow-x-auto scrollbar-hide flex items-end gap-[2px]">
+                  <div className="h-64 flex items-end gap-[2px]">
                     {cashFlow.map((d, i) => {
                       const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
                       const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
                       const netH = maxFlow > 0 ? (Math.abs(d.net) / maxFlow) * 200 : 0;
                       const showLabel = !showLabels || i % Math.ceil(count / 15) === 0;
 
-                      // Format label based on content
                       let label = d.date;
                       if (/^\d{2}:00$/.test(d.date)) {
-                        // Hourly: "12:00" → "12a", "13:00" → "1p"
                         const h = parseInt(d.date.split(":")[0]);
                         label = h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`;
                       } else if (/^[A-Z][a-z]+ [A-Z][a-z]+ \d+$/.test(d.date)) {
-                        // Daily: "Mon Jun 5" → "Jun 5"
                         label = d.date.split(" ").slice(1).join(" ");
                       }
 
                       return (
-                        <div key={i} className={`flex-shrink-0 ${barWidth} flex flex-col items-center justify-end h-full gap-[2px] group relative`}>
+                        <div key={i} className="flex-1 min-w-[12px] flex flex-col items-center justify-end h-full gap-[2px] group relative">
                           <div className="w-full flex flex-col items-center gap-[2px] justify-end" style={{ height: "200px" }}>
                             <div className="w-full bg-emerald-400/40 rounded-t-sm transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                             <div className="w-full bg-rose-400/40 rounded-t-sm transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />

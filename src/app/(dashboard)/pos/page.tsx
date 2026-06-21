@@ -6,16 +6,18 @@ URL: https://github.com/Jamespino20
 Last Update Date: June 13, 2026
 */
 
-import { getProducts, getBuyers, getCategories } from "@/actions";
+import { getProducts, getBuyers, getCategories, getSuppliers, getBrands } from "@/actions";
 import { POSClient } from "./client";
 
 export default async function POSPage() {
-  let products: any[] = [], buyers: any[] = [], categories: any[] = [];
+  let products: any[] = [], buyers: any[] = [], categories: any[] = [], suppliers: any[] = [], brands: any[] = [];
   try {
-    [products, buyers, categories] = await Promise.all([
+    [products, buyers, categories, suppliers, brands] = await Promise.all([
       getProducts({ status: "available" }),
       getBuyers(),
       getCategories(),
+      getSuppliers(),
+      getBrands(),
     ]);
   } catch {
     return (
@@ -28,6 +30,6 @@ export default async function POSPage() {
     );
   }
   return (
-    <POSClient products={products} buyers={buyers} categories={categories} />
+    <POSClient products={products} buyers={buyers} categories={categories} suppliers={suppliers} brands={brands} />
   );
 }

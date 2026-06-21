@@ -58,6 +58,8 @@ interface Props {
   products: Product[];
   buyers: BuyerInfo[];
   categories: CategoryWithChildren[];
+  suppliers: { id: number; name: string }[];
+  brands: { id: number; name: string }[];
 }
 
 interface CartItem {
@@ -77,11 +79,12 @@ const TXN_TYPES = [
   { value: "Adjustment" as const, label: "Adjustment", icon: Package },
 ];
 
-export function POSClient({ products, buyers, categories }: Props) {
+export function POSClient({ products, buyers, categories, suppliers, brands }: Props) {
   const { data: session } = useSession();
   const [search, setSearch] = useState("");
   const [parentCategory, setParentCategory] = useState<number | "">("");
-  const [childCategory, setChildCategory] = useState<number | "">("");
+  const [filterSupplier, setFilterSupplier] = useState<number | "">("");
+  const [filterBrand, setFilterBrand] = useState<number | "">("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [buyerName, setBuyerName] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
@@ -157,26 +160,21 @@ export function POSClient({ products, buyers, categories }: Props) {
     [categories],
   );
 
-  const childCategories = useMemo(() => {
-    if (parentCategory === "") return [];
-    return categories.find((c) => c.id === parentCategory)?.children || [];
-  }, [categories, parentCategory]);
-
   const filtered = products.filter((p) => {
     if (p.quantity <= 0) return false;
     if (search && !p.productName.toLowerCase().includes(search.toLowerCase()))
       return false;
-    if (childCategory !== "" && p.categoryId === childCategory) return true;
+    if (filterSupplier !== "" && p.supplierId !== filterSupplier) return false;
+    if (filterBrand !== "" && (p as any).brandId !== filterBrand) return false;
     if (parentCategory !== "" && p.categoryId === parentCategory) return true;
-    if (parentCategory !== "" && childCategory === "") {
+    if (parentCategory !== "") {
       const parent = categories.find((c) => c.id === parentCategory);
       if (parent && p.category === parent.name) return true;
       const childIds = (parent?.children || []).map((c) => c.id);
       if (childIds.includes(p.categoryId ?? -1)) return true;
       return false;
     }
-    if (parentCategory === "" && childCategory === "") return true;
-    return false;
+    return true;
   });
 
   function categoryDisplay(product: Product): string {
@@ -349,17 +347,12 @@ export function POSClient({ products, buyers, categories }: Props) {
         grandTotal: grandTotal,
         items: cart
           .filter((c) => !(txnType === "Return" && c.quantity === 0))
-          .map((c) => {
-            const brand = (c.product as any).brandRel?.name;
-            return {
-              productName: brand
-                ? `${brand} ${c.product.productName}`
-                : c.product.productName,
-              quantity: c.quantity,
-              unitPrice: Number(c.product.sellingPrice),
-              totalPrice: Number(c.product.sellingPrice) * c.quantity,
-            };
-          }),
+          .map((c) => ({
+            productName: c.product.productName,
+            quantity: c.quantity,
+            unitPrice: Number(c.product.sellingPrice),
+            totalPrice: Number(c.product.sellingPrice) * c.quantity,
+          })),
         paymentMethod,
         transactionType: txnType,
         chequeDetails:
@@ -539,7 +532,6 @@ export function POSClient({ products, buyers, categories }: Props) {
               value={parentCategory}
               onChange={(e) => {
                 setParentCategory(e.target.value ? Number(e.target.value) : "");
-                setChildCategory("");
               }}
               className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
             >
@@ -551,29 +543,36 @@ export function POSClient({ products, buyers, categories }: Props) {
               ))}
             </select>
             <select
-              value={childCategory}
+              value={filterSupplier}
               onChange={(e) =>
-                setChildCategory(e.target.value ? Number(e.target.value) : "")
+                setFilterSupplier(e.target.value ? Number(e.target.value) : "")
               }
-              disabled={parentCategory === "" || childCategories.length === 0}
-              className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
             >
-              <option value="">
-                {parentCategory === ""
-                  ? "Select Subcategory"
-                  : childCategories.length === 0
-                    ? "No subcategories"
-                    : "All Subcategories"}
-              </option>
-              {childCategories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
+              <option value="">All Suppliers</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filterBrand}
+              onChange={(e) =>
+                setFilterBrand(e.target.value ? Number(e.target.value) : "")
+              }
+              className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+            >
+              <option value="">All Brands</option>
+              {brands.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 content-start max-w-[800px] min-w-0">
+          <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 content-start min-w-0">
             {filtered.map((product) => (
               <button
                 key={product.id}
@@ -897,9 +896,7 @@ export function POSClient({ products, buyers, categories }: Props) {
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-semibold text-[#0e212c] truncate">
-                    {(item.product as any).brandRel?.name
-                      ? `${(item.product as any).brandRel.name} ${item.product.productName}`
-                      : item.product.productName}
+                    {item.product.productName}
                   </p>
                   <p className="text-[10px] text-[#94a3b8] break-words">
                     {categoryDisplay(item.product)}
@@ -992,9 +989,6 @@ export function POSClient({ products, buyers, categories }: Props) {
                 </div>
                 <div className="flex justify-between items-center text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider pb-1 border-b border-[#e2e8f0]">
                   <span className="flex-1">Item</span>
-                  <span className="w-20 text-right hidden sm:block">
-                    Category
-                  </span>
                   <span className="w-10 text-center">Qty</span>
                   <span className="w-[72px] text-right">Price</span>
                   <span className="w-[72px] text-right">Total</span>
@@ -1006,13 +1000,7 @@ export function POSClient({ products, buyers, categories }: Props) {
                       className="flex justify-between items-center text-[11px] py-0.5"
                     >
                       <span className="flex-1 text-[#0e212c] font-medium truncate pr-1">
-                        {(() => {
-                          const brand = (item.product as any).brandRel?.name;
-                          return brand ? `${brand} ${item.product.productName}` : item.product.productName;
-                        })()}
-                      </span>
-                      <span className="w-20 text-right text-[#94a3b8] truncate hidden sm:block">
-                        {categoryDisplay(item.product)}
+                        {item.product.productName}
                       </span>
                       <span className="w-10 text-center text-[#64748b]">
                         {item.quantity}

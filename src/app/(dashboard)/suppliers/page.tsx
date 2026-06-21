@@ -10,11 +10,13 @@ Last Update Date: June 13, 2026
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   getSuppliers as fetchSuppliers,
   createSupplier,
   updateSupplier,
   deleteSupplier,
+  deleteSuppliers,
   getProducts as fetchProducts,
 } from "@/actions";
 import {
@@ -37,12 +39,15 @@ import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
-import { ImportButton } from "@/components/import-button";
 import type { Supplier, Product } from "@prisma/client";
 import { toast } from "sonner";
 
 export default function SuppliersPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin =
+    (session?.user as any)?.role === "ADMIN" ||
+    (session?.user as any)?.role === "SUPERADMIN";
   const [suppliers, setSuppliers] = useState<
     (Supplier & { _count: { products: number } })[]
   >([]);
@@ -55,6 +60,7 @@ export default function SuppliersPage() {
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [page, setPage] = useState(1);
   const perPage = 10;
   const [form, setForm] = useState({
@@ -289,17 +295,31 @@ export default function SuppliersPage() {
             label="Export"
             title="Export suppliers"
           />
-          <ImportButton
-            table="suppliers"
-            onImported={() => window.location.reload()}
-            title="Import suppliers from CSV"
-          />
           <button
             onClick={() => setShowAdd(true)}
             className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all duration-200 active:scale-[0.98]"
           >
             <Plus className="h-4 w-4" /> Add Supplier
           </button>
+          {isAdmin && selected.size > 0 && (
+            <button
+              onClick={async () => {
+                if (!confirm(`Delete ${selected.size} supplier(s)?`)) return;
+                const result = await deleteSuppliers(Array.from(selected));
+                if (result.skipped.length > 0) {
+                  const msgs = result.skipped.map(s => `#${s.id}: ${s.reason}`);
+                  alert(`Deleted ${result.deleted}. Skipped:\n${msgs.join("\n")}`);
+                } else {
+                  alert(`Deleted ${result.deleted} supplier(s).`);
+                }
+                setSelected(new Set());
+                refetch();
+              }}
+              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white px-3 py-2 rounded-lg text-sm"
+            >
+              Delete ({selected.size})
+            </button>
+          )}
         </div>
       </div>
 
@@ -308,6 +328,21 @@ export default function SuppliersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                {isAdmin && (
+                  <th className="px-3 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && filtered.every(s => selected.has(s.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelected(new Set(filtered.map(s => s.id)));
+                        } else {
+                          setSelected(new Set());
+                        }
+                      }}
+                    />
+                  </th>
+                )}
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Supplier Name
                 </th>
@@ -340,6 +375,20 @@ export default function SuppliersPage() {
                   key={s.id}
                   className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} hover:bg-[#f1f5f9] transition-colors`}
                 >
+                  {isAdmin && (
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(s.id)}
+                        onChange={(e) => {
+                          const next = new Set(selected);
+                          if (e.target.checked) next.add(s.id);
+                          else next.delete(s.id);
+                          setSelected(next);
+                        }}
+                      />
+                    </td>
+                  )}
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#fd761a]/10 to-[#fd761a]/5 flex items-center justify-center">
@@ -397,7 +446,7 @@ export default function SuppliersPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-[#94a3b8]">
+                  <td colSpan={isAdmin ? 9 : 8} className="p-8 text-center text-[#94a3b8]">
                     No suppliers registered yet
                   </td>
                 </tr>

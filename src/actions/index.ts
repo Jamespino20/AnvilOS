@@ -191,6 +191,20 @@ export async function deleteProduct(id: number) {
   revalidateTag("products", "default");
 }
 
+export async function deleteProducts(ids: number[]) {
+  await requireAdmin();
+  const products = await prisma.product.findMany({ where: { id: { in: ids } } });
+  const result = await prisma.product.deleteMany({ where: { id: { in: ids } } });
+  await logAudit(
+    "InventoryPanel",
+    "Delete Products (Bulk)",
+    `${result.count} product(s) deleted (IDs: ${ids.join(", ")})`,
+  );
+  revalidatePath("/inventory");
+  revalidateTag("products", "default");
+  return { deleted: result.count, skipped: ids.length - result.count, names: products.map(p => p.productName) };
+}
+
 // ─────────── Categories ───────────
 
 export const getCategories = cache(async () => {
@@ -319,6 +333,39 @@ export async function deleteCategory(id: number) {
   revalidateTag("categories", "default");
 }
 
+export async function deleteCategories(ids: number[]) {
+  await requireAdmin();
+  const results: { deleted: string[]; skipped: { id: number; reason: string }[] } = { deleted: [], skipped: [] };
+  for (const id of ids) {
+    try {
+      const linked = await prisma.product.count({ where: { categoryId: id } });
+      if (linked > 0) {
+        const cat = await prisma.category.findUniqueOrThrow({ where: { id } });
+        results.skipped.push({ id, reason: `${cat.name} has ${linked} product(s)` });
+        continue;
+      }
+      const children = await prisma.category.count({ where: { parentCategoryId: id } });
+      if (children > 0) {
+        const cat = await prisma.category.findUniqueOrThrow({ where: { id } });
+        results.skipped.push({ id, reason: `${cat.name} has ${children} subcategory(ies)` });
+        continue;
+      }
+      const cat = await prisma.category.findUniqueOrThrow({ where: { id } });
+      await prisma.category.delete({ where: { id } });
+      results.deleted.push(cat.name);
+    } catch (e: any) {
+      results.skipped.push({ id, reason: e?.message || "Unknown error" });
+    }
+  }
+  if (results.deleted.length > 0) {
+    await logAudit("InventoryPanel", "Delete Categories (Bulk)", `${results.deleted.length} category(ies) deleted: ${results.deleted.join(", ")}`);
+    revalidatePath("/inventory");
+    revalidatePath("/categories");
+    revalidateTag("categories", "default");
+  }
+  return { deleted: results.deleted.length, skipped: results.skipped };
+}
+
 // ─────────── Brands ───────────
 
 export const getBrands = cache(async () => {
@@ -384,6 +431,33 @@ export async function deleteBrand(id: number) {
   revalidatePath("/inventory");
   revalidatePath("/brands");
   revalidateTag("brands", "default");
+}
+
+export async function deleteBrands(ids: number[]) {
+  await requireAdmin();
+  const results: { deleted: string[]; skipped: { id: number; reason: string }[] } = { deleted: [], skipped: [] };
+  for (const id of ids) {
+    try {
+      const linked = await prisma.product.count({ where: { brandId: id } });
+      if (linked > 0) {
+        const brand = await prisma.brand.findUniqueOrThrow({ where: { id } });
+        results.skipped.push({ id, reason: `${brand.name} has ${linked} product(s)` });
+        continue;
+      }
+      const brand = await prisma.brand.findUniqueOrThrow({ where: { id } });
+      await prisma.brand.delete({ where: { id } });
+      results.deleted.push(brand.name);
+    } catch (e: any) {
+      results.skipped.push({ id, reason: e?.message || "Unknown error" });
+    }
+  }
+  if (results.deleted.length > 0) {
+    await logAudit("InventoryPanel", "Delete Brands (Bulk)", `${results.deleted.length} brand(s) deleted: ${results.deleted.join(", ")}`);
+    revalidatePath("/inventory");
+    revalidatePath("/brands");
+    revalidateTag("brands", "default");
+  }
+  return { deleted: results.deleted.length, skipped: results.skipped };
 }
 
 // ─────────── Suppliers ───────────
@@ -478,6 +552,33 @@ export async function deleteSupplier(id: number) {
   );
   revalidatePath("/suppliers");
   revalidateTag("suppliers", "default");
+}
+
+export async function deleteSuppliers(ids: number[]) {
+  await requireAdmin();
+  const results: { deleted: string[]; skipped: { id: number; reason: string }[] } = { deleted: [], skipped: [] };
+  for (const id of ids) {
+    try {
+      const supplier = await prisma.supplier.findUniqueOrThrow({
+        where: { id },
+        include: { _count: { select: { products: true } } },
+      });
+      if (supplier._count.products > 0) {
+        results.skipped.push({ id, reason: `${supplier.supplierName} has ${supplier._count.products} product(s)` });
+        continue;
+      }
+      await prisma.supplier.delete({ where: { id } });
+      results.deleted.push(supplier.supplierName);
+    } catch (e: any) {
+      results.skipped.push({ id, reason: e?.message || "Unknown error" });
+    }
+  }
+  if (results.deleted.length > 0) {
+    await logAudit("SupplierPanel", "Delete Suppliers (Bulk)", `${results.deleted.length} supplier(s) deleted: ${results.deleted.join(", ")}`);
+    revalidatePath("/suppliers");
+    revalidateTag("suppliers", "default");
+  }
+  return { deleted: results.deleted.length, skipped: results.skipped };
 }
 
 // ─────────── Transactions ───────────
@@ -2453,4 +2554,55 @@ export async function deleteUser(id: number) {
   );
   revalidatePath("/users");
   return { success: true };
+}
+
+export async function bulkToggleUsers(ids: number[], activate: boolean) {
+  await requireAdmin();
+  const session = await auth();
+  const currentRole = (session?.user as any)?.role;
+  const results: { updated: string[]; skipped: { id: number; reason: string }[] } = { updated: [], skipped: [] };
+  for (const id of ids) {
+    try {
+      const user = await prisma.user.findUnique({ where: { id } });
+      if (!user) { results.skipped.push({ id, reason: "Not found" }); continue; }
+      if (user.role === "SUPERADMIN") { results.skipped.push({ id, reason: `${user.sellerName} is SUPERADMIN` }); continue; }
+      if (user.role === "ADMIN" && currentRole !== "SUPERADMIN") { results.skipped.push({ id, reason: `Only SUPERADMIN can toggle ADMIN users` }); continue; }
+      await prisma.user.update({ where: { id }, data: { isActive: activate } });
+      invalidateUserCache(id);
+      results.updated.push(user.sellerName);
+    } catch (e: any) {
+      results.skipped.push({ id, reason: e?.message || "Unknown error" });
+    }
+  }
+  if (results.updated.length > 0) {
+    const action = activate ? "Activated" : "Deactivated";
+    await logAudit("User Management", `Bulk ${action} Users`, `${results.updated.length} user(s) ${action.toLowerCase()}: ${results.updated.join(", ")}`);
+    revalidatePath("/users");
+  }
+  return { updated: results.updated.length, skipped: results.skipped };
+}
+
+export async function bulkDeleteUsers(ids: number[]) {
+  await requireAdmin();
+  const session = await auth();
+  const currentRole = (session?.user as any)?.role;
+  const results: { toggled: string[]; skipped: { id: number; reason: string }[] } = { toggled: [], skipped: [] };
+  for (const id of ids) {
+    try {
+      const user = await prisma.user.findUnique({ where: { id } });
+      if (!user) { results.skipped.push({ id, reason: "Not found" }); continue; }
+      if (user.role === "SUPERADMIN") { results.skipped.push({ id, reason: `${user.sellerName} is SUPERADMIN` }); continue; }
+      if (user.role === "ADMIN" && currentRole !== "SUPERADMIN") { results.skipped.push({ id, reason: "Only SUPERADMIN can deactivate ADMIN users" }); continue; }
+      await prisma.user.update({ where: { id }, data: { isActive: false } });
+      invalidateUserCache(id);
+      results.toggled.push(user.sellerName);
+    } catch (e: any) {
+      results.skipped.push({ id, reason: e?.message || "Unknown error" });
+    }
+  }
+  if (results.toggled.length > 0) {
+    await logAudit("User Management", "Bulk Deactivate Users", `${results.toggled.length} user(s) deactivated: ${results.toggled.join(", ")}`);
+    revalidatePath("/users");
+  }
+  return { deactivated: results.toggled.length, skipped: results.skipped };
 }

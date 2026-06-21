@@ -8,14 +8,14 @@ Last Update Date: June 13, 2026
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   getCategories as fetchCategories,
-  getAllCategories,
   createCategory,
   editCategory,
   deleteCategory,
+  deleteCategories,
   getProducts,
 } from "@/actions";
 import {
@@ -28,25 +28,17 @@ import {
   FolderTree,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  ChevronRightIcon,
   Search,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
-import { ImportButton } from "@/components/import-button";
 import type { Category, Product } from "@prisma/client";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 
 const PER_PAGE = 10;
-
-type CategoryWithChildren = Category & {
-  _count: { products: number };
-  children: (Category & { _count: { products: number } })[];
-};
 
 export default function CategoriesPage() {
   const router = useRouter();
@@ -54,7 +46,7 @@ export default function CategoriesPage() {
   const isAdmin =
     (session?.user as any)?.role === "ADMIN" ||
     (session?.user as any)?.role === "SUPERADMIN";
-  const [categories, setCategories] = useState<CategoryWithChildren[]>([]);
+  const [categories, setCategories] = useState<(Category & { _count: { products: number } })[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
@@ -68,9 +60,7 @@ export default function CategoriesPage() {
   const [editName, setEditName] = useState("");
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
-  const [addParentId, setAddParentId] = useState<number | null>(null);
-  const [editParentId, setEditParentId] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
 
   // Product modal state
   const [productModalCat, setProductModalCat] = useState<{
@@ -86,7 +76,7 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     fetchCategories().then((data) => {
-      setCategories(data as CategoryWithChildren[]);
+      setCategories(data as (Category & { _count: { products: number } })[]);
       setLoading(false);
     });
   }, []);
@@ -103,16 +93,7 @@ export default function CategoriesPage() {
 
   function refetch() {
     fetchCategories().then((data) => {
-      setCategories(data as CategoryWithChildren[]);
-    });
-  }
-
-  function toggleExpand(id: number) {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+      setCategories(data as (Category & { _count: { products: number } })[]);
     });
   }
 
@@ -121,14 +102,10 @@ export default function CategoriesPage() {
     setAdding(true);
     setError("");
     try {
-      const cat = await createCategory(
-        catName.trim(),
-        addParentId || undefined,
-      );
+      const cat = await createCategory(catName.trim());
       refetch();
       setShowAdd(false);
       setCatName("");
-      setAddParentId(null);
       router.refresh();
       toast.success("Category created successfully");
     } catch (e: any) {
@@ -139,10 +116,9 @@ export default function CategoriesPage() {
     }
   }
 
-  function openEdit(cat: CategoryWithChildren) {
+  function openEdit(cat: Category & { _count: { products: number } }) {
     setEditId(cat.id);
     setEditName(cat.name);
-    setEditParentId(cat.parentCategoryId);
     setError("");
   }
 
@@ -151,11 +127,10 @@ export default function CategoriesPage() {
     setSaving(true);
     setError("");
     try {
-      await editCategory(editId, editName.trim(), editParentId ?? undefined);
+      await editCategory(editId, editName.trim());
       refetch();
       setEditId(null);
       setEditName("");
-      setEditParentId(null);
       router.refresh();
       toast.success("Category updated successfully");
     } catch (e: any) {
@@ -271,62 +246,54 @@ export default function CategoriesPage() {
               { key: "createdAt", label: "Created" },
             ]}
             fetchRows={async (selected) =>
-              filtered.flatMap((cat) => {
-                const rows: string[][] = [];
-                rows.push(
-                  selected.map((key) => {
-                    if (key === "name") return cat.name;
-                    if (key === "_count.products")
-                      return String(cat._count.products);
-                    if (key === "createdAt")
-                      return cat.createdAt
-                        ? new Date(cat.createdAt).toLocaleDateString("en-PH", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })
-                        : "—";
-                    return "";
-                  }),
-                );
-                for (const child of cat.children) {
-                  rows.push(
-                    selected.map((key) => {
-                      if (key === "name") return `  ${child.name}`;
-                      if (key === "_count.products")
-                        return String(child._count.products);
-                      if (key === "createdAt")
-                        return child.createdAt
-                          ? new Date(child.createdAt).toLocaleDateString(
-                              "en-PH",
-                              {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              },
-                            )
-                          : "—";
-                      return "";
-                    }),
-                  );
-                }
-                return rows;
-              })
+              filtered.map((cat) =>
+                selected.map((key) => {
+                  if (key === "name") return cat.name;
+                  if (key === "_count.products")
+                    return String(cat._count.products);
+                  if (key === "createdAt")
+                    return cat.createdAt
+                      ? new Date(cat.createdAt).toLocaleDateString("en-PH", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : "—";
+                  return "";
+                }),
+              )
             }
           />
-          {isAdmin && <ImportButton table="categories" onImported={refetch} />}
           {isAdmin && (
             <button
               onClick={() => {
                 setShowAdd(true);
                 setError("");
                 setCatName("");
-                setAddParentId(null);
               }}
               className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl hover:shadow-[#fd761a]/25 transition-all duration-200 active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" />{" "}
               <span className="sm:inline">Add Category</span>
+            </button>
+          )}
+          {isAdmin && selected.size > 0 && (
+            <button
+              onClick={async () => {
+                if (!confirm(`Delete ${selected.size} category(ies)?`)) return;
+                const result = await deleteCategories(Array.from(selected));
+                if (result.skipped.length > 0) {
+                  const msgs = result.skipped.map(s => `#${s.id}: ${s.reason}`);
+                  alert(`Deleted ${result.deleted}. Skipped:\n${msgs.join("\n")}`);
+                } else {
+                  alert(`Deleted ${result.deleted} category(ies).`);
+                }
+                setSelected(new Set());
+                refetch();
+              }}
+              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white px-3 py-2 rounded-lg text-sm"
+            >
+              Delete ({selected.size})
             </button>
           )}
         </div>
@@ -337,6 +304,21 @@ export default function CategoriesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                {isAdmin && (
+                  <th className="px-3 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && filtered.every(c => selected.has(c.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelected(new Set(filtered.map(c => c.id)));
+                        } else {
+                          setSelected(new Set());
+                        }
+                      }}
+                    />
+                  </th>
+                )}
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Name
                 </th>
@@ -354,170 +336,87 @@ export default function CategoriesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
-              {paginated.map((cat, i) => {
-                const hasChildren = cat.children.length > 0;
-                const isExpanded = expanded.has(cat.id);
-                return (
-                  <React.Fragment key={cat.id}>
-                    <tr
-                      className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} ${hasChildren ? "cursor-pointer" : ""} hover:bg-[#f1f5f9] transition-colors`}
-                      onClick={
-                        hasChildren ? () => toggleExpand(cat.id) : undefined
+              {paginated.map((cat, i) => (
+                <tr
+                  key={cat.id}
+                  className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} hover:bg-[#f1f5f9] transition-colors`}
+                >
+                  {isAdmin && (
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(cat.id)}
+                        onChange={(e) => {
+                          const next = new Set(selected);
+                          if (e.target.checked) next.add(cat.id);
+                          else next.delete(cat.id);
+                          setSelected(next);
+                        }}
+                      />
+                    </td>
+                  )}
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#fd761a]/10 to-[#fd761a]/5 flex items-center justify-center">
+                        <FolderTree className="h-4 w-4 text-[#fd761a]" />
+                      </div>
+                      <span className="font-medium text-[#0e212c]">
+                        {cat.name}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() =>
+                        openProductModal({ id: cat.id, name: cat.name })
                       }
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#f1f5f9] text-[#64748b] text-xs font-semibold hover:bg-[#e2e8f0] hover:text-[#0e212c] transition-colors cursor-pointer"
                     >
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          {hasChildren ? (
-                            <button
-                              onClick={() => toggleExpand(cat.id)}
-                              className="p-1.5 rounded hover:bg-[#f1f5f9] transition-colors"
-                            >
-                              {isExpanded ? (
-                                <ChevronDown className="h-4 w-4 text-[#64748b]" />
-                              ) : (
-                                <ChevronRightIcon className="h-4 w-4 text-[#64748b]" />
-                              )}
-                            </button>
-                          ) : (
-                            <div className="w-5" />
-                          )}
-                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#fd761a]/10 to-[#fd761a]/5 flex items-center justify-center">
-                            <FolderTree className="h-4 w-4 text-[#fd761a]" />
-                          </div>
-                          <span className="font-medium text-[#0e212c]">
-                            {cat.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-center">
+                      <Package className="h-3 w-3" />
+                      Products: {cat._count.products}
+                    </button>
+                  </td>
+                  <td className="p-4 text-[#64748b]">
+                    {cat.createdAt
+                      ? new Date(cat.createdAt).toLocaleDateString(
+                          "en-PH",
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          },
+                        )
+                      : "—"}
+                  </td>
+                  {isAdmin && (
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
                         <button
-                          onClick={() =>
-                            openProductModal({ id: cat.id, name: cat.name })
-                          }
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#f1f5f9] text-[#64748b] text-xs font-semibold hover:bg-[#e2e8f0] hover:text-[#0e212c] transition-colors cursor-pointer"
+                          onClick={() => openEdit(cat)}
+                          className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all"
+                          title="Edit Category"
                         >
-                          <Package className="h-3 w-3" />
-                          Products: {cat._count.products}
+                          <Pencil className="h-4 w-4" />
                         </button>
-                      </td>
-                      <td className="p-4 text-[#64748b]">
-                        {cat.createdAt
-                          ? new Date(cat.createdAt).toLocaleDateString(
-                              "en-PH",
-                              {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              },
-                            )
-                          : "—"}
-                      </td>
-                      {isAdmin && (
-                        <td className="p-4 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => openEdit(cat)}
-                              className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all"
-                              title="Edit Category"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setDeleteTarget(cat.id);
-                                setDeleteError("");
-                              }}
-                              className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all"
-                              title="Delete Category"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                    {isExpanded &&
-                      cat.children.map((child) => (
-                        <tr
-                          key={child.id}
-                          className="bg-[#fafbfc] hover:bg-[#f1f5f9] transition-colors"
+                        <button
+                          onClick={() => {
+                            setDeleteTarget(cat.id);
+                            setDeleteError("");
+                          }}
+                          className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all"
+                          title="Delete Category"
                         >
-                          <td className="p-4 pl-16">
-                            <div className="flex items-center gap-3">
-                              <span className="text-[#e2e8f0] text-xs select-none">
-                                {"\u2514"}
-                              </span>
-                              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fd761a]/5 to-transparent flex items-center justify-center">
-                                <FolderTree className="h-3.5 w-3.5 text-[#fd761a]/60" />
-                              </div>
-                              <span className="font-medium text-[#334155] text-[13px]">
-                                {child.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="p-4 text-center">
-                            <button
-                              onClick={() =>
-                                openProductModal({
-                                  id: child.id,
-                                  name: child.name,
-                                })
-                              }
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#f1f5f9] text-[#64748b] text-xs font-semibold hover:bg-[#e2e8f0] hover:text-[#0e212c] transition-colors cursor-pointer"
-                            >
-                              <Package className="h-3 w-3" />
-                              Products: {child._count.products}
-                            </button>
-                          </td>
-                          <td className="p-4 text-[#64748b] text-[13px]">
-                            {child.createdAt
-                              ? new Date(child.createdAt).toLocaleDateString(
-                                  "en-PH",
-                                  {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                  },
-                                )
-                              : "—"}
-                          </td>
-                          {isAdmin && (
-                            <td className="p-4 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <button
-                                  onClick={() =>
-                                    openEdit({
-                                      ...child,
-                                      children: [],
-                                    } as CategoryWithChildren)
-                                  }
-                                  className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all"
-                                  title="Edit Subcategory"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setDeleteTarget(child.id);
-                                    setDeleteError("");
-                                  }}
-                                  className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all"
-                                  title="Delete Subcategory"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                  </React.Fragment>
-                );
-              })}
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
               {paginated.length === 0 && (
                 <tr>
                   <td
-                    colSpan={isAdmin ? 4 : 3}
+                    colSpan={isAdmin ? 5 : 3}
                     className="p-8 text-center text-[#94a3b8]"
                   >
                     No categories found. Click &quot;Add Category&quot; to
@@ -564,7 +463,6 @@ export default function CategoriesPage() {
             setShowAdd(false);
             setError("");
             setCatName("");
-            setAddParentId(null);
           }}
         >
           <div
@@ -578,7 +476,6 @@ export default function CategoriesPage() {
                   setShowAdd(false);
                   setError("");
                   setCatName("");
-                  setAddParentId(null);
                 }}
                 className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"
               >
@@ -591,29 +488,6 @@ export default function CategoriesPage() {
                   {error}
                 </div>
               )}
-              <div>
-                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                  Parent Category
-                </label>
-                <select
-                  value={addParentId ?? ""}
-                  onChange={(e) =>
-                    setAddParentId(
-                      e.target.value ? Number(e.target.value) : null,
-                    )
-                  }
-                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
-                >
-                  <option value="">None (Top-level)</option>
-                  {categories
-                    .filter((c) => !c.parentCategoryId)
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Category Name *
@@ -638,7 +512,6 @@ export default function CategoriesPage() {
                     setShowAdd(false);
                     setError("");
                     setCatName("");
-                    setAddParentId(null);
                   }}
                   className="flex-1 py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-[#f8fafc] transition-all"
                 >
@@ -671,7 +544,6 @@ export default function CategoriesPage() {
             setEditId(null);
             setError("");
             setEditName("");
-            setEditParentId(null);
           }}
         >
           <div
@@ -687,7 +559,6 @@ export default function CategoriesPage() {
                   setEditId(null);
                   setError("");
                   setEditName("");
-                  setEditParentId(null);
                 }}
                 className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"
               >
@@ -700,41 +571,6 @@ export default function CategoriesPage() {
                   {error}
                 </div>
               )}
-              <div>
-                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                  Parent Category
-                </label>
-                <select
-                  value={editParentId ?? ""}
-                  onChange={(e) =>
-                    setEditParentId(
-                      e.target.value ? Number(e.target.value) : null,
-                    )
-                  }
-                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
-                >
-                  <option value="">None (Top-level)</option>
-                  {categories
-                    .filter((c) => {
-                      if (c.id === editId) return false;
-                      const currentCat = categories.find(
-                        (cc) => cc.id === editId,
-                      );
-                      if (currentCat?.parentCategoryId === c.id) return false;
-                      // Exclude descendants of the category being edited
-                      const descendantIds = (currentCat?.children || []).map(
-                        (ch) => ch.id,
-                      );
-                      if (descendantIds.includes(c.id)) return false;
-                      return true;
-                    })
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Category Name *
@@ -758,7 +594,6 @@ export default function CategoriesPage() {
                     setEditId(null);
                     setError("");
                     setEditName("");
-                    setEditParentId(null);
                   }}
                   className="flex-1 py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-[#f8fafc] transition-all"
                 >

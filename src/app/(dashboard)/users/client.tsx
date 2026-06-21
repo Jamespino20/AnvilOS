@@ -23,7 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { createUser, updateUser, deleteUser } from "@/actions";
+import { createUser, updateUser, deleteUser, bulkDeleteUsers } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
@@ -50,6 +50,7 @@ interface Props {
 
 export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
   const router = useRouter();
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const perPage = 15;
@@ -65,6 +66,8 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
     password: "",
     role: "STAFF" as "SUPERADMIN" | "ADMIN" | "STAFF",
   });
+
+  const isAdmin = currentUserRole === "SUPERADMIN" || currentUserRole === "ADMIN";
 
   function canEditUser(targetUser: UserRow) {
     if (currentUserRole === "SUPERADMIN") return true;
@@ -275,6 +278,25 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
           >
             <Plus className="h-4 w-4" /> Add User
           </button>
+          {selected.size > 0 && (
+            <button
+              onClick={async () => {
+                if (!confirm(`Deactivate ${selected.size} user(s)?`)) return;
+                const result = await bulkDeleteUsers(Array.from(selected));
+                if (result.skipped.length > 0) {
+                  const msgs = result.skipped.map(s => `#${s.id}: ${s.reason}`);
+                  alert(`Deactivated ${result.deactivated}. Skipped:\n${msgs.join("\n")}`);
+                } else {
+                  alert(`Deactivated ${result.deactivated} user(s).`);
+                }
+                setSelected(new Set());
+                window.location.reload();
+              }}
+              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white px-3 py-2 rounded-lg text-sm"
+            >
+              Deactivate ({selected.size})
+            </button>
+          )}
         </div>
       </div>
 
@@ -291,6 +313,21 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
           <table className="w-full text-sm min-w-[900px] lg:min-w-0">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                {isAdmin && (
+                  <th className="px-3 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && filtered.every(u => selected.has(u.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelected(new Set(filtered.map(u => u.id)));
+                        } else {
+                          setSelected(new Set());
+                        }
+                      }}
+                    />
+                  </th>
+                )}
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Name
                 </th>
@@ -320,6 +357,20 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
                   key={u.id}
                   className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} hover:bg-[#f1f5f9] transition-colors`}
                 >
+                  {isAdmin && (
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(u.id)}
+                        onChange={(e) => {
+                          const next = new Set(selected);
+                          if (e.target.checked) next.add(u.id);
+                          else next.delete(u.id);
+                          setSelected(next);
+                        }}
+                      />
+                    </td>
+                  )}
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       {u.imageUrl ? (
@@ -424,7 +475,7 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-[#94a3b8]">
+                  <td colSpan={8} className="p-8 text-center text-[#94a3b8]">
                     No users found
                   </td>
                 </tr>

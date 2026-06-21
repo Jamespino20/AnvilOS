@@ -34,7 +34,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
-import { ImportButton } from "@/components/import-button";
+
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 import { toast } from "sonner";
@@ -396,11 +396,6 @@ export default function OrdersPage() {
                 }),
               )
             }
-          />
-          <ImportButton
-            table="transactions"
-            onImported={() => window.location.reload()}
-            title="Import purchase orders from CSV or XLSX"
           />
         </div>
       </div>

@@ -22,12 +22,12 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  deleteProducts,
   adjustStock,
 } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
-import { ImportButton } from "@/components/import-button";
 import type { Product, Category, Supplier, Brand } from "@prisma/client";
 import { toast } from "sonner";
 import { formatMoney, formatReportMoney } from "@/lib/format";
@@ -56,7 +56,6 @@ export function InventoryClient({
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
-  const [filterSubCategory, setFilterSubCategory] = useState("");
   const [filterSupplier, setFilterSupplier] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -68,11 +67,10 @@ export function InventoryClient({
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [form, setForm] = useState({
     productName: "",
-    category: "",
     categoryId: "",
-    parentCategoryId: "",
     supplierName: "",
     supplierId: "",
     brandId: "",
@@ -88,9 +86,7 @@ export function InventoryClient({
   });
   const defaultForm = {
     productName: "",
-    category: "",
     categoryId: "",
-    parentCategoryId: "",
     supplierName: "",
     supplierId: "",
     brandId: "",
@@ -123,16 +119,6 @@ export function InventoryClient({
     }
   }, [editQtyId]);
 
-  const parentCategoryList = categories.filter(
-    (c) => c.parentCategoryId === null,
-  );
-  const childCategoryList = categories.filter(
-    (c) => c.parentCategoryId === Number(filterCategory),
-  );
-  const formChildCategoryList = categories.filter(
-    (c) => c.parentCategoryId === Number(form.parentCategoryId),
-  );
-
   async function handleSaveQty(productId: number) {
     const val = parseInt(editQtyVal, 10);
     if (isNaN(val) || val < 0) {
@@ -156,16 +142,8 @@ export function InventoryClient({
     .filter((p) => {
       if (search && !p.productName.toLowerCase().includes(search.toLowerCase()))
         return false;
-      if (filterSubCategory && p.categoryId !== Number(filterSubCategory))
+      if (filterCategory && p.categoryId !== Number(filterCategory))
         return false;
-      else if (filterCategory && p.categoryId !== Number(filterCategory)) {
-        const childIds = childCategoryList.map((c) => c.id);
-        if (
-          !childIds.includes(p.categoryId ?? -1) &&
-          p.categoryId !== Number(filterCategory)
-        )
-          return false;
-      }
       if (filterSupplier && p.supplierId !== Number(filterSupplier))
         return false;
       if (filterBrand && ((p as any).brandId ?? -1) !== Number(filterBrand))
@@ -289,12 +267,9 @@ export function InventoryClient({
     e.preventDefault();
     if (!form.productName) return;
     setAdding(true);
-    const selectedCategoryId =
-      Number(form.categoryId) || Number(form.parentCategoryId) || 0;
+    const selectedCategoryId = Number(form.categoryId) || 0;
     const selectedCategoryName =
-      form.category ||
-      parentCategoryList.find((c) => c.id === Number(form.parentCategoryId))
-        ?.name ||
+      categories.find((c) => c.id === Number(form.categoryId))?.name ||
       "Uncategorized";
     try {
       await createProduct({
@@ -329,17 +304,14 @@ export function InventoryClient({
   }
 
   function openEdit(product: Product & { imageUrl?: string | null }) {
-    const catParent = categories.find(
-      (c) => c.id === (product.categoryId ?? -1),
-    )?.parentCategoryId;
     setForm({
       productName: product.productName,
-      category: product.category,
       categoryId: String(product.categoryId ?? ""),
-      parentCategoryId: catParent ? String(catParent) : "",
       supplierName: product.supplierName,
       supplierId: String(product.supplierId ?? ""),
-      brandId: String((product as any).brandId ?? ""),
+      brandId: String(
+        (product as any).brandRel?.id ?? (product as any).brandId ?? ""
+      ),
       sellingPrice: String(product.sellingPrice),
       costPrice: String(product.unitPrice ?? ""),
       quantity: String(product.quantity),
@@ -357,12 +329,9 @@ export function InventoryClient({
     e.preventDefault();
     if (!form.productName || showEdit === null) return;
     setSaving(true);
-    const selectedCategoryId =
-      Number(form.categoryId) || Number(form.parentCategoryId) || 0;
+    const selectedCategoryId = Number(form.categoryId) || 0;
     const selectedCategoryName =
-      form.category ||
-      parentCategoryList.find((c) => c.id === Number(form.parentCategoryId))
-        ?.name ||
+      categories.find((c) => c.id === Number(form.categoryId))?.name ||
       "Uncategorized";
     try {
       await updateProduct(showEdit, {
@@ -437,85 +406,62 @@ export function InventoryClient({
             value={filterCategory}
             onChange={(e) => {
               setFilterCategory(e.target.value);
-              setFilterSubCategory("");
               setPage(1);
             }}
             className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
             <option value="">All Categories</option>
-            {parentCategoryList.map((c) => (
+            {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
           </select>
           <select
-            value={filterSubCategory}
+            value={filterSupplier}
             onChange={(e) => {
-              setFilterSubCategory(e.target.value);
+              setFilterSupplier(e.target.value);
               setPage(1);
             }}
-            disabled={filterCategory === "" || childCategoryList.length === 0}
-            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
-            <option value="">
-              {filterCategory === ""
-                ? "Select Subcategory"
-                : childCategoryList.length === 0
-                  ? "No subcategories"
-                  : "All Subcategories"}
-            </option>
-            {childCategoryList.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
+            <option value="">All Suppliers</option>
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.supplierName}
               </option>
             ))}
           </select>
-            <select
-              value={filterSupplier}
-              onChange={(e) => {
-                setFilterSupplier(e.target.value);
-                setPage(1);
-              }}
-              className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
-            >
-              <option value="">Supplier</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.supplierName}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterBrand}
-              onChange={(e) => {
-                setFilterBrand(e.target.value);
-                setPage(1);
-              }}
-              className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
-            >
-              <option value="">Brand</option>
-              {brands.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterStatus}
-              onChange={(e) => {
-                setFilterStatus(e.target.value);
-                setPage(1);
-              }}
-              className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
-            >
-              <option value="">Status</option>
-              <option value="low">Low Stock</option>
-              <option value="out">Out of Stock</option>
-              <option value="fast">Fast Moving</option>
-              <option value="weight">Sell by Weight</option>
-              <option value="box">Sell by Box</option>
-            </select>
+          <select
+            value={filterBrand}
+            onChange={(e) => {
+              setFilterBrand(e.target.value);
+              setPage(1);
+            }}
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
+          >
+            <option value="">All Brands</option>
+            {brands.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => {
+              setFilterStatus(e.target.value);
+              setPage(1);
+            }}
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
+          >
+            <option value="">Status</option>
+            <option value="low">Low Stock</option>
+            <option value="out">Out of Stock</option>
+            <option value="fast">Fast Moving</option>
+            <option value="weight">Sell by Weight</option>
+            <option value="box">Sell by Box</option>
+          </select>
         </div>
         <div className="flex gap-2 w-full lg:w-auto">
           <ExportDialog
@@ -570,19 +516,30 @@ export function InventoryClient({
             title="Export inventory"
           />
           {isAdmin && (
-            <ImportButton
-              table="inventory"
-              onImported={() => window.location.reload()}
-              title="Import products from CSV or XLSX"
-            />
-          )}
-          {isAdmin && (
             <button
               onClick={() => setShowAdd(true)}
               title="Add a new product"
               className="h-10 flex items-center justify-center gap-2 px-5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all duration-200 active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" /> Add Product
+            </button>
+          )}
+          {isAdmin && selected.size > 0 && (
+            <button
+              onClick={async () => {
+                if (!confirm(`Delete ${selected.size} product(s)?`)) return;
+                const result = await deleteProducts(Array.from(selected));
+                if (result.skipped > 0) {
+                  alert(`Deleted ${result.deleted}. Skipped ${result.skipped} product(s) (in use).`);
+                } else {
+                  alert(`Deleted ${result.deleted} product(s).`);
+                }
+                setSelected(new Set());
+                router.refresh();
+              }}
+              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white px-3 py-2 rounded-lg text-sm"
+            >
+              Delete ({selected.size})
             </button>
           )}
         </div>
@@ -602,6 +559,21 @@ export function InventoryClient({
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
                 <th className="p-4 w-12"></th>
+                {isAdmin && (
+                  <th className="px-3 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && filtered.every(p => selected.has(p.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelected(new Set(filtered.map(p => p.id)));
+                        } else {
+                          setSelected(new Set());
+                        }
+                      }}
+                    />
+                  </th>
+                )}
                 <th
                   className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
                   onClick={() => {
@@ -638,26 +610,6 @@ export function InventoryClient({
                     className={`ml-1 ${sortBy === "category" ? "text-[#fd761a]" : "text-[#cbd5e1]"}`}
                   >
                     {sortBy === "category" && sortDir === "desc"
-                      ? "\u25BC"
-                      : "\u25B2"}
-                  </span>
-                </th>
-                <th
-                  className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
-                  onClick={() => {
-                    if (sortBy === "supplier")
-                      setSortDir(sortDir === "asc" ? "desc" : "asc");
-                    else {
-                      setSortBy("supplier");
-                      setSortDir("asc");
-                    }
-                  }}
-                >
-                  Supplier
-                  <span
-                    className={`ml-1 ${sortBy === "supplier" ? "text-[#fd761a]" : "text-[#cbd5e1]"}`}
-                  >
-                    {sortBy === "supplier" && sortDir === "desc"
                       ? "\u25BC"
                       : "\u25B2"}
                   </span>
@@ -713,6 +665,20 @@ export function InventoryClient({
                     key={product.id}
                     className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} hover:bg-[#f1f5f9] transition-colors`}
                   >
+                    {isAdmin && (
+                      <td className="px-3 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(product.id)}
+                          onChange={(e) => {
+                            const next = new Set(selected);
+                            if (e.target.checked) next.add(product.id);
+                            else next.delete(product.id);
+                            setSelected(next);
+                          }}
+                        />
+                      </td>
+                    )}
                     <td className="p-2 pl-4">
                       {imgUrl ? (
                         <img
@@ -729,6 +695,11 @@ export function InventoryClient({
                     <td className="p-4 font-medium text-[#0e212c]">
                       <div className="flex items-center gap-2">
                         {product.productName}
+                        {product.sellByBox && product.boxQuantity ? (
+                          <span className="text-[10px] text-[#94a3b8] ml-1">
+                            ({product.boxQuantity}/box)
+                          </span>
+                        ) : null}
                         <div className="flex gap-1">
                           {product.isFastMoving && (
                             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
@@ -749,9 +720,6 @@ export function InventoryClient({
                       </div>
                     </td>
                     <td className="p-4 text-[#64748b]">{product.category}</td>
-                    <td className="p-4 text-[#64748b]">
-                      {product.supplierName}
-                    </td>
                     <td className="p-4 text-[#64748b]">
                       {(product as any).brandRel?.name || "—"}
                     </td>
@@ -836,7 +804,7 @@ export function InventoryClient({
               {filtered.length === 0 && (
                 <tr>
                   <td
-                    colSpan={isAdmin ? 11 : 10}
+                    colSpan={isAdmin ? 11 : 9}
                     className="p-8 text-center text-[#94a3b8]"
                   >
                     No products found
@@ -911,91 +879,17 @@ export function InventoryClient({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                    Parent Category
-                  </label>
-                  <select
-                    value={form.parentCategoryId}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        parentCategoryId: e.target.value,
-                        categoryId: "",
-                        category: "",
-                      })
-                    }
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-                  >
-                    <option value="">Select parent category</option>
-                    {parentCategoryList.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                    Subcategory
+                    Category
                   </label>
                   <select
                     value={form.categoryId}
                     onChange={(e) =>
-                      setForm({
-                        ...form,
-                        categoryId: e.target.value,
-                        category:
-                          formChildCategoryList.find(
-                            (c) => c.id === Number(e.target.value),
-                          )?.name || "",
-                      })
-                    }
-                    disabled={
-                      form.parentCategoryId === "" ||
-                      formChildCategoryList.length === 0
-                    }
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <option value="">
-                      {form.parentCategoryId === ""
-                        ? "Select Subcategory"
-                        : formChildCategoryList.length === 0
-                          ? "No subcategories"
-                          : "Select subcategory"}
-                    </option>
-                    {formChildCategoryList.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                    Supplier
-                  </label>
-                  <select
-                    value={form.supplierId}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        supplierId: e.target.value,
-                        supplierName:
-                          suppliers.find((s) => s.id === Number(e.target.value))
-                            ?.supplierName || "",
-                      })
+                      setForm({ ...form, categoryId: e.target.value })
                     }
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
                   >
-                    <option value="">Select supplier</option>
-                    {suppliers
-                      .filter((s) => s.isAvailable)
-                      .map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.supplierName}
-                        </option>
-                      ))}
+                    <option value="">Select category</option>
+                    {flatCategoryOptions()}
                   </select>
                 </div>
                 <div>
@@ -1019,6 +913,33 @@ export function InventoryClient({
                       ))}
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                  Supplier
+                </label>
+                <select
+                  value={form.supplierId}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      supplierId: e.target.value,
+                      supplierName:
+                        suppliers.find((s) => s.id === Number(e.target.value))
+                          ?.supplierName || "",
+                    })
+                  }
+                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                >
+                  <option value="">Select supplier</option>
+                  {suppliers
+                    .filter((s) => s.isAvailable)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.supplierName}
+                      </option>
+                    ))}
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1262,91 +1183,17 @@ export function InventoryClient({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                    Parent Category
-                  </label>
-                  <select
-                    value={form.parentCategoryId}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        parentCategoryId: e.target.value,
-                        categoryId: "",
-                        category: "",
-                      })
-                    }
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-                  >
-                    <option value="">Select parent category</option>
-                    {parentCategoryList.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                    Subcategory
+                    Category
                   </label>
                   <select
                     value={form.categoryId}
                     onChange={(e) =>
-                      setForm({
-                        ...form,
-                        categoryId: e.target.value,
-                        category:
-                          formChildCategoryList.find(
-                            (c) => c.id === Number(e.target.value),
-                          )?.name || "",
-                      })
-                    }
-                    disabled={
-                      form.parentCategoryId === "" ||
-                      formChildCategoryList.length === 0
-                    }
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <option value="">
-                      {form.parentCategoryId === ""
-                        ? "Select Subcategory"
-                        : formChildCategoryList.length === 0
-                          ? "No subcategories"
-                          : "Select subcategory"}
-                    </option>
-                    {formChildCategoryList.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
-                    Supplier
-                  </label>
-                  <select
-                    value={form.supplierId}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        supplierId: e.target.value,
-                        supplierName:
-                          suppliers.find((s) => s.id === Number(e.target.value))
-                            ?.supplierName || "",
-                      })
+                      setForm({ ...form, categoryId: e.target.value })
                     }
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
                   >
-                    <option value="">Select supplier</option>
-                    {suppliers
-                      .filter((s) => s.isAvailable)
-                      .map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.supplierName}
-                        </option>
-                      ))}
+                    <option value="">Select category</option>
+                    {flatCategoryOptions()}
                   </select>
                 </div>
                 <div>
@@ -1370,6 +1217,33 @@ export function InventoryClient({
                       ))}
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                  Supplier
+                </label>
+                <select
+                  value={form.supplierId}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      supplierId: e.target.value,
+                      supplierName:
+                        suppliers.find((s) => s.id === Number(e.target.value))
+                          ?.supplierName || "",
+                    })
+                  }
+                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                >
+                  <option value="">Select supplier</option>
+                  {suppliers
+                    .filter((s) => s.isAvailable)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.supplierName}
+                      </option>
+                    ))}
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

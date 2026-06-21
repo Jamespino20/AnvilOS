@@ -35,7 +35,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { getDateScopeStart, getDateScopeEnd, DATE_SCOPES } from "@/lib/format";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
-import { ImportButton } from "@/components/import-button";
+
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 import { toast } from "sonner";
 
@@ -229,7 +229,7 @@ export default function TransactionsPage() {
             }}
             className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[140px]"
           >
-            <option value="">Type</option>
+            <option value="">All Types</option>
             {TYPE_OPTIONS.slice(1).map((t) => (
               <option key={t} value={t}>
                 {t.replace(/([A-Z])/g, " $1").trim()}
@@ -244,7 +244,7 @@ export default function TransactionsPage() {
             }}
             className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[120px]"
           >
-            <option value="">Status</option>
+            <option value="">All Statuses</option>
             {STATUS_OPTIONS.slice(1).map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -259,7 +259,7 @@ export default function TransactionsPage() {
             }}
             className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[120px]"
           >
-            <option value="">Payment</option>
+            <option value="">All Payments</option>
             <option value="Cash">Cash</option>
             <option value="Credit">Credit</option>
           </select>
@@ -319,11 +319,6 @@ export default function TransactionsPage() {
                   dateScope
                 : undefined
             }
-          />
-          <ImportButton
-            table="transactions"
-            onImported={() => window.location.reload()}
-            title="Import transactions from CSV or XLSX"
           />
         </div>
       </div>

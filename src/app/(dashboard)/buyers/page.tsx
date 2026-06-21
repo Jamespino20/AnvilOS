@@ -39,7 +39,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
-import { ImportButton } from "@/components/import-button";
+
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 import { toast } from "sonner";
 
@@ -704,11 +704,6 @@ export default function BuyersPage() {
             }
             label="Export"
             title="Export buyers list"
-          />
-          <ImportButton
-            table="buyers"
-            onImported={() => window.location.reload()}
-            title="Import buyers from CSV or XLSX"
           />
         </div>
       </div>
