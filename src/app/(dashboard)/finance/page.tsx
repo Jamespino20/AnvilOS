@@ -369,7 +369,7 @@ export default function FinancePage() {
 
                 return (
                   <div className="relative pt-6">
-                    <div className="h-64 flex items-end border-b border-[#e2e8f0]">
+                    <div className="h-64 flex items-end border-b border-[#e2e8f0]" style={{ minWidth: `${count * minBarW}px` }}>
                       {cashFlow.map((d, i) => {
                         const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
                         const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
@@ -381,8 +381,10 @@ export default function FinancePage() {
                           label = h === 0 ? "12 AM" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`;
                         }
 
-                        // Show every label — flex sizing ensures they have room
-                        const showLabel = true;
+                        // Smart label density: target ~12-15 visible labels max
+                        const maxLabels = 15;
+                        const labelInterval = count <= maxLabels ? 1 : Math.ceil(count / maxLabels);
+                        const showLabel = i % labelInterval === 0 || i === count - 1;
 
                         return (
                           <div key={i} className="flex flex-col items-center justify-end h-full group relative" style={{ flex: "1 0 0", minWidth: `${minBarW}px` }}>
@@ -393,7 +395,7 @@ export default function FinancePage() {
                             </div>
                             <div className="h-6 flex flex-col items-center justify-start overflow-hidden w-full">
                               {showLabel && (
-                                <span className="text-[9px] text-[#64748b] font-medium whitespace-nowrap mt-1 truncate max-w-full text-center">
+                                <span className="text-[9px] text-[#64748b] font-medium whitespace-nowrap mt-1 text-center">
                                   {label}
                                 </span>
                               )}
