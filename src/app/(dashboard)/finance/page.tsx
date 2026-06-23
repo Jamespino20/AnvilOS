@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { getFinancialDashboard, getCashFlowTrend, getTopProductsByRevenue } from "@/actions";
@@ -343,21 +343,27 @@ export default function FinancePage() {
               ) : <p className="text-sm text-[#94a3b8] text-center py-8">No payment data for this period</p>}
             </div>
           </div>
-
-          {/* Cash Flow Trend */}
+          {/* Cash Flow Trend */}
           <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2"><LineChart className="h-4 w-4 text-[#fd761a]" /> Cash Flow ({fin.period.label})</h3>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[#cbd5e1] scrollbar-track-transparent">
               {(() => {
                 const count = cashFlow.length;
-                const isHourly = count === 24;
+                const isHourly = count <= 24;
+                const isDaily = count > 24 && count <= 31;
                 const isMonthly = count > 31;
-                const barWidth = isMonthly ? 28 : isHourly ? 14 : 24;
-                const gap = 4;
+
+                const barWidth = isHourly ? 20 : isDaily ? 28 : 24;
+                const gap = isHourly ? 8 : isDaily ? 6 : 4;
                 const totalBar = barWidth + gap;
-                const minW = count * totalBar;
+                
+                let minW = count * totalBar;
+                if (count > 15) {
+                  minW = Math.max(minW, 800);
+                }
+
                 const yearSet = new Set<number>();
                 cashFlow.forEach((d: any) => {
                   const parts = d.date.split(/[\s,]+/);
@@ -370,9 +376,9 @@ export default function FinancePage() {
                 const isMultiYear = years.length > 1;
 
                 return (
-                  <div style={{ minWidth: `${Math.max(minW, 200)}px` }}>
+                  <div style={{ minWidth: `${minW}px` }}>
                     <div className="relative pt-6">
-                      <div className="h-64 flex items-end gap-0">
+                      <div className="h-64 flex items-end gap-0 border-b border-[#e2e8f0]">
                         {cashFlow.map((d, i) => {
                           const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
                           const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
@@ -385,21 +391,26 @@ export default function FinancePage() {
                           }
 
                           const labelInterval = (() => {
-                            const fromCount = Math.max(1, Math.floor(count / 10));
-                            const labelW = isHourly ? 35 : isMonthly ? 50 : 55;
-                            const fromWidth = Math.max(1, Math.ceil(labelW / totalBar));
-                            return Math.max(fromCount, fromWidth);
+                            if (totalBar >= 60) return 1;
+                            const labelW = 45;
+                            return Math.max(1, Math.ceil(labelW / totalBar));
                           })();
                           const showLabel = i % labelInterval === 0;
 
                           return (
                             <div key={i} className="flex flex-col items-center justify-end h-full group relative shrink-0" style={{ width: `${totalBar}px` }}>
-                              <div className="w-full flex flex-col items-center gap-[2px] justify-end" style={{ height: "200px" }}>
-                                <div className="bg-emerald-400/40 rounded-t-sm transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px`, width: `${barWidth}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                                <div className="bg-rose-400/40 rounded-t-sm transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px`, width: `${barWidth}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                                <div className={`${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-sm transition-all group-hover:opacity-80`} style={{ height: `${netH}px`, width: `${barWidth}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                              <div className="w-full flex flex-col items-center gap-[2px] justify-end pb-1" style={{ height: "200px" }}>
+                                <div className="bg-emerald-400/40 rounded-t-[1px] transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px`, width: `${barWidth}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                                <div className="bg-rose-400/40 rounded-t-[1px] transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px`, width: `${barWidth}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                                <div className={`${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-[1px] transition-all group-hover:opacity-80`} style={{ height: `${netH}px`, width: `${barWidth}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                               </div>
-                              {showLabel && <span className="text-[9px] text-[#94a3b8] whitespace-nowrap mt-1">{label}</span>}
+                              <div className="h-6 flex flex-col items-center justify-start border-l border-[#e2e8f0]/30 first:border-l-0">
+                                {showLabel && (
+                                  <span className="text-[9px] text-[#64748b] font-medium whitespace-nowrap mt-1 px-1">
+                                    {label}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
@@ -409,8 +420,8 @@ export default function FinancePage() {
                         if (firstIdx === -1) return null;
                         return (
                           <div key={year} className="absolute top-0 flex flex-col items-center pointer-events-none" style={{ left: `${firstIdx * totalBar}px`, width: `${totalBar}px` }}>
-                            <span className="text-[11px] font-bold text-[#0e212c] px-1 rounded bg-white/90">{year}</span>
-                            <div className="w-[2px] bg-[#cbd5e1]" style={{ minHeight: "200px" }} />
+                            <span className="text-[10px] font-bold text-[#0e212c] px-1.5 py-0.5 rounded bg-white shadow-sm border border-[#e2e8f0] translate-y-[-50%]">{year}</span>
+                            <div className="w-[1px] bg-[#94a3b8]/50" style={{ height: "220px" }} />
                           </div>
                         );
                       })}
@@ -419,20 +430,19 @@ export default function FinancePage() {
                 );
               })()}
             </div>
-            <div className="flex items-center gap-4 mt-4 text-xs text-[#64748b]">
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-400/40" /> Revenue</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-rose-400/40" /> Expenses</span>
-              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500/60" /> Net Profit</span>
+            <div className="flex items-center justify-center gap-6 mt-6 pt-4 border-t border-[#f1f5f9] text-[10px] font-semibold text-[#64748b] uppercase tracking-wider">
+              <span className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-emerald-50 transition-colors"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400/50 shadow-sm" /> Revenue</span>
+              <span className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-rose-50 transition-colors"><span className="w-2.5 h-2.5 rounded-full bg-rose-400/50 shadow-sm" /> Expenses</span>
+              <span className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-emerald-50 transition-colors"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500/70 shadow-sm" /> Net Profit</span>
             </div>
           </div>
 
-          <p className="text-xs text-[#94a3b8] text-center">{fin.period.label}</p>
+          <p className="text-[10px] text-[#94a3b8] text-center font-medium opacity-70 tracking-widest uppercase">{fin.period.label}</p>
         </>
       ) : <p className="text-sm text-[#94a3b8] text-center py-12">No financial data available</p>}
     </div>
   );
 }
-
 
 
 
