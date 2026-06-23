@@ -538,6 +538,7 @@ export function InventoryClient({
           <table className="w-full text-sm min-w-[1000px] lg:min-w-0">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
+                <th className="p-4 w-12"></th>
                 <th
                   className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
                   onClick={() => {
