@@ -352,17 +352,9 @@ export default function FinancePage() {
               {(() => {
                 const count = cashFlow.length;
                 const isHourly = count <= 24;
-                const isDaily = count > 24 && count <= 31;
-                const isMonthly = count > 31;
 
-                const barWidth = isHourly ? 20 : isDaily ? 28 : 24;
-                const gap = isHourly ? 8 : isDaily ? 6 : 4;
-                const totalBar = barWidth + gap;
-                
-                let minW = count * totalBar;
-                if (count > 15) {
-                  minW = Math.max(minW, 800);
-                }
+                // Min width per bar column — bars flex-grow to fill, but never shrink below this
+                const minBarW = 28;
 
                 const yearSet = new Set<number>();
                 cashFlow.forEach((d: any) => {
@@ -376,56 +368,51 @@ export default function FinancePage() {
                 const isMultiYear = years.length > 1;
 
                 return (
-                  <div style={{ minWidth: `${minW}px` }}>
-                    <div className="relative pt-6">
-                      <div className="h-64 flex items-end gap-0 border-b border-[#e2e8f0]">
-                        {cashFlow.map((d, i) => {
-                          const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
-                          const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
-                          const netH = maxFlow > 0 ? (Math.abs(d.net) / maxFlow) * 200 : 0;
+                  <div className="relative pt-6">
+                    <div className="h-64 flex items-end border-b border-[#e2e8f0]">
+                      {cashFlow.map((d, i) => {
+                        const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
+                        const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
+                        const netH = maxFlow > 0 ? (Math.abs(d.net) / maxFlow) * 200 : 0;
 
-                          let label = d.date;
-                          if (isHourly && /^\d{2}:00$/.test(d.date)) {
-                            const h = parseInt(d.date.split(":")[0]);
-                            label = h === 0 ? "12 AM" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`;
-                          }
+                        let label = d.date;
+                        if (isHourly && /^\d{2}:00$/.test(d.date)) {
+                          const h = parseInt(d.date.split(":")[0]);
+                          label = h === 0 ? "12 AM" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`;
+                        }
 
-                          const labelInterval = (() => {
-                            if (totalBar >= 60) return 1;
-                            const labelW = 45;
-                            return Math.max(1, Math.ceil(labelW / totalBar));
-                          })();
-                          const showLabel = i % labelInterval === 0;
+                        // Show every label — flex sizing ensures they have room
+                        const showLabel = true;
 
-                          return (
-                            <div key={i} className="flex flex-col items-center justify-end h-full group relative shrink-0" style={{ width: `${totalBar}px` }}>
-                              <div className="w-full flex flex-col items-center gap-[2px] justify-end pb-1" style={{ height: "200px" }}>
-                                <div className="bg-emerald-400/40 rounded-t-[1px] transition-all group-hover:bg-emerald-400/60" style={{ height: `${revH}px`, width: `${barWidth}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                                <div className="bg-rose-400/40 rounded-t-[1px] transition-all group-hover:bg-rose-400/60" style={{ height: `${expH}px`, width: `${barWidth}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                                <div className={`${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-[1px] transition-all group-hover:opacity-80`} style={{ height: `${netH}px`, width: `${barWidth}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                              </div>
-                              <div className="h-6 flex flex-col items-center justify-start border-l border-[#e2e8f0]/30 first:border-l-0">
-                                {showLabel && (
-                                  <span className="text-[9px] text-[#64748b] font-medium whitespace-nowrap mt-1 px-1">
-                                    {label}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {isMultiYear && years.map((year) => {
-                        const firstIdx = cashFlow.findIndex((d) => d.date.includes(String(year)));
-                        if (firstIdx === -1) return null;
                         return (
-                          <div key={year} className="absolute top-0 flex flex-col items-center pointer-events-none" style={{ left: `${firstIdx * totalBar}px`, width: `${totalBar}px` }}>
-                            <span className="text-[10px] font-bold text-[#0e212c] px-1.5 py-0.5 rounded bg-white shadow-sm border border-[#e2e8f0] translate-y-[-50%]">{year}</span>
-                            <div className="w-[1px] bg-[#94a3b8]/50" style={{ height: "220px" }} />
+                          <div key={i} className="flex flex-col items-center justify-end h-full group relative" style={{ flex: "1 0 0", minWidth: `${minBarW}px` }}>
+                            <div className="w-full flex flex-col items-center gap-[2px] justify-end pb-1 px-[2px]" style={{ height: "200px" }}>
+                              <div className="bg-emerald-400/40 rounded-t-[1px] transition-all group-hover:bg-emerald-400/60 w-full max-w-[40px]" style={{ height: `${revH}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                              <div className="bg-rose-400/40 rounded-t-[1px] transition-all group-hover:bg-rose-400/60 w-full max-w-[40px]" style={{ height: `${expH}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                              <div className={`${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-[1px] transition-all group-hover:opacity-80 w-full max-w-[40px]`} style={{ height: `${netH}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                            </div>
+                            <div className="h-6 flex flex-col items-center justify-start overflow-hidden w-full">
+                              {showLabel && (
+                                <span className="text-[9px] text-[#64748b] font-medium whitespace-nowrap mt-1 truncate max-w-full text-center">
+                                  {label}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
                     </div>
+                    {isMultiYear && years.map((year) => {
+                      const firstIdx = cashFlow.findIndex((d) => d.date.includes(String(year)));
+                      if (firstIdx === -1) return null;
+                      const pct = (firstIdx / count) * 100;
+                      return (
+                        <div key={year} className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none" style={{ left: `${pct}%` }}>
+                          <span className="text-[10px] font-bold text-[#0e212c] px-1.5 py-0.5 rounded bg-white shadow-sm border border-[#e2e8f0]">{year}</span>
+                          <div className="w-[1px] bg-[#94a3b8]/50 flex-1" />
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })()}
