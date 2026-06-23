@@ -355,7 +355,7 @@ export default function FinancePage() {
                 const isHourly = count === 24;
                 const isMonthly = count > 31;
                 const barWidth = isMonthly ? 28 : isHourly ? 14 : 24;
-                const gap = 2;
+                const gap = 4;
                 const totalBar = barWidth + gap;
                 const minW = count * totalBar;
                 const yearSet = new Set<number>();
@@ -384,11 +384,13 @@ export default function FinancePage() {
                             label = h === 0 ? "12 AM" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`;
                           }
 
-                          const showLabel = isMonthly
-                            ? i % 3 === 0
-                            : isHourly
-                              ? i % 4 === 0
-                              : i % Math.ceil(count / 12) === 0;
+                          const labelInterval = (() => {
+                            const fromCount = Math.max(1, Math.floor(count / 10));
+                            const labelW = isHourly ? 35 : isMonthly ? 50 : 55;
+                            const fromWidth = Math.max(1, Math.ceil(labelW / totalBar));
+                            return Math.max(fromCount, fromWidth);
+                          })();
+                          const showLabel = i % labelInterval === 0;
 
                           return (
                             <div key={i} className="flex flex-col items-center justify-end h-full group relative shrink-0" style={{ width: `${totalBar}px` }}>

@@ -16,7 +16,6 @@ import {
   createSupplier,
   updateSupplier,
   deleteSupplier,
-  deleteSuppliers,
   getProducts as fetchProducts,
 } from "@/actions";
 import {
@@ -60,7 +59,6 @@ export default function SuppliersPage() {
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [page, setPage] = useState(1);
   const perPage = 10;
   const [form, setForm] = useState({
@@ -301,25 +299,6 @@ export default function SuppliersPage() {
           >
             <Plus className="h-4 w-4" /> Add Supplier
           </button>
-          {isAdmin && selected.size > 0 && (
-            <button
-              onClick={async () => {
-                if (!confirm(`Delete ${selected.size} supplier(s)?`)) return;
-                const result = await deleteSuppliers(Array.from(selected));
-                if (result.skipped.length > 0) {
-                  const msgs = result.skipped.map(s => `#${s.id}: ${s.reason}`);
-                  alert(`Deleted ${result.deleted}. Skipped:\n${msgs.join("\n")}`);
-                } else {
-                  alert(`Deleted ${result.deleted} supplier(s).`);
-                }
-                setSelected(new Set());
-                refetch();
-              }}
-              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white px-3 py-2 rounded-lg text-sm"
-            >
-              Delete ({selected.size})
-            </button>
-          )}
         </div>
       </div>
 
@@ -328,21 +307,6 @@ export default function SuppliersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                {isAdmin && (
-                  <th className="px-3 py-3 text-left">
-                    <input
-                      type="checkbox"
-                      checked={filtered.length > 0 && filtered.every(s => selected.has(s.id))}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelected(new Set(filtered.map(s => s.id)));
-                        } else {
-                          setSelected(new Set());
-                        }
-                      }}
-                    />
-                  </th>
-                )}
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Supplier Name
                 </th>
@@ -375,20 +339,6 @@ export default function SuppliersPage() {
                   key={s.id}
                   className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} hover:bg-[#f1f5f9] transition-colors`}
                 >
-                  {isAdmin && (
-                    <td className="px-3 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(s.id)}
-                        onChange={(e) => {
-                          const next = new Set(selected);
-                          if (e.target.checked) next.add(s.id);
-                          else next.delete(s.id);
-                          setSelected(next);
-                        }}
-                      />
-                    </td>
-                  )}
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#fd761a]/10 to-[#fd761a]/5 flex items-center justify-center">

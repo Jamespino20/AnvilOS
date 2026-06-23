@@ -22,7 +22,6 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
-  deleteProducts,
   adjustStock,
 } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
@@ -67,7 +66,6 @@ export function InventoryClient({
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [form, setForm] = useState({
     productName: "",
     categoryId: "",
@@ -524,26 +522,6 @@ export function InventoryClient({
               <Plus className="h-4 w-4" /> Add Product
             </button>
           )}
-          {isAdmin && selected.size > 0 && (
-            <button
-              onClick={async () => {
-                if (!confirm(`Delete ${selected.size} product(s)?`)) return;
-                const result = await deleteProducts(Array.from(selected));
-                if (result.skipped > 0) {
-                  alert(
-                    `Deleted ${result.deleted}. Skipped ${result.skipped} product(s) (in use).`,
-                  );
-                } else {
-                  alert(`Deleted ${result.deleted} product(s).`);
-                }
-                setSelected(new Set());
-                router.refresh();
-              }}
-              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white px-3 py-2 rounded-lg text-sm"
-            >
-              Delete ({selected.size})
-            </button>
-          )}
         </div>
       </div>
 
@@ -560,25 +538,6 @@ export function InventoryClient({
           <table className="w-full text-sm min-w-[1000px] lg:min-w-0">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                <th className="p-4 w-12"></th>
-                {isAdmin && (
-                  <th className="px-3 py-3 text-left">
-                    <input
-                      type="checkbox"
-                      checked={
-                        filtered.length > 0 &&
-                        filtered.every((p) => selected.has(p.id))
-                      }
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelected(new Set(filtered.map((p) => p.id)));
-                        } else {
-                          setSelected(new Set());
-                        }
-                      }}
-                    />
-                  </th>
-                )}
                 <th
                   className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
                   onClick={() => {
@@ -670,20 +629,6 @@ export function InventoryClient({
                     key={product.id}
                     className={`${i % 2 === 0 ? "" : "bg-[#fafbfc]"} hover:bg-[#f1f5f9] transition-colors`}
                   >
-                    {isAdmin && (
-                      <td className="px-3 py-3">
-                        <input
-                          type="checkbox"
-                          checked={selected.has(product.id)}
-                          onChange={(e) => {
-                            const next = new Set(selected);
-                            if (e.target.checked) next.add(product.id);
-                            else next.delete(product.id);
-                            setSelected(next);
-                          }}
-                        />
-                      </td>
-                    )}
                     <td className="p-2 pl-4">
                       {imgUrl ? (
                         <img
