@@ -785,10 +785,13 @@ function buildTransactionWhere(opts?: {
     };
   }
   if (opts?.search) {
-    where.OR = [
+    const or: any[] = [
       { buyerName: { contains: opts.search } },
-      { receiptNumber: parseInt(opts.search) || undefined },
-    ].filter(Boolean);
+      { invoiceNumber: { contains: opts.search } },
+    ];
+    const num = parseInt(opts.search);
+    if (!isNaN(num)) or.push({ receiptNumber: num });
+    where.OR = or;
   }
   return where;
 }
@@ -1216,6 +1219,17 @@ export async function updateTransactionInvoice(
     where: { id },
     select: { receiptNumber: true },
   });
+  if (invoiceNumber) {
+    const existing = await prisma.transaction.findFirst({
+      where: { invoiceNumber, id: { not: id } },
+      select: { id: true, receiptNumber: true },
+    });
+    if (existing) {
+      throw new Error(
+        `Invoice number "${invoiceNumber}" already used on receipt #${existing.receiptNumber}`,
+      );
+    }
+  }
   await prisma.transaction.update({
     where: { id },
     data: { invoiceNumber: invoiceNumber || null },
