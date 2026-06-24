@@ -127,21 +127,6 @@ export function InventoryClient({
     return value.trim().replace(/\s+/g, " ").toLowerCase();
   }
 
-  function exactCategory(name: string) {
-    const normalized = normalizeName(name);
-    return categories.find((c) => normalizeName(c.name) === normalized);
-  }
-
-  function exactBrand(name: string) {
-    const normalized = normalizeName(name);
-    return brands.find((b) => normalizeName(b.name) === normalized);
-  }
-
-  function exactSupplier(name: string) {
-    const normalized = normalizeName(name);
-    return suppliers.find((s) => normalizeName(s.supplierName) === normalized);
-  }
-
   function nonNegativeInput(value: string) {
     if (value === "") return "";
     const num = Number(value);
@@ -321,18 +306,15 @@ export function InventoryClient({
     }
     setFormError("");
     setAdding(true);
-    const selectedCategory = exactCategory(form.categoryName);
-    const selectedBrand = exactBrand(form.brandName);
-    const selectedSupplier = exactSupplier(form.supplierName);
     try {
       await createProduct({
         productName: form.productName,
         category: form.categoryName.trim() || "Uncategorized",
         categoryName: form.categoryName,
-        categoryId: selectedCategory?.id,
+        categoryId: form.categoryId === "" ? undefined : Number(form.categoryId),
         supplierName: form.supplierName || "Unknown",
-        supplierId: selectedSupplier?.id,
-        brandId: selectedBrand?.id,
+        supplierId: form.supplierId === "" ? undefined : Number(form.supplierId),
+        brandId: form.brandId === "" ? undefined : Number(form.brandId),
         brandName: form.brandName,
         unitPrice: form.costPrice === "" ? undefined : Number(form.costPrice),
         sellingPrice: form.sellingPrice === "" ? 0 : Number(form.sellingPrice),
@@ -394,18 +376,15 @@ export function InventoryClient({
     }
     setFormError("");
     setSaving(true);
-    const selectedCategory = exactCategory(form.categoryName);
-    const selectedBrand = exactBrand(form.brandName);
-    const selectedSupplier = exactSupplier(form.supplierName);
     try {
       await updateProduct(showEdit, {
         productName: form.productName,
         category: form.categoryName.trim() || "Uncategorized",
         categoryName: form.categoryName,
-        categoryId: selectedCategory?.id ?? null,
+        categoryId: form.categoryId === "" ? null : Number(form.categoryId) || null,
         supplierName: form.supplierName || "Unknown",
-        supplierId: selectedSupplier?.id ?? null,
-        brandId: selectedBrand?.id ?? null,
+        supplierId: form.supplierId === "" ? null : Number(form.supplierId) || null,
+        brandId: form.brandId === "" ? null : Number(form.brandId) || null,
         brandName: form.brandName,
         unitPrice: form.costPrice === "" ? undefined : Number(form.costPrice),
         sellingPrice: form.sellingPrice === "" ? undefined : Number(form.sellingPrice),
@@ -992,23 +971,28 @@ export function InventoryClient({
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Supplier
                 </label>
-                <input
-                  type="text"
-                  list="add-suppliers"
-                  value={form.supplierName}
+                <select
+                  value={form.supplierId}
                   onChange={(e) =>
-                    setForm({ ...form, supplierName: e.target.value })
+                    setForm({
+                      ...form,
+                      supplierId: e.target.value,
+                      supplierName:
+                        suppliers.find((s) => s.id === Number(e.target.value))
+                          ?.supplierName || "",
+                    })
                   }
-                  placeholder="Select or type new supplier"
                   className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-                />
-                <datalist id="add-suppliers">
+                >
+                  <option value="">Select supplier</option>
                   {suppliers
                     .filter((s) => s.isAvailable)
                     .map((s) => (
-                      <option key={s.id} value={s.supplierName} />
+                      <option key={s.id} value={s.id}>
+                        {s.supplierName}
+                      </option>
                     ))}
-                </datalist>
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1330,23 +1314,28 @@ export function InventoryClient({
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Supplier
                 </label>
-                <input
-                  type="text"
-                  list="edit-suppliers"
-                  value={form.supplierName}
+                <select
+                  value={form.supplierId}
                   onChange={(e) =>
-                    setForm({ ...form, supplierName: e.target.value })
+                    setForm({
+                      ...form,
+                      supplierId: e.target.value,
+                      supplierName:
+                        suppliers.find((s) => s.id === Number(e.target.value))
+                          ?.supplierName || "",
+                    })
                   }
-                  placeholder="Select or type new supplier"
                   className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-                />
-                <datalist id="edit-suppliers">
+                >
+                  <option value="">Select supplier</option>
                   {suppliers
                     .filter((s) => s.isAvailable)
                     .map((s) => (
-                      <option key={s.id} value={s.supplierName} />
+                      <option key={s.id} value={s.id}>
+                        {s.supplierName}
+                      </option>
                     ))}
-                </datalist>
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
