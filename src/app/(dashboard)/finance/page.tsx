@@ -27,6 +27,12 @@ function formatDate(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function parseLocalDate(dateStr: string, timeStr: string = "00:00:00"): Date {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const [hours, minutes, seconds] = timeStr.split(":").map(Number);
+  return new Date(year, month - 1, day, hours, minutes, seconds || 0);
+}
+
 function formatMoney(value: number) {
   return value.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -98,8 +104,8 @@ export default function FinancePage() {
       const dates = period === "custom"
         ? { start: customStart, end: customEnd }
         : periodDates(period);
-      const startDate = dates ? new Date(dates.start) : undefined;
-      const endDate = dates ? new Date(dates.end + "T23:59:59") : undefined;
+      const startDate = dates ? parseLocalDate(dates.start) : undefined;
+      const endDate = dates ? parseLocalDate(dates.end, "23:59:59") : undefined;
 
       // Determine grouping based on period or custom range
       let groupBy: "hourly" | "daily" | "weekly" | "monthly" = "daily";

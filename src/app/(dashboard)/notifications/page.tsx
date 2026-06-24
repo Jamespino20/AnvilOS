@@ -15,7 +15,7 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
 } from "@/actions";
-import { Bell, CheckCheck, Loader2, CheckCircle } from "lucide-react";
+import { Bell, CheckCheck, Loader2, CheckCircle, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 
 interface NotificationItem {
@@ -50,6 +50,11 @@ export default function NotificationsPage() {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
     );
+  }
+
+  async function handleDelete(id: number) {
+    await fetch(`/api/notifications?id=${id}`, { method: "DELETE" });
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   }
 
   async function handleMarkAllRead() {
@@ -129,6 +134,13 @@ export default function NotificationsPage() {
                   <CheckCircle className="h-4 w-4" />
                 </button>
               )}
+              <button
+                onClick={() => handleDelete(n.id)}
+                className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all shrink-0"
+                title="Delete"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
           ))}
         </div>

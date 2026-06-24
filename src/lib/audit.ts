@@ -88,21 +88,47 @@ async function flushAuditBatch() {
   if (pendingAuditBatch.length === 0) return;
 
   try {
-    const formattedEntries = pendingAuditBatch
-      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
-      .map((entry) => formatAuditEntry(entry));
+    // Group entries by (panel, action, sellerId) to merge similar events
+    const groups = new Map<string, AuditEntry[]>();
+    for (const entry of pendingAuditBatch) {
+      const key = `${entry.panel}|${entry.action}|${entry.sellerId}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(entry);
+    }
 
-    await prisma.auditLog.createMany({
-      data: formattedEntries.map((details) => ({
-        details,
-        sellerId: pendingAuditBatch[0].sellerId || null,
-        panel: pendingAuditBatch[0].panel,
-        action: pendingAuditBatch.map((e) => e.action).join(" | "),
-        successStatus: pendingAuditBatch.every((e) => e.successStatus),
-        logTime: pendingAuditBatch[0].timestamp,
-      })),
-    });
+    const rows: { details: string; sellerId: number | null; panel: string; action: string; successStatus: boolean; logTime: Date }[] = [];
 
+    for (const [, entries] of groups) {
+      const sorted = entries.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      const formattedEntries = sorted.map((entry) => formatAuditEntry(entry));
+
+      if (sorted.length === 1) {
+        // Single entry — store as-is
+        const e = sorted[0];
+        rows.push({
+          details: formattedEntries[0],
+          sellerId: e.sellerId || null,
+          panel: e.panel,
+          action: e.action,
+          successStatus: e.successStatus,
+          logTime: e.timestamp,
+        });
+      } else {
+        // Multiple similar entries — merge into one
+        const first = sorted[0];
+        const count = sorted.length;
+        rows.push({
+          details: formattedEntries.join("\n"),
+          sellerId: first.sellerId || null,
+          panel: first.panel,
+          action: `${first.action} (×${count})`,
+          successStatus: sorted.every((e) => e.successStatus),
+          logTime: first.timestamp,
+        });
+      }
+    }
+
+    await prisma.auditLog.createMany({ data: rows });
     pendingAuditBatch = [];
   } catch (e) {
     console.error("Audit batch flush failed:", e);
@@ -137,23 +163,11 @@ export async function logAudit(
       timestamp: new Date(),
     };
 
-    if (oldValues || newValues) {
-      pendingAuditBatch.push(entry);
+    // Batch all entries (with or without old/new values) for grouping
+    pendingAuditBatch.push(entry);
 
-      if (auditBatchTimer) clearTimeout(auditBatchTimer);
-      auditBatchTimer = setTimeout(flushAuditBatch, AUDIT_BATCH_DELAY);
-    } else {
-      await prisma.auditLog.create({
-        data: {
-          sellerId: sellerId || null,
-          panel,
-          action,
-          details: `${details} | Actor: ${fingerprint}`,
-          successStatus,
-          logTime: new Date(),
-        },
-      });
-    }
+    if (auditBatchTimer) clearTimeout(auditBatchTimer);
+    auditBatchTimer = setTimeout(flushAuditBatch, AUDIT_BATCH_DELAY);
   } catch (e) {
     console.error("Audit log failed:", e);
   }

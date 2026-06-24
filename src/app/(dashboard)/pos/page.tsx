@@ -6,18 +6,19 @@ URL: https://github.com/Jamespino20
 Last Update Date: June 13, 2026
 */
 
-import { getProducts, getBuyers, getCategories, getSuppliers, getBrands } from "@/actions";
+import { getProducts, getBuyers, getCategories, getSuppliers, getBrands, getPendingPOQuantities } from "@/actions";
 import { POSClient } from "./client";
 
 export default async function POSPage() {
-  let products: any[] = [], buyers: any[] = [], categories: any[] = [], suppliers: any[] = [], brands: any[] = [];
+  let products: any[] = [], buyers: any[] = [], categories: any[] = [], suppliers: any[] = [], brands: any[] = [], pendingPOQty: Record<number, number> = {};
   try {
-    [products, buyers, categories, suppliers, brands] = await Promise.all([
+    [products, buyers, categories, suppliers, brands, pendingPOQty] = await Promise.all([
       getProducts({ status: "available" }),
       getBuyers(),
       getCategories(),
       getSuppliers(),
       getBrands(),
+      getPendingPOQuantities(),
     ]);
   } catch {
     return (
@@ -30,6 +31,17 @@ export default async function POSPage() {
     );
   }
   return (
-    <POSClient products={products} buyers={buyers} categories={categories} suppliers={suppliers} brands={brands} />
+    <POSClient
+      products={products.map((p) => ({
+        ...p,
+        sellingPrice: Number(p.sellingPrice),
+        unitPrice: p.unitPrice != null ? Number(p.unitPrice) : null,
+      }))}
+      buyers={buyers}
+      categories={categories}
+      suppliers={suppliers}
+      brands={brands}
+      pendingPOQty={pendingPOQty}
+    />
   );
 }

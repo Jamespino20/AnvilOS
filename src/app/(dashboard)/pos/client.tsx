@@ -60,6 +60,7 @@ interface Props {
   categories: CategoryWithChildren[];
   suppliers: { id: number; supplierName: string }[];
   brands: { id: number; name: string }[];
+  pendingPOQty?: Record<number, number>;
 }
 
 interface CartItem {
@@ -85,6 +86,7 @@ export function POSClient({
   categories,
   suppliers,
   brands,
+  pendingPOQty = {},
 }: Props) {
   const { data: session } = useSession();
   const [search, setSearch] = useState("");
@@ -164,7 +166,8 @@ export function POSClient({
   const parentCategories = categories;
 
   const filtered = products.filter((p) => {
-    if (p.quantity <= 0) return false;
+    const effectiveQty = p.quantity - (pendingPOQty[p.id] || 0);
+    if (effectiveQty <= 0) return false;
     if (search && !p.productName.toLowerCase().includes(search.toLowerCase()))
       return false;
     if (filterSupplier !== "" && p.supplierId !== filterSupplier) return false;
@@ -180,13 +183,14 @@ export function POSClient({
   }
 
   function addToCart(product: Product) {
+    const effectiveQty = product.quantity - (pendingPOQty[product.id] || 0);
     setCart((prev) => {
       const existing = prev.find((c) => c.product.id === product.id);
       if (existing) {
         const maxQty =
           txnType === "Return"
             ? existing.originalQty || product.quantity
-            : product.quantity;
+            : effectiveQty;
         return prev.map((c) =>
           c.product.id === product.id
             ? { ...c, quantity: Math.min(c.quantity + 1, maxQty) }
@@ -194,7 +198,7 @@ export function POSClient({
         );
       }
       const maxInit =
-        txnType === "Return" ? 0 : Math.min(1, product.quantity || 0) || 1;
+        txnType === "Return" ? 0 : Math.min(1, effectiveQty || 0) || 1;
       return [...prev, { product, quantity: maxInit }];
     });
   }
@@ -203,10 +207,11 @@ export function POSClient({
     setCart((prev) =>
       prev
         .map((c) => {
+          const effectiveQty = c.product.quantity - (pendingPOQty[c.product.id] || 0);
           const maxQty =
             txnType === "Return"
               ? c.originalQty || c.product.quantity
-              : c.product.quantity;
+              : effectiveQty;
           return c.product.id === productId
             ? {
                 ...c,
@@ -226,10 +231,11 @@ export function POSClient({
     setCart((prev) =>
       prev.map((c) => {
         if (c.product.id !== productId) return c;
+        const effectiveQty = c.product.quantity - (pendingPOQty[c.product.id] || 0);
         const maxQty =
           txnType === "Return"
             ? c.originalQty || c.product.quantity
-            : c.product.quantity;
+            : effectiveQty;
         const minQty = txnType === "Return" ? 0 : 1;
         return { ...c, quantity: Math.min(Math.max(minQty, qty), maxQty) };
       }),
@@ -390,11 +396,16 @@ export function POSClient({
       setPayeeName("");
       setPaymentMethod("Cash");
       setDeliveryMethod("WalkIn");
-      setTimeout(() => {
-        downloadReceipt(receiptData).catch(() => {});
-        toast.success("Transaction completed successfully");
+      if (txnType !== "SalePO") {
+        setTimeout(() => {
+          downloadReceipt(receiptData).catch(() => {});
+          toast.success("Transaction completed successfully");
+          setDone(null);
+        }, 500);
+      } else {
+        toast.success("Purchase Order created successfully");
         setDone(null);
-      }, 500);
+      }
     } catch (e: any) {
       toast.error(e.message || "Transaction failed");
     } finally {
@@ -593,11 +604,17 @@ export function POSClient({
                       maximumFractionDigits: 2,
                     })}
                   </p>
-                  <p
-                    className={`text-[10px] ${product.quantity <= product.minThreshold && product.quantity > 0 ? "text-rose-500 font-bold" : "text-[#94a3b8]"}`}
-                  >
-                    {product.quantity}
-                  </p>
+                  {(() => {
+                    const effectiveQty = product.quantity - (pendingPOQty[product.id] || 0);
+                    return (
+                      <p
+                        className={`text-[10px] ${effectiveQty <= product.minThreshold && effectiveQty > 0 ? "text-rose-500 font-bold" : "text-[#94a3b8]"}`}
+                      >
+                        {effectiveQty}
+                        {pendingPOQty[product.id] ? ` (${product.quantity})` : ""}
+                      </p>
+                    );
+                  })()}
                 </div>
               </button>
             ))}
@@ -656,7 +673,6 @@ export function POSClient({
                   title="Select transaction type"
                   onChange={(e) => {
                     setTxnType(e.target.value as any);
-                    setCart([]);
                     setError("");
                     setReturnReceipt("");
                   }}

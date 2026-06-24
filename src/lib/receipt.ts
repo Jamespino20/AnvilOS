@@ -61,7 +61,7 @@ export async function downloadReceiptPdf(data: {
   doc.setFillColor(253, 118, 26);
   doc.rect(0, 0, pw, 3, "F");
 
-  // Logo — maintain aspect ratio on 80mm receipt
+  // Logo — maintain aspect ratio on 80mm receipt, convert PNG→JPEG to strip alpha
   try {
     const resp = await fetch("/images/CWLHardware_Logo.png");
     const blob = await resp.blob();
@@ -82,8 +82,17 @@ export async function downloadReceiptPdf(data: {
       logoH = maxLogoH;
       logoW = logoH * aspect;
     }
-    const b64Pure = b64.includes(",") ? b64.split(",")[1] : b64;
-    doc.addImage(b64Pure, "PNG", cx - logoW / 2, y, logoW, logoH);
+    // Draw on white canvas to strip alpha, export as JPEG
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    const jpegB64 = canvas.toDataURL("image/jpeg", 0.95);
+    const jpegPure = jpegB64.includes(",") ? jpegB64.split(",")[1] : jpegB64;
+    doc.addImage(jpegPure, "JPEG", cx - logoW / 2, y, logoW, logoH);
     y += logoH + 3;
   } catch { console.warn("Logo not available, skipping in receipt"); }
 

@@ -195,7 +195,7 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
   doc.setFillColor(...THEME_WHITE);
   doc.roundedRect(10, 5, 24, 19, 2, 2, "F");
 
-  // Logo — maintain aspect ratio
+  // Logo — maintain aspect ratio, convert PNG→JPEG to strip alpha (jsPDF renders transparent PNG as black)
   try {
     const resp = await fetch("/images/CWLHardware_Logo.png");
     const blob = await resp.blob();
@@ -216,8 +216,17 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
       logoH = maxLogoH;
       logoW = logoH * aspect;
     }
-    const b64Pure = b64.includes(",") ? b64.split(",")[1] : b64;
-    doc.addImage(b64Pure, "PNG", 12 + (maxLogoW - logoW) / 2, 7 + (maxLogoH - logoH) / 2, logoW, logoH);
+    // Draw on white canvas to strip alpha, export as JPEG
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    const jpegB64 = canvas.toDataURL("image/jpeg", 0.95);
+    const jpegPure = jpegB64.includes(",") ? jpegB64.split(",")[1] : jpegB64;
+    doc.addImage(jpegPure, "JPEG", 12 + (maxLogoW - logoW) / 2, 7 + (maxLogoH - logoH) / 2, logoW, logoH);
   } catch { console.warn("Logo not available, skipping in PDF header"); }
 
   doc.setTextColor(...THEME_WHITE);

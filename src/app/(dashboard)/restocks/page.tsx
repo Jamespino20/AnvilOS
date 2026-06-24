@@ -50,7 +50,7 @@ export default function RestocksPage() {
   const [showNew, setShowNew] = useState(false);
 
   // New restock cart state
-  const [cart, setCart] = useState<{ productId: number; productName: string; quantity: number; costPrice: number }[]>([]);
+  const [cart, setCart] = useState<{ productId: number; productName: string; quantity: number; costPrice: number | string }[]>([]);
   const [restockSearch, setRestockSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -98,7 +98,7 @@ export default function RestocksPage() {
     setCart((prev) => {
       const existing = prev.find((i) => i.productId === product.id);
       if (existing) return prev.map((i) => i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i);
-      return [...prev, { productId: product.id, productName: product.productName, quantity: 1, costPrice: 0 }];
+      return [...prev, { productId: product.id, productName: product.productName, quantity: 1, costPrice: "" }];
     });
   }
 
@@ -137,7 +137,7 @@ export default function RestocksPage() {
     if (cart.length === 0) return;
     setSubmitting(true);
     try {
-      const totalCost = cart.reduce((sum, i) => sum + i.costPrice * i.quantity, 0);
+      const totalCost = cart.reduce((sum, i) => sum + (Number(i.costPrice) || 0) * i.quantity, 0);
       await createTransaction({
         buyerName: "CWL Hardware (Company Restock)",
         buyerAddress: "Company Restock",
@@ -150,9 +150,9 @@ export default function RestocksPage() {
         items: cart.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
-          unitPrice: i.costPrice,
-          totalPrice: i.costPrice * i.quantity,
-          costPrice: i.costPrice,
+          unitPrice: Number(i.costPrice) || 0,
+          totalPrice: (Number(i.costPrice) || 0) * i.quantity,
+          costPrice: Number(i.costPrice) || 0,
         })),
       });
       setShowNew(false);
@@ -370,8 +370,7 @@ export default function RestocksPage() {
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">Per unit</span>
                           <input type="number" min={0} step={0.01} value={item.costPrice} onChange={(e) => {
-                            const val = parseFloat(e.target.value) || 0;
-                            setCart((prev) => prev.map((i) => i.productId === item.productId ? { ...i, costPrice: val } : i));
+                            setCart((prev) => prev.map((i) => i.productId === item.productId ? { ...i, costPrice: e.target.value } : i));
                           }} className="w-24 h-10 px-2.5 text-xs text-right font-mono border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#fd761a]" placeholder="0.00" />
                         </div>
                         <div className="flex items-center gap-1">
@@ -389,7 +388,7 @@ export default function RestocksPage() {
                         </div>
                         <div className="ml-auto text-right">
                           <p className="text-[11px] text-[#64748b]">Subtotal</p>
-                          <p className="text-xs font-bold text-[#0e212c]">{(item.costPrice * item.quantity).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          <p className="text-xs font-bold text-[#0e212c]">{((Number(item.costPrice) || 0) * item.quantity).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         </div>
                       </div>
                     </div>

@@ -63,6 +63,25 @@ export async function getProduct(id: number) {
   });
 }
 
+export async function getPendingPOQuantities(): Promise<Record<number, number>> {
+  const pendingItems = await prisma.transactionItem.findMany({
+    where: {
+      transaction: {
+        transactionType: "SalePO",
+        transactionStatus: { in: ["Ongoing", "Processing", "OnTheWay"] },
+      },
+    },
+    select: { productId: true, quantity: true },
+  });
+  const map: Record<number, number> = {};
+  for (const item of pendingItems) {
+    if (item.productId) {
+      map[item.productId] = (map[item.productId] || 0) + (item.quantity || 0);
+    }
+  }
+  return map;
+}
+
 function normalizeLookupName(value?: string | null) {
   return (value || "").trim().replace(/\s+/g, " ").toLowerCase();
 }
@@ -923,6 +942,19 @@ export async function createTransaction(data: {
   });
   const receiptNumber = (lastReceipt?.receiptNumber ?? 1000) + 1;
 
+  // Duplicate invoice check
+  if (data.invoiceNumber) {
+    const existingInvoice = await prisma.transaction.findFirst({
+      where: { invoiceNumber: data.invoiceNumber },
+      select: { id: true, receiptNumber: true },
+    });
+    if (existingInvoice) {
+      throw new Error(
+        `Invoice number "${data.invoiceNumber}" already used on receipt #${existingInvoice.receiptNumber}`,
+      );
+    }
+  }
+
   // Return validation
   if (data.transactionType === "Return" && data.returnForReceiptNumber) {
     const orig = await prisma.transaction.findFirst({
@@ -1026,12 +1058,24 @@ export async function createTransaction(data: {
     buyer = await prisma.buyer.findFirst({
       where: { name: data.buyerName },
     });
+
+    // Returns decrement totalSpent (refund), Damage/Adjustment don't affect it
+    // SalePO skips totalSpent at creation — only incremented on completion
+    const isReturn = data.transactionType === "Return";
+    const isNonMonetary = data.transactionType === "Damage" || data.transactionType === "Adjustment";
+    const isSalePO = data.transactionType === "SalePO";
+    const skipTotalSpent = isNonMonetary || isSalePO;
+
     if (buyer) {
       buyer = await prisma.buyer.update({
         where: { id: buyer.id },
         data: {
           totalOrders: { increment: 1 },
-          totalSpent: { increment: data.grandTotal },
+          totalSpent: skipTotalSpent
+            ? undefined
+            : isReturn
+              ? { decrement: data.grandTotal }
+              : { increment: data.grandTotal },
           address: data.buyerAddress || undefined,
           phone: data.buyerContact || undefined,
           email: data.buyerEmail || undefined,
@@ -1046,7 +1090,7 @@ export async function createTransaction(data: {
           phone: data.buyerContact || null,
           email: data.buyerEmail || null,
           totalOrders: 1,
-          totalSpent: data.grandTotal,
+          totalSpent: skipTotalSpent ? 0 : isReturn ? -data.grandTotal : data.grandTotal,
           sellerId: sellerId || undefined,
         },
       });
@@ -1056,11 +1100,16 @@ export async function createTransaction(data: {
       data: { buyerId: buyer.id },
     });
   }
-  // For credit sales, update buyer's credit balance
+  // For credit sales, update buyer's credit balance (decrement for returns)
   if (data.isCredit && buyer) {
+    const isReturn = data.transactionType === "Return";
     await prisma.buyer.update({
       where: { id: buyer.id },
-      data: { creditBalance: { increment: data.grandTotal } },
+      data: {
+        creditBalance: isReturn
+          ? { decrement: data.grandTotal }
+          : { increment: data.grandTotal },
+      },
     });
   }
 
@@ -1194,7 +1243,7 @@ export async function updateTransactionStatus(
     include: { items: true },
   });
 
-  // If completing a Sale PO, deduct stock now
+  // If completing a Sale PO, deduct stock and record totalSpent
   if (
     status === "Completed" &&
     txn.transactionStatus !== "Completed" &&
@@ -1207,6 +1256,20 @@ export async function updateTransactionStatus(
         quantity: i.quantity!,
       })),
     );
+    // Increment buyer totalSpent now that money is received
+    if (txn.buyerName) {
+      const buyer = await prisma.buyer.findFirst({
+        where: { name: txn.buyerName },
+      });
+      if (buyer) {
+        await prisma.buyer.update({
+          where: { id: buyer.id },
+          data: {
+            totalSpent: { increment: Number(txn.grandTotal) },
+          },
+        });
+      }
+    }
   }
 
   const updated = await prisma.transaction.update({
@@ -1224,6 +1287,28 @@ export async function updateTransactionStatus(
       }),
     },
   });
+
+  // If cancelling a Return, reverse the totalSpent decrement (refund undone)
+  if (
+    status === "Cancelled" &&
+    txn.transactionStatus !== "Cancelled" &&
+    txn.transactionType === "Return" &&
+    txn.buyerName
+  ) {
+    const buyer = await prisma.buyer.findFirst({
+      where: { name: txn.buyerName },
+    });
+    if (buyer) {
+      await prisma.buyer.update({
+        where: { id: buyer.id },
+        data: {
+          totalSpent: { increment: Number(txn.grandTotal) },
+          totalOrders: { decrement: 1 },
+        },
+      });
+    }
+  }
+
   await logAudit(
     "EditTransactionDialog",
     "Update Status",
@@ -1257,6 +1342,8 @@ export async function updateTransaction(
       | "OnTheWay"
       | "Completed"
       | "Cancelled";
+    isCredit?: boolean;
+    creditDueDate?: string | null;
     items?: {
       id?: number;
       productId: number;
@@ -1284,6 +1371,8 @@ export async function updateTransaction(
       deliveryNotes: data.deliveryNotes,
       delivererName: data.delivererName,
       transactionStatus: data.transactionStatus,
+      isCredit: data.isCredit,
+      creditDueDate: data.creditDueDate ? new Date(data.creditDueDate) : undefined,
     },
   });
 
@@ -1503,6 +1592,13 @@ export async function markAllNotificationsRead(userId: number) {
   revalidatePath("/notifications");
 }
 
+export async function deleteNotification(id: number) {
+  await requireAdmin();
+  await prisma.notification.delete({ where: { id } });
+  await logAudit("System", "Delete Notification", `Notification #${id} deleted`);
+  revalidatePath("/notifications");
+}
+
 export async function getUnreadNotificationCount(userId: number) {
   const total = await prisma.notification.count();
   const read = await prisma.notificationRead.count({ where: { userId } });
@@ -1559,7 +1655,10 @@ export const getBuyers = cache(async (type?: "WalkIn" | "PO") => {
 
   // Include legacy buyers from transactions not yet in Buyer table
   const existingNames = new Set(buyerRecords.map((b) => b.name));
-  const legacyWhere: any = { buyerName: { notIn: Array.from(existingNames) } };
+  const legacyWhere: any = {
+    buyerName: { notIn: Array.from(existingNames) },
+    transactionStatus: { not: "Cancelled" },
+  };
   if (nameFilter)
     legacyWhere.buyerName = {
       in: nameFilter,
@@ -2042,6 +2141,15 @@ export async function getCashFlowTrend(
 ) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
+
+  // Convert UTC Date to Philippine time (UTC+8) components
+  const PH_OFFSET = 8;
+  const toPH = (d: Date) => {
+    const utc = d.getTime() + d.getTimezoneOffset() * 60000;
+    const ph = new Date(utc + PH_OFFSET * 3600000);
+    return { year: ph.getFullYear(), month: ph.getMonth(), date: ph.getDate(), day: ph.getDay(), hour: ph.getHours() };
+  };
+
   const start =
     startDate ||
     (() => {
@@ -2084,14 +2192,16 @@ export async function getCashFlowTrend(
 
   // ── Hourly grouping ──
   if (effectiveGroupBy === "hourly") {
+    const PH_OFFSET = 8; // Philippines is UTC+8
+    const toPHHour = (d: Date) => (d.getUTCHours() + PH_OFFSET) % 24;
     const revMap = new Map<number, number>();
     const expMap = new Map<number, number>();
     for (const r of revenues) {
-      const h = r.transactionDate.getHours();
+      const h = toPHHour(r.transactionDate);
       revMap.set(h, (revMap.get(h) || 0) + Number(r.grandTotal || 0));
     }
     for (const e of expenses) {
-      const h = e.transactionDate.getHours();
+      const h = toPHHour(e.transactionDate);
       expMap.set(h, (expMap.get(h) || 0) + Number(e.grandTotal || 0));
     }
     const data: { date: string; revenue: number; expenses: number; net: number }[] = [];
@@ -2113,19 +2223,21 @@ export async function getCashFlowTrend(
     const revMap = new Map<string, number>();
     const expMap = new Map<string, number>();
     for (const r of revenues) {
-      const d = r.transactionDate;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const ph = toPH(r.transactionDate);
+      const key = `${ph.year}-${String(ph.month + 1).padStart(2, "0")}`;
       revMap.set(key, (revMap.get(key) || 0) + Number(r.grandTotal || 0));
     }
     for (const e of expenses) {
-      const d = e.transactionDate;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const ph = toPH(e.transactionDate);
+      const key = `${ph.year}-${String(ph.month + 1).padStart(2, "0")}`;
       expMap.set(key, (expMap.get(key) || 0) + Number(e.grandTotal || 0));
     }
     // Iterate month by month from start to end
     const data: { date: string; revenue: number; expenses: number; net: number }[] = [];
-    const cur = new Date(start.getFullYear(), start.getMonth(), 1);
-    const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+    const phStartMonth = toPH(start);
+    const phEndMonth = toPH(end);
+    const cur = new Date(phStartMonth.year, phStartMonth.month, 1);
+    const endMonth = new Date(phEndMonth.year, phEndMonth.month, 1);
     const totalSpanMonths = Math.round((end.getTime() - start.getTime()) / (30 * 86400000));
     const useFullYear = totalSpanMonths > 24;
     while (cur <= endMonth) {
@@ -2144,26 +2256,28 @@ export async function getCashFlowTrend(
     const revMap = new Map<string, number>();
     const expMap = new Map<string, number>();
     for (const r of revenues) {
-      const d = r.transactionDate;
-      const dayOfWeek = d.getDay();
-      const monday = new Date(d);
-      monday.setDate(d.getDate() - ((dayOfWeek + 6) % 7));
+      const ph = toPH(r.transactionDate);
+      const dayOfWeek = ph.day;
+      const dayOffset = (dayOfWeek + 6) % 7;
+      const mondayDate = ph.date - dayOffset;
+      const monday = new Date(ph.year, ph.month, mondayDate);
       const key = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
       revMap.set(key, (revMap.get(key) || 0) + Number(r.grandTotal || 0));
     }
     for (const e of expenses) {
-      const d = e.transactionDate;
-      const dayOfWeek = d.getDay();
-      const monday = new Date(d);
-      monday.setDate(d.getDate() - ((dayOfWeek + 6) % 7));
+      const ph = toPH(e.transactionDate);
+      const dayOfWeek = ph.day;
+      const dayOffset = (dayOfWeek + 6) % 7;
+      const mondayDate = ph.date - dayOffset;
+      const monday = new Date(ph.year, ph.month, mondayDate);
       const key = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
       expMap.set(key, (expMap.get(key) || 0) + Number(e.grandTotal || 0));
     }
     // Iterate weeks from start to end
     const data: { date: string; revenue: number; expenses: number; net: number }[] = [];
-    const dayOfWeek = start.getDay();
-    const cur = new Date(start);
-    cur.setDate(cur.getDate() - ((dayOfWeek + 6) % 7)); // align to Monday
+    const phStart = toPH(start);
+    const dayOfWeek = phStart.day;
+    const cur = new Date(phStart.year, phStart.month, phStart.date - ((dayOfWeek + 6) % 7));
     const totalSpanMonthsW = Math.round((end.getTime() - start.getTime()) / (30 * 86400000));
     const useFullYearW = totalSpanMonthsW > 24;
     while (cur <= end) {
@@ -2180,14 +2294,14 @@ export async function getCashFlowTrend(
   // ── Daily grouping (default) ──
   const revMap = new Map<string, number>();
   for (const r of revenues) {
-    const d = r.transactionDate;
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const ph = toPH(r.transactionDate);
+    const key = `${ph.year}-${String(ph.month + 1).padStart(2, "0")}-${String(ph.date).padStart(2, "0")}`;
     revMap.set(key, (revMap.get(key) || 0) + Number(r.grandTotal || 0));
   }
   const expMap = new Map<string, number>();
   for (const e of expenses) {
-    const d = e.transactionDate;
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const ph = toPH(e.transactionDate);
+    const key = `${ph.year}-${String(ph.month + 1).padStart(2, "0")}-${String(ph.date).padStart(2, "0")}`;
     expMap.set(key, (expMap.get(key) || 0) + Number(e.grandTotal || 0));
   }
   const data: {
@@ -2206,11 +2320,13 @@ export async function getCashFlowTrend(
           d2.setDate(d2.getDate() - i);
           return d2;
         })();
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const ph = toPH(d);
+    const key = `${ph.year}-${String(ph.month + 1).padStart(2, "0")}-${String(ph.date).padStart(2, "0")}`;
     const rev = revMap.get(key) || 0;
     const exp = expMap.get(key) || 0;
+    const labelDate = new Date(ph.year, ph.month, ph.date);
     data.push({
-      date: d.toLocaleDateString("en-US", {
+      date: labelDate.toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",

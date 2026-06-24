@@ -96,6 +96,8 @@ export default function OrdersPage() {
   const [editDeliveryRef, setEditDeliveryRef] = useState("");
   const [editDeliveryNotes, setEditDeliveryNotes] = useState("");
   const [editDelivererName, setEditDelivererName] = useState("");
+  const [editIsCredit, setEditIsCredit] = useState(false);
+  const [editCreditDueDate, setEditCreditDueDate] = useState("");
   const [editItems, setEditItems] = useState<
     {
       productId: number;
@@ -112,7 +114,7 @@ export default function OrdersPage() {
         statusIn: ["Ongoing", "Processing", "OnTheWay"],
         type: "SalePO",
       }),
-      getProducts({ status: "available" }),
+      getProducts(),
       getDeliverers(),
     ]).then(([txns, prods, delivs]) => {
       const all = txns as TxnWithItems[];
@@ -149,6 +151,12 @@ export default function OrdersPage() {
     setEditDeliveryRef(t.deliveryRef || "");
     setEditDeliveryNotes(t.deliveryNotes || "");
     setEditDelivererName(t.delivererName || "");
+    setEditIsCredit((t as any).isCredit || false);
+    setEditCreditDueDate(
+      (t as any).creditDueDate
+        ? new Date((t as any).creditDueDate).toISOString().split("T")[0]
+        : "",
+    );
     setEditItems(
       t.items.map((i) => ({
         productId: i.productId!,
@@ -171,6 +179,8 @@ export default function OrdersPage() {
         deliveryNotes: editDeliveryNotes,
         delivererName: editDelivererName,
         transactionStatus: editStatus,
+        isCredit: editIsCredit,
+        creditDueDate: editIsCredit ? editCreditDueDate : null,
         items: editItems,
       });
       loadOrders();
@@ -546,242 +556,6 @@ export default function OrdersPage() {
                   </button>
                 </div>
               </div>
-
-              {isEditing && (
-                <div className="border-t border-[#e2e8f0] p-5 space-y-4 bg-[#f8fafc]">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-sm text-[#0e212c]">
-                      Edit Order #{order.receiptNumber}
-                    </h3>
-                    <button
-                      onClick={() => setEditId(null)}
-                      className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
-                        Buyer
-                      </label>
-                      <input
-                        type="text"
-                        value={editBuyer}
-                        onChange={(e) => setEditBuyer(e.target.value)}
-                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
-                        Address
-                      </label>
-                      <input
-                        type="text"
-                        value={editAddress}
-                        onChange={(e) => setEditAddress(e.target.value)}
-                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
-                        Contact
-                      </label>
-                      <input
-                        type="text"
-                        value={editContact}
-                        onChange={(e) => setEditContact(e.target.value)}
-                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
-                        Delivery Reference
-                      </label>
-                      <input
-                        type="text"
-                        value={editDeliveryRef}
-                        onChange={(e) => setEditDeliveryRef(e.target.value)}
-                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
-                        Delivery Notes
-                      </label>
-                      <input
-                        type="text"
-                        value={editDeliveryNotes}
-                        onChange={(e) => setEditDeliveryNotes(e.target.value)}
-                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
-                        Deliverer
-                      </label>
-                      <input
-                        type="text"
-                        value={editDelivererName}
-                        onChange={(e) => setEditDelivererName(e.target.value)}
-                        list="edit-deliverers"
-                        placeholder="Select or type deliverer name"
-                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
-                      />
-                      <datalist id="edit-deliverers">
-                        {deliverers.map((d) => (
-                          <option key={d} value={d} />
-                        ))}
-                      </datalist>
-                    </div>
-                    <div className="flex items-end pb-2">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${
-                          editStatus === "Completed"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : editStatus === "OnTheWay"
-                              ? "bg-violet-50 text-violet-700"
-                              : editStatus === "Processing"
-                                ? "bg-sky-50 text-sky-700"
-                                : editStatus === "Cancelled"
-                                  ? "bg-rose-50 text-rose-700"
-                                  : "bg-amber-50 text-amber-700"
-                        }`}
-                      >
-                        {STAGE_LABELS[editStatus]}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                        Line Items
-                      </label>
-                      <button
-                        onClick={() =>
-                          setEditItems([
-                            ...editItems,
-                            {
-                              productId: 0,
-                              quantity: 1,
-                              unitPrice: 0,
-                              totalPrice: 0,
-                            },
-                          ])
-                        }
-                        disabled={editStatus === "OnTheWay"}
-                        className="text-xs font-semibold text-[#fd761a] hover:text-[#e56600] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={
-                          editStatus === "OnTheWay"
-                            ? "Cannot add items once order is On the Way"
-                            : "Add Item"
-                        }
-                      >
-                        + Add Item
-                      </button>
-                    </div>
-                    <div className="space-y-2">
-                      {editItems.map((item, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <select
-                            value={item.productId || ""}
-                            onChange={(e) => {
-                              const newItems = [...editItems];
-                              const pid = Number(e.target.value);
-                              const prod = products.find((p) => p.id === pid);
-                              newItems[i] = {
-                                ...item,
-                                productId: pid,
-                                unitPrice: Number(prod?.sellingPrice || 0),
-                                totalPrice:
-                                  Number(prod?.unitPrice || 0) * item.quantity,
-                              };
-                              setEditItems(newItems);
-                            }}
-                            className="flex-1 min-w-[180px] px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]"
-                          >
-                            <option value="">Select product</option>
-                            {products.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.productName}
-                                {(p as any).imageUrl ? " 📷" : ""}
-                              </option>
-                            ))}
-                          </select>
-                          <label className="text-[10px] font-semibold text-[#94a3b8] uppercase shrink-0">
-                            Qty
-                          </label>
-                          <input
-                            type="number"
-                            min={1}
-                            value={item.quantity}
-                            onChange={(e) => {
-                              const newItems = [...editItems];
-                              const qty = Math.max(
-                                1,
-                                Number(e.target.value) || 1,
-                              );
-                              newItems[i] = {
-                                ...item,
-                                quantity: qty,
-                                totalPrice: qty * item.unitPrice,
-                              };
-                              setEditItems(newItems);
-                            }}
-                            disabled={editStatus === "OnTheWay"}
-                            className="w-16 px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a] disabled:bg-[#f1f5f9] disabled:cursor-not-allowed"
-                          />
-                          <span className="text-sm font-mono text-[#0e212c] w-20 text-right">
-                            {item.unitPrice.toLocaleString("en-PH", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </span>
-                          <span className="text-sm font-mono text-[#fd761a] font-semibold w-24 text-right">
-                            {item.totalPrice.toLocaleString("en-PH", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </span>
-                          <button
-                            onClick={() =>
-                              setEditItems(editItems.filter((_, j) => j !== i))
-                            }
-                            disabled={editStatus === "OnTheWay"}
-                            className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-3 pt-2 border-t border-[#e2e8f0]">
-                    <button
-                      onClick={() => setEditId(null)}
-                      className="px-5 py-2 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-white transition-all"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white rounded-lg font-semibold text-sm shadow-lg shadow-[#fd761a]/20 hover:from-[#e56600] hover:to-[#d45d00] transition-all active:scale-[0.98] disabled:opacity-50"
-                    >
-                      {saving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CheckCircle className="h-4 w-4" />
-                      )}{" "}
-                      Save Changes
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}
@@ -1225,6 +999,308 @@ export default function OrdersPage() {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+      {/* Edit Order Modal */}
+      {editId !== null &&
+        (() => {
+          const order = orders.find((o) => o.id === editId);
+          if (!order) return null;
+          return (
+            <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
+              <div
+                className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-3xl max-h-[85vh] flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#e2e8f0]">
+                  <h3 className="font-semibold text-sm text-[#0e212c]">
+                    Edit Order #{order.receiptNumber}
+                  </h3>
+                  <button
+                    onClick={() => setEditId(null)}
+                    className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
+                        Buyer
+                      </label>
+                      <input
+                        type="text"
+                        value={editBuyer}
+                        onChange={(e) => setEditBuyer(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
+                        Address
+                      </label>
+                      <input
+                        type="text"
+                        value={editAddress}
+                        onChange={(e) => setEditAddress(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
+                        Contact
+                      </label>
+                      <input
+                        type="text"
+                        value={editContact}
+                        onChange={(e) => setEditContact(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
+                        Delivery Reference
+                      </label>
+                      <input
+                        type="text"
+                        value={editDeliveryRef}
+                        onChange={(e) => setEditDeliveryRef(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
+                        Delivery Notes
+                      </label>
+                      <input
+                        type="text"
+                        value={editDeliveryNotes}
+                        onChange={(e) => setEditDeliveryNotes(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
+                        Deliverer
+                      </label>
+                      <input
+                        type="text"
+                        value={editDelivererName}
+                        onChange={(e) => setEditDelivererName(e.target.value)}
+                        list="edit-deliverers-modal"
+                        placeholder="Select or type deliverer name"
+                        className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                      />
+                      <datalist id="edit-deliverers-modal">
+                        {deliverers.map((d) => (
+                          <option key={d} value={d} />
+                        ))}
+                      </datalist>
+                    </div>
+                    <div className="flex items-end pb-2">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${
+                          editStatus === "Completed"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : editStatus === "OnTheWay"
+                              ? "bg-violet-50 text-violet-700"
+                              : editStatus === "Processing"
+                                ? "bg-sky-50 text-sky-700"
+                                : editStatus === "Cancelled"
+                                  ? "bg-rose-50 text-rose-700"
+                                  : "bg-amber-50 text-amber-700"
+                        }`}
+                      >
+                        {STAGE_LABELS[editStatus]}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Credit Details */}
+                  <div className="border-t border-[#e2e8f0] pt-4">
+                    <h4 className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-3">
+                      Credit Details
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="edit-is-credit"
+                          checked={editIsCredit}
+                          onChange={(e) => setEditIsCredit(e.target.checked)}
+                          className="h-4 w-4 rounded border-[#e2e8f0] text-[#fd761a] focus:ring-[#fd761a]"
+                        />
+                        <label
+                          htmlFor="edit-is-credit"
+                          className="text-sm text-[#0e212c]"
+                        >
+                          Credit Sale
+                        </label>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
+                          Due Date
+                        </label>
+                        <input
+                          type="date"
+                          value={editCreditDueDate}
+                          onChange={(e) => setEditCreditDueDate(e.target.value)}
+                          disabled={!editIsCredit}
+                          className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a] disabled:bg-[#f1f5f9] disabled:cursor-not-allowed"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">
+                          Paid At
+                        </label>
+                        <p className="text-sm text-[#0e212c] py-2">
+                          {(order as any).creditPaidAt
+                            ? new Date(
+                                (order as any).creditPaidAt,
+                              ).toLocaleDateString("en-PH", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })
+                            : editIsCredit
+                              ? "Unpaid"
+                              : "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Line Items */}
+                  <div className="border-t border-[#e2e8f0] pt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Line Items
+                      </label>
+                      <button
+                        onClick={() =>
+                          setEditItems([
+                            ...editItems,
+                            {
+                              productId: 0,
+                              quantity: 1,
+                              unitPrice: 0,
+                              totalPrice: 0,
+                            },
+                          ])
+                        }
+                        disabled={editStatus === "OnTheWay"}
+                        className="text-xs font-semibold text-[#fd761a] hover:text-[#e56600] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        + Add Item
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {editItems.map((item, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <select
+                            value={item.productId || ""}
+                            onChange={(e) => {
+                              const newItems = [...editItems];
+                              const pid = Number(e.target.value);
+                              const prod = products.find((p) => p.id === pid);
+                              newItems[i] = {
+                                ...item,
+                                productId: pid,
+                                unitPrice: Number(prod?.sellingPrice || 0),
+                                totalPrice:
+                                  Number(prod?.sellingPrice || 0) *
+                                  item.quantity,
+                              };
+                              setEditItems(newItems);
+                            }}
+                            className="flex-1 min-w-[180px] px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a]"
+                          >
+                            <option value="">Select product</option>
+                            {products.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.productName}
+                              </option>
+                            ))}
+                          </select>
+                          <label className="text-[10px] font-semibold text-[#94a3b8] uppercase shrink-0">
+                            Qty
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const newItems = [...editItems];
+                              const qty = Math.max(
+                                1,
+                                Number(e.target.value) || 1,
+                              );
+                              newItems[i] = {
+                                ...item,
+                                quantity: qty,
+                                totalPrice: qty * item.unitPrice,
+                              };
+                              setEditItems(newItems);
+                            }}
+                            disabled={editStatus === "OnTheWay"}
+                            className="w-16 px-2 py-1.5 border border-[#e2e8f0] rounded text-sm focus:outline-none focus:border-[#fd761a] disabled:bg-[#f1f5f9] disabled:cursor-not-allowed"
+                          />
+                          <span className="text-sm font-mono text-[#0e212c] w-20 text-right">
+                            {item.unitPrice.toLocaleString("en-PH", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                          <span className="text-sm font-mono text-[#fd761a] font-semibold w-24 text-right">
+                            {item.totalPrice.toLocaleString("en-PH", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                          <button
+                            onClick={() =>
+                              setEditItems(editItems.filter((_, j) => j !== i))
+                            }
+                            disabled={editStatus === "OnTheWay"}
+                            className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 px-5 py-4 border-t border-[#e2e8f0]">
+                  <button
+                    onClick={() => setEditId(null)}
+                    className="px-5 py-2 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-white transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white rounded-lg font-semibold text-sm shadow-lg shadow-[#fd761a]/20 hover:from-[#e56600] hover:to-[#d45d00] transition-all active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4" />
+                    )}{" "}
+                    Save Changes
+                  </button>
                 </div>
               </div>
             </div>

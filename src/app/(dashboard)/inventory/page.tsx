@@ -20,7 +20,7 @@ export default async function InventoryPage() {
   let products: any[] = [], categories: any[] = [], suppliers: any[] = [], brands: any[] = [];
   try {
     [products, categories, suppliers, brands] = await Promise.all([
-      getProducts({ status: "available" }),
+      getProducts(),
       getAllCategories(),
       getSuppliers(),
       getBrands(),

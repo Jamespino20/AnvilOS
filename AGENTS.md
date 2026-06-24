@@ -57,6 +57,48 @@
 - **Draggable cart pane** — POS cart pane has drag handle on left edge for resizing. Width constrained between 280px-550px.
 - **POS grid sizing** — Product grid has `min-w-0` for proper flex behavior across screen sizes.
 
+### Done (June 24, 2026 — Batch Fix Session)
+
+#### Purchase Orders Module
+- **Edit order line items fixed** — Changed `getProducts({ status: "available" })` to `getProducts()` in orders page so all products (including unavailable) appear in the edit dropdown. Previously, products that were later made unavailable showed "Select product" because they were filtered out.
+- **Edit order totalPrice bug fixed** — `totalPrice` was using `prod.unitPrice` (cost price) instead of `prod.sellingPrice` when selecting a new product in the edit form.
+- **Edit order form converted to modal** — Replaced inline expandable panel with a fixed modal overlay (z-50, backdrop blur, max-h-[85vh] scrollable). Matches the expanded detail modal pattern.
+- **Credit details added to edit order** — New `editIsCredit` and `editCreditDueDate` state variables. Modal includes Credit Details section with checkbox, due date input, and paid status display.
+- **`updateTransaction` accepts credit fields** — Server action now accepts `isCredit` and `creditDueDate` parameters and persists them.
+
+#### POS Module
+- **SalePO receipts deferred** — Receipt PDF download skipped for SalePO at checkout. Toast notification only. Receipt generates when PO is completed via the Orders page.
+- **Transaction type switch preserves cart** — Removed `setCart([])` from the transaction type dropdown onChange handler. Cart items persist when switching between SaleWalkIn, SalePO, Return, Damage, Adjustment.
+- **Duplicate invoice number prevention** — Server-side check in `createTransaction` queries for existing `invoiceNumber` before creating a new transaction. Throws descriptive error with the conflicting receipt number.
+- **Product prices serialization fixed** — POS page now maps products with `Number(p.sellingPrice)` and `Number(p.unitPrice)` before passing to client component. Prisma `Decimal` objects were not serializing correctly through the server-to-client boundary, causing prices to display as zero.
+- **PO stock reservation in POS grid** — New `getPendingPOQuantities()` server action sums quantities of items on active SalePOs (Ongoing/Processing/OnTheWay). POS grid filters products by `effectiveQty = quantity - pendingPO`. Cart max quantity capped at effectiveQty. Product cards show effective quantity with actual quantity in parentheses when reserved.
+- **Add/Edit product category/brand reverted to `<select>`** — Category, Brand, and Supplier fields in Add/Edit product modals changed back to `<select>` dropdowns (were `<input>` + `<datalist>`). Server-side `resolveProductCategory`, `resolveProductBrand`, `resolveProductSupplier` functions remain as fallback.
+
+#### Finance Module
+- **Philippine timezone sync** — Added `parseLocalDate()` helper in finance page that creates Date objects in local timezone instead of UTC. Added `toPH()` helper in `getCashFlowTrend` that converts UTC Date to Philippine time (UTC+8) components. All four grouping modes (hourly, daily, weekly, monthly) now use Philippine time for keys and labels. Previously, `new Date("2026-06-24")` parsed as UTC midnight, causing off-by-one day errors in UTC+8.
+- **Chart flexibility** — Chart already supports hourly (today), daily, weekly, and monthly grouping based on period selection. No additional changes needed.
+
+#### Restocks Module
+- **Persistent zero in cost price input fixed** — `costPrice` type changed from `number` to `number | string` in cart state. Initialized as `""` instead of `0`. Input stores raw string value. `Number()` conversion applied on submit and display. Clearing the input now shows empty field instead of snapping back to zero.
+
+#### Exports Module
+- **Logo showing black fixed** — PNG with transparent alpha channel was rendering as solid black in jsPDF. Both `csv.ts` and `receipt.ts` now draw the logo onto a white canvas (`ctx.fillStyle = "#ffffff"`) and export as JPEG (`canvas.toDataURL("image/jpeg", 0.95)`) before passing to `doc.addImage()`. This strips the alpha channel that jsPDF's PNG decoder couldn't handle.
+
+#### Notifications Module
+- **Notification deletion** — New `deleteNotification(id)` server action with admin guard. New DELETE endpoint at `/api/notifications?id=X`. Notifications page now shows a Trash2 icon button per notification. `handleDelete` calls DELETE API and removes from local state.
+
+#### Buyers Module
+- **Cancelled POs excluded from totalSpent** — `getBuyers` legacy query now filters `transactionStatus: { not: "Cancelled" }`.
+- **Return transactions decrement totalSpent** — Buyer upsert in `createTransaction` now checks `transactionType`: Returns use `{ decrement: grandTotal }`, Damage/Adjustment skip totalSpent update entirely.
+- **Return cancellation reverses decrement** — `updateTransactionStatus` increments totalSpent back when a Return is cancelled.
+- **SalePO totalSpent deferred to completion** — SalePO creation no longer increments totalSpent. `updateTransactionStatus` increments totalSpent when SalePO reaches "Completed" status. SalePO cancellation no longer decrements totalSpent (since it was never incremented).
+
+#### Audit Logging Module
+- **Similar events grouped** — Batch flush now groups entries by `(panel, action, sellerId)`. Multiple similar entries within the 500ms batch window are merged into a single AuditLog row with `(×N)` suffix in the action field. All entries (with or without old/new values) are now batched.
+
+#### Inventory Module
+- **Out-of-stock products visible** — Changed `getProducts({ status: "available" })` to `getProducts()` in inventory page. Products with `quantity = 0` or `isAvailable = false` now appear in the inventory list. The "Out of Stock" status filter in the client component now works correctly.
+
 ### Blocked
 
 - (none)
