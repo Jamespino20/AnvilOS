@@ -922,7 +922,7 @@ export default function TransactionsPage() {
                         {t.items.map((item) => (
                           <tr key={item.id}>
                             <td className="p-3 text-[#0e212c] font-medium">
-                              {products.find((p) => p.id === item.productId)
+                              {item.productName || products.find((p) => p.id === item.productId)
                                 ?.productName || `#${item.productId}`}
                             </td>
                             <td className="p-3 text-right text-[#64748b]">

@@ -443,7 +443,7 @@ export default function RestocksPage() {
                       const cost = Number(item.costPrice || item.unitPrice || 0);
                       return (
                         <tr key={item.id}>
-                          <td className="py-2.5 text-[#0e212c] font-medium">{prod?.productName || `#${item.productId}`}</td>
+                          <td className="py-2.5 text-[#0e212c] font-medium">{item.productName || prod?.productName || `#${item.productId}`}</td>
                           <td className="py-2.5 text-right text-[#64748b]">{item.quantity}</td>
                           <td className="py-2.5 text-right text-[#64748b] font-mono">{cost.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                           <td className="py-2.5 text-right text-[#0e212c] font-semibold font-mono">{(cost * (item.quantity || 0)).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
