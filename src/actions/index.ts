@@ -114,6 +114,25 @@ async function resolveProductBrand(brandId?: number | null, brandName?: string) 
   return created.id;
 }
 
+async function resolveProductSupplier(supplierId?: number | null, supplierName?: string) {
+  const name = supplierName?.trim().replace(/\s+/g, " ");
+  if (!name) return { supplierId: supplierId ?? null, supplierName: "" };
+
+  const suppliers = await prisma.supplier.findMany({
+    select: { id: true, supplierName: true },
+  });
+  const existing = suppliers.find(
+    (s) => normalizeLookupName(s.supplierName) === normalizeLookupName(name),
+  );
+  if (existing) return { supplierId: existing.id, supplierName: existing.supplierName };
+
+  const created = await prisma.supplier.create({
+    data: { supplierName: name },
+  });
+  await logAudit("InventoryPanel", "Add Supplier", `${created.supplierName} created`);
+  return { supplierId: created.id, supplierName: created.supplierName };
+}
+
 async function assertUniqueProductName(
   productName: string,
   categoryId: number | null,
@@ -169,6 +188,7 @@ export async function createProduct(data: {
     data.categoryName || data.category,
   );
   const brandId = await resolveProductBrand(data.brandId, data.brandName);
+  const resolvedSupplier = await resolveProductSupplier(data.supplierId, data.supplierName);
   await assertUniqueProductName(productName, category.categoryId, brandId);
 
   const { categoryName, brandName, ...productData } = data;
@@ -179,6 +199,8 @@ export async function createProduct(data: {
       categoryId: category.categoryId,
       category: category.category,
       brandId,
+      supplierId: resolvedSupplier.supplierId,
+      supplierName: resolvedSupplier.supplierName || "Unknown",
       isAvailable: true,
     },
   });
@@ -241,6 +263,10 @@ export async function updateProduct(
     data.brandName !== undefined || data.brandId !== undefined
       ? await resolveProductBrand(data.brandId ?? null, data.brandName)
       : current.brandId;
+  const resolvedSupplier =
+    data.supplierName !== undefined || data.supplierId !== undefined
+      ? await resolveProductSupplier(data.supplierId ?? null, data.supplierName)
+      : { supplierId: current.supplierId, supplierName: current.supplierName };
 
   await assertUniqueProductName(productName, category.categoryId, brandId, id);
 
@@ -253,6 +279,8 @@ export async function updateProduct(
       categoryId: category.categoryId,
       category: category.category,
       brandId,
+      supplierId: resolvedSupplier.supplierId,
+      supplierName: resolvedSupplier.supplierName || "Unknown",
     },
   });
   await logAudit(

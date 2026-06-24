@@ -82,7 +82,8 @@ export async function downloadReceiptPdf(data: {
       logoH = maxLogoH;
       logoW = logoH * aspect;
     }
-    doc.addImage(b64, "PNG", cx - logoW / 2, y, logoW, logoH);
+    const b64Pure = b64.includes(",") ? b64.split(",")[1] : b64;
+    doc.addImage(b64Pure, "PNG", cx - logoW / 2, y, logoW, logoH);
     y += logoH + 3;
   } catch { console.warn("Logo not available, skipping in receipt"); }
 

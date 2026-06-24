@@ -216,7 +216,8 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
       logoH = maxLogoH;
       logoW = logoH * aspect;
     }
-    doc.addImage(b64, "PNG", 12 + (maxLogoW - logoW) / 2, 7 + (maxLogoH - logoH) / 2, logoW, logoH);
+    const b64Pure = b64.includes(",") ? b64.split(",")[1] : b64;
+    doc.addImage(b64Pure, "PNG", 12 + (maxLogoW - logoW) / 2, 7 + (maxLogoH - logoH) / 2, logoW, logoH);
   } catch { console.warn("Logo not available, skipping in PDF header"); }
 
   doc.setTextColor(...THEME_WHITE);
@@ -302,18 +303,6 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
       ]),
     ),
     margin: { top: 46, right: marginRight, bottom: 20, left: marginLeft },
-    didParseCell: (data) => {
-      if (data.section !== "body") return;
-      const cellText = String(data.cell.raw || "");
-      const colWidth = scaled[data.column.index];
-      doc.setFontSize(baseFontSize);
-      const textWidth = doc.getTextWidth(cellText);
-      if (textWidth > colWidth - 4 && baseFontSize > 4) {
-        const newSize = Math.max(4, baseFontSize - 1.5);
-        doc.setFontSize(newSize);
-        data.cell.styles.fontSize = newSize;
-      }
-    },
     didDrawPage: (data) => {
       const pageCount = (doc as any).internal.getNumberOfPages();
       doc.setFontSize(7);

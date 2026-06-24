@@ -137,6 +137,11 @@ export function InventoryClient({
     return brands.find((b) => normalizeName(b.name) === normalized);
   }
 
+  function exactSupplier(name: string) {
+    const normalized = normalizeName(name);
+    return suppliers.find((s) => normalizeName(s.supplierName) === normalized);
+  }
+
   function nonNegativeInput(value: string) {
     if (value === "") return "";
     const num = Number(value);
@@ -318,6 +323,7 @@ export function InventoryClient({
     setAdding(true);
     const selectedCategory = exactCategory(form.categoryName);
     const selectedBrand = exactBrand(form.brandName);
+    const selectedSupplier = exactSupplier(form.supplierName);
     try {
       await createProduct({
         productName: form.productName,
@@ -325,7 +331,7 @@ export function InventoryClient({
         categoryName: form.categoryName,
         categoryId: selectedCategory?.id,
         supplierName: form.supplierName || "Unknown",
-        supplierId: Number(form.supplierId) || undefined,
+        supplierId: selectedSupplier?.id,
         brandId: selectedBrand?.id,
         brandName: form.brandName,
         unitPrice: form.costPrice === "" ? undefined : Number(form.costPrice),
@@ -359,7 +365,7 @@ export function InventoryClient({
       productName: product.productName,
       categoryId: String(product.categoryId ?? ""),
       categoryName: product.category || "",
-      supplierName: product.supplierName,
+      supplierName: (product as any).supplierRel?.supplierName || product.supplierName || "",
       supplierId: String(product.supplierId ?? ""),
       brandId: String(
         (product as any).brandRel?.id ?? (product as any).brandId ?? "",
@@ -390,6 +396,7 @@ export function InventoryClient({
     setSaving(true);
     const selectedCategory = exactCategory(form.categoryName);
     const selectedBrand = exactBrand(form.brandName);
+    const selectedSupplier = exactSupplier(form.supplierName);
     try {
       await updateProduct(showEdit, {
         productName: form.productName,
@@ -397,7 +404,7 @@ export function InventoryClient({
         categoryName: form.categoryName,
         categoryId: selectedCategory?.id ?? null,
         supplierName: form.supplierName || "Unknown",
-        supplierId: form.supplierId === "" ? null : (Number(form.supplierId) || undefined),
+        supplierId: selectedSupplier?.id ?? null,
         brandId: selectedBrand?.id ?? null,
         brandName: form.brandName,
         unitPrice: form.costPrice === "" ? undefined : Number(form.costPrice),
@@ -985,28 +992,23 @@ export function InventoryClient({
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Supplier
                 </label>
-                <select
-                  value={form.supplierId}
+                <input
+                  type="text"
+                  list="add-suppliers"
+                  value={form.supplierName}
                   onChange={(e) =>
-                    setForm({
-                      ...form,
-                      supplierId: e.target.value,
-                      supplierName:
-                        suppliers.find((s) => s.id === Number(e.target.value))
-                          ?.supplierName || "",
-                    })
+                    setForm({ ...form, supplierName: e.target.value })
                   }
+                  placeholder="Select or type new supplier"
                   className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-                >
-                  <option value="">Select supplier</option>
+                />
+                <datalist id="add-suppliers">
                   {suppliers
                     .filter((s) => s.isAvailable)
                     .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.supplierName}
-                      </option>
+                      <option key={s.id} value={s.supplierName} />
                     ))}
-                </select>
+                </datalist>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -1328,28 +1330,23 @@ export function InventoryClient({
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Supplier
                 </label>
-                <select
-                  value={form.supplierId}
+                <input
+                  type="text"
+                  list="edit-suppliers"
+                  value={form.supplierName}
                   onChange={(e) =>
-                    setForm({
-                      ...form,
-                      supplierId: e.target.value,
-                      supplierName:
-                        suppliers.find((s) => s.id === Number(e.target.value))
-                          ?.supplierName || "",
-                    })
+                    setForm({ ...form, supplierName: e.target.value })
                   }
+                  placeholder="Select or type new supplier"
                   className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-                >
-                  <option value="">Select supplier</option>
+                />
+                <datalist id="edit-suppliers">
                   {suppliers
                     .filter((s) => s.isAvailable)
                     .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.supplierName}
-                      </option>
+                      <option key={s.id} value={s.supplierName} />
                     ))}
-                </select>
+                </datalist>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
