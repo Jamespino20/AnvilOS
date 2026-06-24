@@ -63,13 +63,91 @@ export async function getProduct(id: number) {
   });
 }
 
+function normalizeLookupName(value?: string | null) {
+  return (value || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function assertNonNegative(value: number | undefined, label: string) {
+  if (value !== undefined && value < 0) {
+    throw new Error(`${label} cannot be below zero.`);
+  }
+}
+
+async function resolveProductCategory(categoryId?: number | null, categoryName?: string) {
+  const name = categoryName?.trim().replace(/\s+/g, " ");
+  if (!name) {
+    return { categoryId: categoryId ?? null, category: "Uncategorized" };
+  }
+
+  const categories = await prisma.category.findMany({
+    where: { parentCategoryId: null },
+    select: { id: true, name: true },
+  });
+  const existing = categories.find(
+    (cat) => normalizeLookupName(cat.name) === normalizeLookupName(name),
+  );
+  if (existing) return { categoryId: existing.id, category: existing.name };
+
+  const created = await prisma.category.create({
+    data: { name, parentCategoryId: null, createdAt: new Date() },
+  });
+  await logAudit("InventoryPanel", "Add Category", `${created.name} created`);
+  return { categoryId: created.id, category: created.name };
+}
+
+async function resolveProductBrand(brandId?: number | null, brandName?: string) {
+  const name = brandName?.trim().replace(/\s+/g, " ");
+  if (!name) return brandId ?? null;
+
+  const brands = await prisma.brand.findMany({
+    select: { id: true, name: true },
+  });
+  const existing = brands.find(
+    (brand) => normalizeLookupName(brand.name) === normalizeLookupName(name),
+  );
+  if (existing) return existing.id;
+
+  const created = await prisma.brand.create({
+    data: { name, createdAt: new Date() },
+  });
+  await logAudit("InventoryPanel", "Add Brand", `${created.name} created`);
+  return created.id;
+}
+
+async function assertUniqueProductName(
+  productName: string,
+  categoryId: number | null,
+  brandId: number | null,
+  currentProductId?: number,
+) {
+  const products = await prisma.product.findMany({
+    where: {
+      categoryId,
+      brandId,
+      ...(currentProductId ? { id: { not: currentProductId } } : {}),
+    },
+    select: { productName: true },
+  });
+  const normalized = normalizeLookupName(productName);
+  const duplicate = products.some(
+    (product) => normalizeLookupName(product.productName) === normalized,
+  );
+  if (duplicate) {
+    throw new Error(
+      "A product with this name already exists in the selected category and brand.",
+    );
+  }
+}
+
 export async function createProduct(data: {
   productName: string;
   categoryId?: number;
+  categoryName?: string;
   category: string;
   supplierId?: number;
   supplierName: string;
   brandId?: number;
+  brandName?: string;
   unitPrice?: number;
   sellingPrice: number;
   quantity: number;
@@ -81,29 +159,41 @@ export async function createProduct(data: {
   boxQuantity?: number;
 }) {
   await requireAdmin();
-  const fn = async () => {
-    const product = await prisma.product.create({
-      data: { ...data, isAvailable: true },
-    });
-    await logAudit(
-      "ProductDialog",
-      "Add Product",
-      `${product.productName} created`,
-    );
-    return product;
-  };
-  try {
-    return await fn();
-  } catch (e: any) {
-    if (e?.code === "P2002") {
-      await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('products', 'PRODUCT_ID'), COALESCE((SELECT MAX("PRODUCT_ID") FROM "products"), 1))`;
-      const product = await fn();
-      revalidatePath("/inventory");
-      revalidateTag("products", "default");
-      return product;
-    }
-    throw e;
-  }
+  const productName = data.productName.trim().replace(/\s+/g, " ");
+  if (!productName) throw new Error("Product name is required.");
+  assertNonNegative(data.sellingPrice, "Selling Price");
+  assertNonNegative(data.unitPrice, "Unit Price");
+
+  const category = await resolveProductCategory(
+    data.categoryId,
+    data.categoryName || data.category,
+  );
+  const brandId = await resolveProductBrand(data.brandId, data.brandName);
+  await assertUniqueProductName(productName, category.categoryId, brandId);
+
+  const { categoryName, brandName, ...productData } = data;
+  const product = await prisma.product.create({
+    data: {
+      ...productData,
+      productName,
+      categoryId: category.categoryId,
+      category: category.category,
+      brandId,
+      isAvailable: true,
+    },
+  });
+  await logAudit(
+    "ProductDialog",
+    "Add Product",
+    `${product.productName} created`,
+  );
+  revalidatePath("/inventory");
+  revalidatePath("/categories");
+  revalidatePath("/brands");
+  revalidateTag("products", "default");
+  revalidateTag("categories", "default");
+  revalidateTag("brands", "default");
+  return product;
 }
 
 export async function updateProduct(
@@ -111,10 +201,12 @@ export async function updateProduct(
   data: Partial<{
     productName: string;
     categoryId: number | null;
+    categoryName: string;
     category: string;
     supplierId: number | null;
     supplierName: string;
     brandId: number | null;
+    brandName: string;
     unitPrice: number;
     sellingPrice: number;
     quantity: number;
@@ -128,14 +220,52 @@ export async function updateProduct(
   }>,
 ) {
   await requireAdmin();
-  const product = await prisma.product.update({ where: { id }, data });
+  const current = await prisma.product.findUniqueOrThrow({ where: { id } });
+  const productName = data.productName
+    ? data.productName.trim().replace(/\s+/g, " ")
+    : current.productName;
+  if (!productName) throw new Error("Product name is required.");
+  assertNonNegative(data.sellingPrice, "Selling Price");
+  assertNonNegative(data.unitPrice, "Unit Price");
+
+  const category =
+    data.categoryName !== undefined ||
+    data.category !== undefined ||
+    data.categoryId !== undefined
+      ? await resolveProductCategory(
+          data.categoryId ?? null,
+          data.categoryName || data.category,
+        )
+      : { categoryId: current.categoryId, category: current.category };
+  const brandId =
+    data.brandName !== undefined || data.brandId !== undefined
+      ? await resolveProductBrand(data.brandId ?? null, data.brandName)
+      : current.brandId;
+
+  await assertUniqueProductName(productName, category.categoryId, brandId, id);
+
+  const { categoryName, brandName, ...productData } = data;
+  const product = await prisma.product.update({
+    where: { id },
+    data: {
+      ...productData,
+      productName,
+      categoryId: category.categoryId,
+      category: category.category,
+      brandId,
+    },
+  });
   await logAudit(
     "InventoryPanel",
     "Edit Product",
     `${product.productName} (#${id}) updated`,
   );
   revalidatePath("/inventory");
+  revalidatePath("/categories");
+  revalidatePath("/brands");
   revalidateTag("products", "default");
+  revalidateTag("categories", "default");
+  revalidateTag("brands", "default");
   return product;
 }
 
@@ -181,6 +311,9 @@ export async function setProductAvailability(id: number, isAvailable: boolean) {
 export async function deleteProduct(id: number) {
   await requireAdmin();
   const product = await prisma.product.findUniqueOrThrow({ where: { id } });
+  if (product.quantity > 0) {
+    throw new Error("Cannot delete product while it still has stock.");
+  }
   await prisma.product.delete({ where: { id } });
   await logAudit(
     "InventoryPanel",
@@ -194,6 +327,12 @@ export async function deleteProduct(id: number) {
 export async function deleteProducts(ids: number[]) {
   await requireAdmin();
   const products = await prisma.product.findMany({ where: { id: { in: ids } } });
+  const blocked = products.filter((product) => product.quantity > 0);
+  if (blocked.length > 0) {
+    throw new Error(
+      `Cannot delete ${blocked.length} product(s) while they still have stock.`,
+    );
+  }
   const result = await prisma.product.deleteMany({ where: { id: { in: ids } } });
   await logAudit(
     "InventoryPanel",

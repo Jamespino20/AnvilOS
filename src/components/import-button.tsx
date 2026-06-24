@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useState, useRef } from "react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { Upload, X, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
 import { validateImportData, importData } from "@/actions";
 import { getImportConfig } from "@/lib/import-configs";
@@ -68,22 +68,39 @@ export function ImportButton({ table, onImported, title }: Props) {
     });
   }
 
-  function parseXLSX(buffer: ArrayBuffer) {
+  async function parseXLSX(buffer: ArrayBuffer) {
     try {
-      const workbook = XLSX.read(buffer, { type: "array" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: "" });
-      if (json.length < 1) {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+      const sheet = workbook.worksheets[0];
+      if (!sheet) {
+        setErrors([{ row: 0, column: "", message: "The workbook does not contain any worksheets" }]);
+        return;
+      }
+      const headerValues = (sheet.getRow(1).values ?? []) as Array<unknown>;
+      const headers = headerValues
+        .slice(1)
+        .map((value: unknown) => String(value ?? "").trim())
+        .filter(Boolean);
+      if (headers.length < 1) {
         setErrors([{ row: 0, column: "", message: "Sheet must contain a header row and at least one data row" }]);
         return;
       }
-      const rows = json.map((row) => {
+      const rows: Record<string, string>[] = [];
+      for (let r = 2; r <= sheet.rowCount; r++) {
+        const row = sheet.getRow(r);
+        const values = headers.map((_: string, i: number) => String(row.getCell(i + 1).text ?? "").trim());
+        if (values.every((value) => !value)) continue;
         const normalized: Record<string, string> = {};
-        for (const key of Object.keys(row)) {
-          normalized[key.trim()] = String(row[key] ?? "");
-        }
-        return normalized;
-      });
+        headers.forEach((header: string, i: number) => {
+          normalized[header] = values[i] || "";
+        });
+        rows.push(normalized);
+      }
+      if (rows.length < 1) {
+        setErrors([{ row: 0, column: "", message: "Sheet must contain a header row and at least one data row" }]);
+        return;
+      }
       setParsed(rows);
       validateImportData(table, rows).then((r) => {
         setErrors(r.errors);

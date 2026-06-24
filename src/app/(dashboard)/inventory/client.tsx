@@ -1,4 +1,12 @@
-﻿"use client";
+﻿/*
+App Name: CWL Hardware
+App Client: CWL Hardware
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: June 23, 2026
+*/
+
+"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -13,7 +21,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Check,
+  AlertTriangle,
   Zap,
   Weight,
   Box,
@@ -69,9 +77,11 @@ export function InventoryClient({
   const [form, setForm] = useState({
     productName: "",
     categoryId: "",
+    categoryName: "",
     supplierName: "",
     supplierId: "",
     brandId: "",
+    brandName: "",
     sellingPrice: "",
     costPrice: "",
     quantity: "",
@@ -85,9 +95,11 @@ export function InventoryClient({
   const defaultForm = {
     productName: "",
     categoryId: "",
+    categoryName: "",
     supplierName: "",
     supplierId: "",
     brandId: "",
+    brandName: "",
     sellingPrice: "",
     costPrice: "",
     quantity: "",
@@ -100,6 +112,7 @@ export function InventoryClient({
   };
 
   const [page, setPage] = useState(1);
+  const [formError, setFormError] = useState("");
   const perPage = 15;
   const isAdmin = role === "ADMIN" || role === "SUPERADMIN";
   const isSuperAdmin = role === "SUPERADMIN";
@@ -110,12 +123,53 @@ export function InventoryClient({
   const [savingQty, setSavingQty] = useState(false);
   const editQtyRef = useRef<HTMLInputElement>(null);
 
+  function normalizeName(value: string) {
+    return value.trim().replace(/\s+/g, " ").toLowerCase();
+  }
+
+  function exactCategory(name: string) {
+    const normalized = normalizeName(name);
+    return categories.find((c) => normalizeName(c.name) === normalized);
+  }
+
+  function exactBrand(name: string) {
+    const normalized = normalizeName(name);
+    return brands.find((b) => normalizeName(b.name) === normalized);
+  }
+
+  function nonNegativeInput(value: string) {
+    if (value === "") return "";
+    const num = Number(value);
+    if (Number.isNaN(num)) return value;
+    return String(Math.max(0, num));
+  }
+
+  function duplicateProductName() {
+    const productName = normalizeName(form.productName);
+    if (!productName) return null;
+    const categoryName = normalizeName(form.categoryName || "Uncategorized");
+    const brandName = normalizeName(form.brandName);
+    return initialProducts.find((product) => {
+      if (showEdit === product.id) return false;
+      const productCategoryName = normalizeName(product.category || "Uncategorized");
+      const productBrandName = normalizeName((product as any).brandRel?.name || "");
+      return (
+        normalizeName(product.productName) === productName &&
+        productCategoryName === categoryName &&
+        productBrandName === brandName
+      );
+    });
+  }
+
   useEffect(() => {
     if (editQtyId !== null && editQtyRef.current) {
       editQtyRef.current.focus();
       editQtyRef.current.select();
     }
   }, [editQtyId]);
+
+  const duplicate = duplicateProductName();
+  const deleteTargetProduct = initialProducts.find((p) => p.id === deleteTarget);
 
   async function handleSaveQty(productId: number) {
     const val = parseInt(editQtyVal, 10);
@@ -253,34 +307,31 @@ export function InventoryClient({
     };
   }
 
-  function flatCategoryOptions() {
-    return categories.map((c) => (
-      <option key={c.id} value={c.id}>
-        {c.name}
-      </option>
-    ));
-  }
-
   async function handleAddProduct(e: React.FormEvent) {
     e.preventDefault();
     if (!form.productName) return;
+    if (duplicate) {
+      setFormError("A product with this name already exists in the selected category and brand.");
+      return;
+    }
+    setFormError("");
     setAdding(true);
-    const selectedCategoryId = Number(form.categoryId) || 0;
-    const selectedCategoryName =
-      categories.find((c) => c.id === Number(form.categoryId))?.name ||
-      "Uncategorized";
+    const selectedCategory = exactCategory(form.categoryName);
+    const selectedBrand = exactBrand(form.brandName);
     try {
       await createProduct({
         productName: form.productName,
-        category: selectedCategoryName,
-        categoryId: selectedCategoryId || undefined,
+        category: form.categoryName.trim() || "Uncategorized",
+        categoryName: form.categoryName,
+        categoryId: selectedCategory?.id,
         supplierName: form.supplierName || "Unknown",
         supplierId: Number(form.supplierId) || undefined,
-        brandId: Number(form.brandId) || undefined,
-        unitPrice: Number(form.costPrice) || undefined,
-        sellingPrice: Number(form.sellingPrice) || 0,
+        brandId: selectedBrand?.id,
+        brandName: form.brandName,
+        unitPrice: form.costPrice === "" ? undefined : Number(form.costPrice),
+        sellingPrice: form.sellingPrice === "" ? 0 : Number(form.sellingPrice),
         quantity: Number(form.quantity) || 0,
-        minThreshold: Number(form.minThreshold) || 5,
+        minThreshold: form.minThreshold === "" ? 5 : Number(form.minThreshold),
         imageUrl: form.imageUrl || undefined,
         isFastMoving: form.isFastMoving,
         sellByWeight: form.sellByWeight,
@@ -293,9 +344,11 @@ export function InventoryClient({
       setForm(defaultForm);
       router.refresh();
       toast.success("Product added successfully");
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to add product", e);
-      toast.error("Failed to add product");
+      const message = e?.message || "Failed to add product";
+      setFormError(message);
+      toast.error(message);
     } finally {
       setAdding(false);
     }
@@ -305,11 +358,13 @@ export function InventoryClient({
     setForm({
       productName: product.productName,
       categoryId: String(product.categoryId ?? ""),
+      categoryName: product.category || "",
       supplierName: product.supplierName,
       supplierId: String(product.supplierId ?? ""),
       brandId: String(
         (product as any).brandRel?.id ?? (product as any).brandId ?? "",
       ),
+      brandName: (product as any).brandRel?.name || "",
       sellingPrice: String(product.sellingPrice),
       costPrice: String(product.unitPrice ?? ""),
       quantity: String(product.quantity),
@@ -320,28 +375,34 @@ export function InventoryClient({
       sellByBox: product.sellByBox,
       boxQuantity: String(product.boxQuantity ?? ""),
     });
+    setFormError("");
     setShowEdit(product.id);
   }
 
   async function handleEditProduct(e: React.FormEvent) {
     e.preventDefault();
     if (!form.productName || showEdit === null) return;
+    if (duplicate) {
+      setFormError("A product with this name already exists in the selected category and brand.");
+      return;
+    }
+    setFormError("");
     setSaving(true);
-    const selectedCategoryId = Number(form.categoryId) || 0;
-    const selectedCategoryName =
-      categories.find((c) => c.id === Number(form.categoryId))?.name ||
-      "Uncategorized";
+    const selectedCategory = exactCategory(form.categoryName);
+    const selectedBrand = exactBrand(form.brandName);
     try {
       await updateProduct(showEdit, {
         productName: form.productName,
-        category: selectedCategoryName,
-        categoryId: form.categoryId === "" ? null : (selectedCategoryId || undefined),
+        category: form.categoryName.trim() || "Uncategorized",
+        categoryName: form.categoryName,
+        categoryId: selectedCategory?.id ?? null,
         supplierName: form.supplierName || "Unknown",
         supplierId: form.supplierId === "" ? null : (Number(form.supplierId) || undefined),
-        brandId: form.brandId === "" ? null : (Number(form.brandId) || undefined),
-        unitPrice: Number(form.costPrice) || undefined,
-        sellingPrice: Number(form.sellingPrice) || undefined,
-        minThreshold: Number(form.minThreshold) || 5,
+        brandId: selectedBrand?.id ?? null,
+        brandName: form.brandName,
+        unitPrice: form.costPrice === "" ? undefined : Number(form.costPrice),
+        sellingPrice: form.sellingPrice === "" ? undefined : Number(form.sellingPrice),
+        minThreshold: form.minThreshold === "" ? 5 : Number(form.minThreshold),
         imageUrl: form.imageUrl || undefined,
         isFastMoving: form.isFastMoving,
         sellByWeight: form.sellByWeight,
@@ -354,9 +415,11 @@ export function InventoryClient({
       setForm(defaultForm);
       router.refresh();
       toast.success("Product updated successfully");
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to update product", e);
-      toast.error("Failed to update product");
+      const message = e?.message || "Failed to update product";
+      setFormError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -370,9 +433,9 @@ export function InventoryClient({
       setDeleteTarget(null);
       router.refresh();
       toast.success("Product deleted successfully");
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to delete product", e);
-      toast.error("Failed to delete product");
+      toast.error(e?.message || "Failed to delete product");
     } finally {
       setDeleting(false);
     }
@@ -515,7 +578,11 @@ export function InventoryClient({
           />
           {isAdmin && (
             <button
-              onClick={() => setShowAdd(true)}
+              onClick={() => {
+                setForm(defaultForm);
+                setFormError("");
+                setShowAdd(true);
+              }}
               title="Add a new product"
               className="h-10 flex items-center justify-center gap-2 px-5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all duration-200 active:scale-[0.98]"
             >
@@ -740,9 +807,24 @@ export function InventoryClient({
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => setDeleteTarget(product.id)}
-                            className="p-1.5 rounded-md text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 transition-all"
-                            title="Delete product"
+                            onClick={() => {
+                              if (product.quantity > 0) {
+                                toast.error("Products with stock cannot be deleted.");
+                                return;
+                              }
+                              setDeleteTarget(product.id);
+                            }}
+                            disabled={product.quantity > 0}
+                            className={`p-1.5 rounded-md transition-all ${
+                              product.quantity > 0
+                                ? "text-[#cbd5e1] cursor-not-allowed"
+                                : "text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50"
+                            }`}
+                            title={
+                              product.quantity > 0
+                                ? "Set stock to zero before deleting"
+                                : "Delete product"
+                            }
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -795,7 +877,10 @@ export function InventoryClient({
       {showAdd && (
         <div
           className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center"
-          onClick={() => setShowAdd(false)}
+          onClick={() => {
+            setShowAdd(false);
+            setFormError("");
+          }}
         >
           <div
             className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-lg mx-4 max-h-[85vh] flex flex-col"
@@ -804,7 +889,10 @@ export function InventoryClient({
             <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0] shrink-0">
               <h2 className="text-lg font-bold text-[#0e212c]">Add Product</h2>
               <button
-                onClick={() => setShowAdd(false)}
+                onClick={() => {
+                  setShowAdd(false);
+                  setFormError("");
+                }}
                 className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"
               >
                 <X className="h-5 w-5" />
@@ -820,9 +908,10 @@ export function InventoryClient({
                 </label>
                 <input
                   value={form.productName}
-                  onChange={(e) =>
-                    setForm({ ...form, productName: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormError("");
+                    setForm({ ...form, productName: e.target.value });
+                  }}
                   required
                   className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
                 />
@@ -832,39 +921,66 @@ export function InventoryClient({
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Category
                   </label>
-                  <select
-                    value={form.categoryId}
-                    onChange={(e) =>
-                      setForm({ ...form, categoryId: e.target.value })
-                    }
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-                  >
-                    <option value="">Select category</option>
-                    {flatCategoryOptions()}
-                  </select>
+                  <input
+                    value={form.categoryName}
+                    list="product-category-options"
+                    placeholder="Type or select category"
+                    onChange={(e) => {
+                      setFormError("");
+                      const category = exactCategory(e.target.value);
+                      setForm({
+                        ...form,
+                        categoryName: e.target.value,
+                        categoryId: category ? String(category.id) : "",
+                      });
+                    }}
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                  />
+                  <datalist id="product-category-options">
+                    {categories
+                      .filter((c) => c.isAvailable)
+                      .map((c) => (
+                        <option key={c.id} value={c.name} />
+                      ))}
+                  </datalist>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Brand
                   </label>
-                  <select
-                    value={form.brandId}
-                    onChange={(e) =>
-                      setForm({ ...form, brandId: e.target.value })
-                    }
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-                  >
-                    <option value="">Select brand</option>
+                  <input
+                    value={form.brandName}
+                    list="product-brand-options"
+                    placeholder="Type or select brand"
+                    onChange={(e) => {
+                      setFormError("");
+                      const brand = exactBrand(e.target.value);
+                      setForm({
+                        ...form,
+                        brandName: e.target.value,
+                        brandId: brand ? String(brand.id) : "",
+                      });
+                    }}
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                  />
+                  <datalist id="product-brand-options">
                     {brands
                       .filter((b) => b.isAvailable)
                       .map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name}
-                        </option>
+                        <option key={b.id} value={b.name} />
                       ))}
-                  </select>
+                  </datalist>
                 </div>
               </div>
+              {(duplicate || formError) && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-medium text-amber-800 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>
+                    {formError ||
+                      `A product named "${duplicate?.productName}" already exists in this category and brand.`}
+                  </span>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Supplier
@@ -899,9 +1015,12 @@ export function InventoryClient({
                   </label>
                   <input
                     type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="0.00"
                     value={form.sellingPrice}
                     onChange={(e) =>
-                      setForm({ ...form, sellingPrice: e.target.value })
+                      setForm({ ...form, sellingPrice: nonNegativeInput(e.target.value) })
                     }
                     required
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
@@ -913,9 +1032,12 @@ export function InventoryClient({
                   </label>
                   <input
                     type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="0.00"
                     value={form.costPrice}
                     onChange={(e) =>
-                      setForm({ ...form, costPrice: e.target.value })
+                      setForm({ ...form, costPrice: nonNegativeInput(e.target.value) })
                     }
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
@@ -1065,14 +1187,17 @@ export function InventoryClient({
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowAdd(false)}
+                  onClick={() => {
+                    setShowAdd(false);
+                    setFormError("");
+                  }}
                   className="flex-1 py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-[#f8fafc] transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={adding}
+                  disabled={adding || Boolean(duplicate)}
                   className="flex-1 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {adding ? (
@@ -1096,6 +1221,7 @@ export function InventoryClient({
           onClick={() => {
             setShowEdit(null);
             setForm(defaultForm);
+            setFormError("");
           }}
         >
           <div
@@ -1108,6 +1234,7 @@ export function InventoryClient({
                 onClick={() => {
                   setShowEdit(null);
                   setForm(defaultForm);
+                  setFormError("");
                 }}
                 className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"
               >
@@ -1124,9 +1251,10 @@ export function InventoryClient({
                 </label>
                 <input
                   value={form.productName}
-                  onChange={(e) =>
-                    setForm({ ...form, productName: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setFormError("");
+                    setForm({ ...form, productName: e.target.value });
+                  }}
                   required
                   className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
                 />
@@ -1136,39 +1264,66 @@ export function InventoryClient({
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Category
                   </label>
-                  <select
-                    value={form.categoryId}
-                    onChange={(e) =>
-                      setForm({ ...form, categoryId: e.target.value })
-                    }
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-                  >
-                    <option value="">Select category</option>
-                    {flatCategoryOptions()}
-                  </select>
+                  <input
+                    value={form.categoryName}
+                    list="product-edit-category-options"
+                    placeholder="Type or select category"
+                    onChange={(e) => {
+                      setFormError("");
+                      const category = exactCategory(e.target.value);
+                      setForm({
+                        ...form,
+                        categoryName: e.target.value,
+                        categoryId: category ? String(category.id) : "",
+                      });
+                    }}
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                  />
+                  <datalist id="product-edit-category-options">
+                    {categories
+                      .filter((c) => c.isAvailable)
+                      .map((c) => (
+                        <option key={c.id} value={c.name} />
+                      ))}
+                  </datalist>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Brand
                   </label>
-                  <select
-                    value={form.brandId}
-                    onChange={(e) =>
-                      setForm({ ...form, brandId: e.target.value })
-                    }
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-                  >
-                    <option value="">Select brand</option>
+                  <input
+                    value={form.brandName}
+                    list="product-edit-brand-options"
+                    placeholder="Type or select brand"
+                    onChange={(e) => {
+                      setFormError("");
+                      const brand = exactBrand(e.target.value);
+                      setForm({
+                        ...form,
+                        brandName: e.target.value,
+                        brandId: brand ? String(brand.id) : "",
+                      });
+                    }}
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                  />
+                  <datalist id="product-edit-brand-options">
                     {brands
                       .filter((b) => b.isAvailable)
                       .map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name}
-                        </option>
+                        <option key={b.id} value={b.name} />
                       ))}
-                  </select>
+                  </datalist>
                 </div>
               </div>
+              {(duplicate || formError) && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-medium text-amber-800 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>
+                    {formError ||
+                      `A product named "${duplicate?.productName}" already exists in this category and brand.`}
+                  </span>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                   Supplier
@@ -1203,9 +1358,12 @@ export function InventoryClient({
                   </label>
                   <input
                     type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="0.00"
                     value={form.sellingPrice}
                     onChange={(e) =>
-                      setForm({ ...form, sellingPrice: e.target.value })
+                      setForm({ ...form, sellingPrice: nonNegativeInput(e.target.value) })
                     }
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
@@ -1216,9 +1374,12 @@ export function InventoryClient({
                   </label>
                   <input
                     type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="0.00"
                     value={form.costPrice}
                     onChange={(e) =>
-                      setForm({ ...form, costPrice: e.target.value })
+                      setForm({ ...form, costPrice: nonNegativeInput(e.target.value) })
                     }
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
@@ -1369,6 +1530,7 @@ export function InventoryClient({
                   onClick={() => {
                     setShowEdit(null);
                     setForm(defaultForm);
+                    setFormError("");
                   }}
                   className="flex-1 py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-[#f8fafc] transition-all"
                 >
@@ -1376,7 +1538,7 @@ export function InventoryClient({
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || Boolean(duplicate)}
                   className="flex-1 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {saving ? (
@@ -1399,7 +1561,11 @@ export function InventoryClient({
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Delete Product"
-        message="This action cannot be undone. The product will be permanently removed from inventory."
+        message={
+          deleteTargetProduct && deleteTargetProduct.quantity > 0
+            ? "This product still has stock and cannot be deleted."
+            : "This action cannot be undone. The product will be permanently removed from inventory."
+        }
         confirmLabel={deleting ? "Deleting..." : "Delete"}
         variant="danger"
       />

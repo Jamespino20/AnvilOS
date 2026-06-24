@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import { getFinancialDashboard, getCashFlowTrend, getTopProductsByRevenue } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExportDialog } from "@/components/export-dialog";
-import { TrendingUp, TrendingDown, DollarSign, Receipt, ArrowUpRight, ArrowDownRight, Calendar,   ShoppingCart, RotateCcw, Undo2, Ban, Wallet, BarChart3, PieChart, LineChart, Download, ChevronLeft, ChevronRight, AlertTriangle, Package } from "lucide-react";
+import { TrendingUp, DollarSign, Receipt, ArrowUpRight, ArrowDownRight, ShoppingCart, RotateCcw, Undo2, Ban, BarChart3, PieChart, LineChart, ChevronLeft, ChevronRight, AlertTriangle, Package } from "lucide-react";
 import { CardSkeleton } from "@/components/ui/skeleton";
+import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Brush, ReferenceLine } from "recharts";
 
 const PERIODS = [
   { label: "Last Year", value: "lastYear" },
@@ -24,6 +25,10 @@ function formatDate(d: Date): string {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function formatMoney(value: number) {
+  return value.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function periodDates(period: string, customStart?: string, customEnd?: string) {
@@ -127,10 +132,15 @@ export default function FinancePage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const maxFlow = Math.max(...cashFlow.map((d) => Math.max(d.revenue, d.expenses, Math.abs(d.net))), 1);
 
   const topTotalPages = Math.ceil(topProducts.length / topPerPage);
   const topPaginated = topProducts.slice((topPage - 1) * topPerPage, topPage * topPerPage);
+  const cashFlowTimeline = cashFlow.map((d) => ({
+    label: d.date,
+    revenue: d.revenue,
+    expenses: d.expenses,
+    net: d.net,
+  }));
 
   function handlePeriodClick(value: string) {
     if (value === "custom") {
@@ -184,38 +194,65 @@ export default function FinancePage() {
           <ExportDialog
             filename={`cwl-hardware-finance${period !== "thisMonth" ? `-${period === "custom" ? `${customStart}_${customEnd}` : period}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={[
-              { key: "metric", label: "Metric" },
-              { key: "value", label: "Value" },
+              { key: "section", label: "Section" },
+              { key: "label", label: "Label" },
+              { key: "amount", label: "Amount" },
+              { key: "revenue", label: "Revenue" },
+              { key: "expenses", label: "Expenses" },
+              { key: "net", label: "Net" },
             ]}
             fetchRows={async (selectedColumns) => {
               if (!fin) return [];
               const rows: string[][] = [
-                ["Period", fin.period?.label || ""],
-                ["Gross Sales", `${fin.grossSales.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                ["Returns", `${fin.returnsTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                ["Gross Revenue", `${fin.grossRevenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                ["Restocks Cost", `${fin.restocksTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                ["Damages Loss", `${fin.damagesTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                ["Net Revenue", `${fin.netRevenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                ["Sales Transactions", String(fin.salesCount)],
-                ["Returns", String(fin.returnCount)],
-                ["Restocks", String(fin.restockCount)],
-                ["Damages", String(fin.damageCount)],
-                ["Adjustments", String(fin.adjustmentCount)],
-                ["Cancelled", String(fin.cancelledCount)],
+                ["Summary", "Period", fin.period?.label || "", "", "", ""],
+                ["Summary", "Gross Sales", formatMoney(fin.grossSales), "", "", ""],
+                ["Summary", "Returns", formatMoney(fin.returnsTotal), "", "", ""],
+                ["Summary", "Gross Revenue", formatMoney(fin.grossRevenue), "", "", ""],
+                ["Summary", "Restocks Cost", formatMoney(fin.restocksTotal), "", "", ""],
+                ["Summary", "Damages Loss", formatMoney(fin.damagesTotal), "", "", ""],
+                ["Summary", "Net Revenue", formatMoney(fin.netRevenue), "", "", ""],
+                ["Summary", "Sales Transactions", String(fin.salesCount), "", "", ""],
+                ["Summary", "Returns Count", String(fin.returnCount), "", "", ""],
+                ["Summary", "Restocks Count", String(fin.restockCount), "", "", ""],
+                ["Summary", "Damages Count", String(fin.damageCount), "", "", ""],
+                ["Summary", "Adjustments Count", String(fin.adjustmentCount), "", "", ""],
+                ["Summary", "Cancelled Count", String(fin.cancelledCount), "", "", ""],
+                ["Cash Flow Timeline", "", "", "", "", ""],
               ];
               if (fin.paymentBreakdown?.length > 0) {
-                rows.push([]);
-                rows.push(["Payment Method Breakdown"]);
+                rows.push(["Payment Breakdown", "", "", "", "", ""]);
                 for (const pm of fin.paymentBreakdown) {
-                  rows.push([pm.method, `${pm.total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${pm.count} txn)`]);
+                  rows.push([
+                    "Payment Breakdown",
+                    pm.method,
+                    `${formatMoney(pm.total)} (${pm.count} txn)`,
+                    "",
+                    "",
+                    "",
+                  ]);
                 }
               }
-              return rows.map((r) => selectedColumns.map((key) => {
-                if (key === "metric") return r[0];
-                if (key === "value") return r[1] ?? "";
-                return "";
-              }));
+              for (const entry of cashFlowTimeline) {
+                rows.push([
+                  "Cash Flow Timeline",
+                  entry.label,
+                  "",
+                  formatMoney(entry.revenue),
+                  formatMoney(entry.expenses),
+                  formatMoney(entry.net),
+                ]);
+              }
+              return rows.map((row) =>
+                selectedColumns.map((key) => {
+                  if (key === "section") return row[0];
+                  if (key === "label") return row[1];
+                  if (key === "amount") return row[2] ?? "";
+                  if (key === "revenue") return row[3] ?? "";
+                  if (key === "expenses") return row[4] ?? "";
+                  if (key === "net") return row[5] ?? "";
+                  return "";
+                }),
+              );
             }}
             label="Export Report"
             title="Export financial report"
@@ -346,80 +383,75 @@ export default function FinancePage() {
           {/* Cash Flow Trend */}
           <div className="bg-white rounded-xl border border-[#e2e8f0] p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2"><LineChart className="h-4 w-4 text-[#fd761a]" /> Cash Flow ({fin.period.label})</h3>
+              <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2"><LineChart className="h-4 w-4 text-[#fd761a]" /> Cash Flow Timeline ({fin.period.label})</h3>
             </div>
-            <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[#cbd5e1] scrollbar-track-transparent">
-              {(() => {
-                const count = cashFlow.length;
-                const isHourly = count <= 24;
-
-                // Min width per bar column — bars flex-grow to fill, but never shrink below this
-                const minBarW = 28;
-
-                const yearSet = new Set<number>();
-                cashFlow.forEach((d: any) => {
-                  const parts = d.date.split(/[\s,]+/);
-                  parts.forEach((p: string) => {
-                    const n = parseInt(p);
-                    if (!isNaN(n) && n >= 1000 && n <= 9999) yearSet.add(n);
-                  });
-                });
-                const years = Array.from(yearSet).sort();
-                const isMultiYear = years.length > 1;
-
-                return (
-                  <div className="relative pt-6">
-                    <div className="h-64 flex items-end border-b border-[#e2e8f0]" style={{ minWidth: `${count * minBarW}px` }}>
-                      {cashFlow.map((d, i) => {
-                        const revH = maxFlow > 0 ? (d.revenue / maxFlow) * 200 : 0;
-                        const expH = maxFlow > 0 ? (d.expenses / maxFlow) * 200 : 0;
-                        const netH = maxFlow > 0 ? (Math.abs(d.net) / maxFlow) * 200 : 0;
-
-                        let label = d.date;
-                        if (isHourly && /^\d{2}:00$/.test(d.date)) {
-                          const h = parseInt(d.date.split(":")[0]);
-                          label = h === 0 ? "12 AM" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`;
-                        }
-
-                        // Smart label density: target ~12-15 visible labels max
-                        const maxLabels = 15;
-                        const labelInterval = count <= maxLabels ? 1 : Math.ceil(count / maxLabels);
-                        const showLabel = i % labelInterval === 0 || i === count - 1;
-
-                        return (
-                          <div key={i} className="flex flex-col items-center justify-end h-full group relative" style={{ flex: "1 0 0", minWidth: `${minBarW}px` }}>
-                            <div className="w-full flex flex-col items-center gap-[2px] justify-end pb-1 px-[2px]" style={{ height: "200px" }}>
-                              <div className="bg-emerald-400/40 rounded-t-[1px] transition-all group-hover:bg-emerald-400/60 w-full max-w-[40px]" style={{ height: `${revH}px` }} title={`${d.date}: Revenue ${d.revenue.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                              <div className="bg-rose-400/40 rounded-t-[1px] transition-all group-hover:bg-rose-400/60 w-full max-w-[40px]" style={{ height: `${expH}px` }} title={`${d.date}: Expenses ${d.expenses.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                              <div className={`${d.net >= 0 ? "bg-emerald-500/60" : "bg-rose-500/60"} rounded-t-[1px] transition-all group-hover:opacity-80 w-full max-w-[40px]`} style={{ height: `${netH}px` }} title={`${d.date}: Net ${d.net.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-                            </div>
-                            <div className="h-6 flex flex-col items-center justify-start overflow-hidden w-full">
-                              {showLabel && (
-                                <span className="text-[9px] text-[#64748b] font-medium whitespace-nowrap mt-1 text-center">
-                                  {label}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {isMultiYear && years.map((year) => {
-                      const firstIdx = cashFlow.findIndex((d) => d.date.includes(String(year)));
-                      if (firstIdx === -1) return null;
-                      const pct = (firstIdx / count) * 100;
-                      return (
-                        <div key={year} className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none" style={{ left: `${pct}%` }}>
-                          <span className="text-[10px] font-bold text-[#0e212c] px-1.5 py-0.5 rounded bg-white shadow-sm border border-[#e2e8f0]">{year}</span>
-                          <div className="w-[1px] bg-[#94a3b8]/50 flex-1" />
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
+            <div className="mt-2">
+              {cashFlowTimeline.length > 0 ? (
+                <div className="h-[360px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={cashFlowTimeline} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                      <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fill: "#64748b", fontSize: 10 }}
+                        tickLine={false}
+                        axisLine={{ stroke: "#e2e8f0" }}
+                        minTickGap={18}
+                      />
+                      <YAxis
+                        tick={{ fill: "#64748b", fontSize: 10 }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(value) => formatMoney(Number(value))}
+                      />
+                      <Tooltip
+                        formatter={(value: any, name: any): [string, string] => [formatMoney(Number(value ?? 0)), String(name ?? "")]}
+                        labelStyle={{ color: "#0e212c", fontWeight: 700 }}
+                        contentStyle={{
+                          borderRadius: 10,
+                          borderColor: "#e2e8f0",
+                          boxShadow: "0 10px 30px rgba(15, 23, 42, 0.08)",
+                        }}
+                      />
+                      <ReferenceLine y={0} stroke="#cbd5e1" strokeDasharray="4 4" />
+                      <Area
+                        type="monotone"
+                        dataKey="revenue"
+                        name="Revenue"
+                        stroke="#10b981"
+                        fill="#10b981"
+                        fillOpacity={0.12}
+                        strokeWidth={2}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="expenses"
+                        name="Expenses"
+                        stroke="#ef4444"
+                        fill="#ef4444"
+                        fillOpacity={0.1}
+                        strokeWidth={2}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="net"
+                        name="Net"
+                        stroke="#fd761a"
+                        strokeWidth={2.5}
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 5 }}
+                      />
+                      {cashFlowTimeline.length > 12 && (
+                        <Brush dataKey="label" height={24} travellerWidth={8} stroke="#fd761a" />
+                      )}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="text-sm text-[#94a3b8] text-center py-12">No cash flow data for this period</p>
+              )}
             </div>
-            <div className="flex items-center justify-center gap-6 mt-6 pt-4 border-t border-[#f1f5f9] text-[10px] font-semibold text-[#64748b] uppercase tracking-wider">
+            <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-[#f1f5f9] text-[10px] font-semibold text-[#64748b] uppercase tracking-wider">
               <span className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-emerald-50 transition-colors"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400/50 shadow-sm" /> Revenue</span>
               <span className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-rose-50 transition-colors"><span className="w-2.5 h-2.5 rounded-full bg-rose-400/50 shadow-sm" /> Expenses</span>
               <span className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-emerald-50 transition-colors"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500/70 shadow-sm" /> Net Profit</span>
