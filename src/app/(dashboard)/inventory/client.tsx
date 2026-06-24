@@ -928,55 +928,55 @@ export function InventoryClient({
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Category
                   </label>
-                  <input
-                    value={form.categoryName}
-                    list="product-category-options"
-                    placeholder="Type or select category"
-                    onChange={(e) => {
-                      setFormError("");
-                      const category = exactCategory(e.target.value);
+                  <select
+                    value={form.categoryId}
+                    onChange={(e) =>
                       setForm({
                         ...form,
-                        categoryName: e.target.value,
-                        categoryId: category ? String(category.id) : "",
-                      });
-                    }}
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
-                  />
-                  <datalist id="product-category-options">
+                        categoryId: e.target.value,
+                        categoryName:
+                          categories.find((c) => c.id === Number(e.target.value))
+                            ?.name || "",
+                      })
+                    }
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                  >
+                    <option value="">Select category</option>
                     {categories
                       .filter((c) => c.isAvailable)
                       .map((c) => (
-                        <option key={c.id} value={c.name} />
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
                       ))}
-                  </datalist>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Brand
                   </label>
-                  <input
-                    value={form.brandName}
-                    list="product-brand-options"
-                    placeholder="Type or select brand"
-                    onChange={(e) => {
-                      setFormError("");
-                      const brand = exactBrand(e.target.value);
+                  <select
+                    value={form.brandId}
+                    onChange={(e) =>
                       setForm({
                         ...form,
-                        brandName: e.target.value,
-                        brandId: brand ? String(brand.id) : "",
-                      });
-                    }}
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
-                  />
-                  <datalist id="product-brand-options">
+                        brandId: e.target.value,
+                        brandName:
+                          brands.find((b) => b.id === Number(e.target.value))
+                            ?.name || "",
+                      })
+                    }
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                  >
+                    <option value="">Select brand</option>
                     {brands
                       .filter((b) => b.isAvailable)
                       .map((b) => (
-                        <option key={b.id} value={b.name} />
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                        </option>
                       ))}
-                  </datalist>
+                  </select>
                 </div>
               </div>
               {(duplicate || formError) && (
@@ -1266,55 +1266,55 @@ export function InventoryClient({
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Category
                   </label>
-                  <input
-                    value={form.categoryName}
-                    list="product-edit-category-options"
-                    placeholder="Type or select category"
-                    onChange={(e) => {
-                      setFormError("");
-                      const category = exactCategory(e.target.value);
+                  <select
+                    value={form.categoryId}
+                    onChange={(e) =>
                       setForm({
                         ...form,
-                        categoryName: e.target.value,
-                        categoryId: category ? String(category.id) : "",
-                      });
-                    }}
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
-                  />
-                  <datalist id="product-edit-category-options">
+                        categoryId: e.target.value,
+                        categoryName:
+                          categories.find((c) => c.id === Number(e.target.value))
+                            ?.name || "",
+                      })
+                    }
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                  >
+                    <option value="">Select category</option>
                     {categories
                       .filter((c) => c.isAvailable)
                       .map((c) => (
-                        <option key={c.id} value={c.name} />
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
                       ))}
-                  </datalist>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
                     Brand
                   </label>
-                  <input
-                    value={form.brandName}
-                    list="product-edit-brand-options"
-                    placeholder="Type or select brand"
-                    onChange={(e) => {
-                      setFormError("");
-                      const brand = exactBrand(e.target.value);
+                  <select
+                    value={form.brandId}
+                    onChange={(e) =>
                       setForm({
                         ...form,
-                        brandName: e.target.value,
-                        brandId: brand ? String(brand.id) : "",
-                      });
-                    }}
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
-                  />
-                  <datalist id="product-edit-brand-options">
+                        brandId: e.target.value,
+                        brandName:
+                          brands.find((b) => b.id === Number(e.target.value))
+                            ?.name || "",
+                      })
+                    }
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+                  >
+                    <option value="">Select brand</option>
                     {brands
                       .filter((b) => b.isAvailable)
                       .map((b) => (
-                        <option key={b.id} value={b.name} />
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                        </option>
                       ))}
-                  </datalist>
+                  </select>
                 </div>
               </div>
               {(duplicate || formError) && (
