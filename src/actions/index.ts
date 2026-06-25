@@ -787,10 +787,7 @@ function buildTransactionWhere(opts?: {
     };
   }
   if (opts?.search) {
-    const or: any[] = [
-      { buyerName: { contains: opts.search } },
-      { invoiceNumber: { contains: opts.search } },
-    ];
+    const or: any[] = [{ buyerName: { contains: opts.search } }];
     const num = parseInt(opts.search);
     if (!isNaN(num)) or.push({ receiptNumber: num });
     where.OR = or;
