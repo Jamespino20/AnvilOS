@@ -136,6 +136,9 @@ export default function TransactionsPage() {
       setTotal(count);
       setLoading(false);
       setInitialLoad(false);
+    }).catch(() => {
+      setLoading(false);
+      setInitialLoad(false);
     });
   }, [
     statusFilter,

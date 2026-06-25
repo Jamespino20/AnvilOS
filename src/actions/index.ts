@@ -24,14 +24,14 @@ const DB_TIMEOUT = 20000;
 
 // ─────────── Products ───────────
 
-export const getProducts = cache(
-  async (opts?: {
-    categoryId?: number;
-    supplierId?: number;
-    brandId?: number;
-    search?: string;
-    status?: string;
-  }) => {
+export async function getProducts(opts?: {
+  categoryId?: number;
+  supplierId?: number;
+  brandId?: number;
+  search?: string;
+  status?: string;
+}) {
+  try {
     const where: any = {};
     if (opts?.categoryId) where.categoryId = opts.categoryId;
     if (opts?.supplierId) where.supplierId = opts.supplierId;
@@ -53,8 +53,10 @@ export const getProducts = cache(
       DB_TIMEOUT,
       "Loading products",
     );
-  },
-);
+  } catch {
+    return [] as any[];
+  }
+}
 
 export async function getProduct(id: number) {
   return prisma.product.findUnique({
@@ -809,23 +811,27 @@ export async function getTransactions(opts?: {
   sortBy?: string;
   sortDir?: "asc" | "desc";
 }) {
-  const where = buildTransactionWhere(opts);
-  const take = opts?.perPage || 100;
-  const skip = ((opts?.page || 1) - 1) * take;
+  try {
+    const where = buildTransactionWhere(opts);
+    const take = opts?.perPage || 100;
+    const skip = ((opts?.page || 1) - 1) * take;
 
-  return withTimeout(
-    prisma.transaction.findMany({
-      where,
-      orderBy: opts?.sortBy
-        ? { [opts.sortBy]: opts.sortDir || "desc" }
-        : { transactionDate: "desc" },
-      include: { items: true, seller: { select: { sellerName: true } } },
-      skip,
-      take,
-    }),
-    DB_TIMEOUT,
-    "Loading transactions",
-  );
+    return withTimeout(
+      prisma.transaction.findMany({
+        where,
+        orderBy: opts?.sortBy
+          ? { [opts.sortBy]: opts.sortDir || "desc" }
+          : { transactionDate: "desc" },
+        include: { items: true, seller: { select: { sellerName: true } } },
+        skip,
+        take,
+      }),
+      DB_TIMEOUT,
+      "Loading transactions",
+    );
+  } catch {
+    return [] as any[];
+  }
 }
 
 export async function getTransactionsCount(opts?: {
@@ -836,8 +842,12 @@ export async function getTransactionsCount(opts?: {
   search?: string;
   paymentMethod?: string;
 }) {
-  const where = buildTransactionWhere(opts);
-  return prisma.transaction.count({ where });
+  try {
+    const where = buildTransactionWhere(opts);
+    return prisma.transaction.count({ where });
+  } catch {
+    return 0;
+  }
 }
 
 export async function getTransaction(id: number) {
