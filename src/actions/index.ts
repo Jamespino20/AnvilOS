@@ -8,6 +8,7 @@ Last Update Date: June 13, 2026
 
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { prisma, invalidateUserCache } from "@/lib/prisma";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { logAudit } from "@/lib/audit";
@@ -795,6 +796,98 @@ function buildTransactionWhere(opts?: {
   return where;
 }
 
+function buildTransactionSqlWhere(opts?: {
+  status?: string;
+  statusIn?: string[];
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  paymentMethod?: string;
+}) {
+  const clauses: Prisma.Sql[] = [];
+
+  if (opts?.status) {
+    clauses.push(Prisma.sql`TRANSACTION_STATUS = ${opts.status}`);
+  }
+  if (opts?.statusIn?.length) {
+    clauses.push(
+      Prisma.sql`TRANSACTION_STATUS IN (${Prisma.join(opts.statusIn)})`,
+    );
+  }
+  if (opts?.type) {
+    clauses.push(Prisma.sql`TRANSACTION_TYPE = ${opts.type}`);
+  }
+  if (opts?.paymentMethod) {
+    clauses.push(Prisma.sql`PAYMENT_METHOD = ${opts.paymentMethod}`);
+  }
+  if (opts?.startDate) {
+    clauses.push(Prisma.sql`TRANSACTION_DATE >= ${new Date(opts.startDate)}`);
+  }
+  if (opts?.endDate) {
+    clauses.push(
+      Prisma.sql`TRANSACTION_DATE <= ${new Date(opts.endDate + "T23:59:59")}`,
+    );
+  }
+  if (opts?.search) {
+    const receipt = Number.parseInt(opts.search, 10);
+    const buyerMatch = Prisma.sql`
+      BUYER_NAME COLLATE utf8mb4_unicode_ci LIKE
+      CONCAT('%', CAST(${opts.search} AS CHAR CHARACTER SET utf8mb4), '%')
+      COLLATE utf8mb4_unicode_ci
+    `;
+    clauses.push(
+      Number.isNaN(receipt)
+        ? buyerMatch
+        : Prisma.sql`(${buyerMatch} OR RECEIPT_NUMBER = ${receipt})`,
+    );
+  }
+
+  return clauses;
+}
+
+function buildTransactionSqlWhereClause(opts?: {
+  status?: string;
+  statusIn?: string[];
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  paymentMethod?: string;
+}) {
+  const clauses = buildTransactionSqlWhere(opts);
+  return clauses.length
+    ? Prisma.sql`WHERE ${Prisma.join(clauses, " AND ")}`
+    : Prisma.empty;
+}
+
+function transactionSortColumn(sortBy?: string) {
+  switch (sortBy) {
+    case "receiptNumber":
+      return Prisma.sql`TRANSACTION_ID`;
+    case "invoiceNumber":
+      return Prisma.sql`INVOICE_NUMBER`;
+    case "buyerName":
+      return Prisma.sql`BUYER_NAME`;
+    case "transactionType":
+      return Prisma.sql`TRANSACTION_TYPE`;
+    case "transactionDate":
+      return Prisma.sql`TRANSACTION_DATE`;
+    case "paymentMethod":
+      return Prisma.sql`PAYMENT_METHOD`;
+    case "grandTotal":
+      return Prisma.sql`GRAND_TOTAL`;
+    case "transactionStatus":
+      return Prisma.sql`TRANSACTION_STATUS`;
+    case "sellerName":
+      return Prisma.sql`SELLER_NAME`;
+    case "isCredit":
+      return Prisma.sql`IS_CREDIT`;
+    default:
+      return Prisma.sql`TRANSACTION_DATE`;
+  }
+}
+
 export async function getTransactions(opts?: {
   status?: string;
   statusIn?: string[];
@@ -809,6 +902,31 @@ export async function getTransactions(opts?: {
   sortDir?: "asc" | "desc";
 }) {
   try {
+    if (opts?.search) {
+      const take = opts?.perPage || 100;
+      const skip = ((opts?.page || 1) - 1) * take;
+      const where = buildTransactionSqlWhereClause(opts);
+      const orderColumn = transactionSortColumn(opts?.sortBy);
+      const orderDirection = opts?.sortDir === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+      const [rows] = await Promise.all([
+        prisma.$queryRaw<{ id: number }[]>(Prisma.sql`
+          SELECT TRANSACTION_ID AS id
+          FROM transactions
+          ${where}
+          ORDER BY ${orderColumn} ${orderDirection}, TRANSACTION_ID DESC
+          LIMIT ${take} OFFSET ${skip}
+        `),
+      ]);
+      const ids = rows.map((row) => row.id);
+      if (ids.length === 0) return [] as any[];
+      const transactions = await prisma.transaction.findMany({
+        where: { id: { in: ids } },
+        include: { items: true, seller: { select: { sellerName: true } } },
+      });
+      const byId = new Map(transactions.map((txn) => [txn.id, txn]));
+      return ids.map((id) => byId.get(id)).filter(Boolean) as any[];
+    }
+
     const where = buildTransactionWhere(opts);
     const take = opts?.perPage || 100;
     const skip = ((opts?.page || 1) - 1) * take;
@@ -840,6 +958,16 @@ export async function getTransactionsCount(opts?: {
   paymentMethod?: string;
 }) {
   try {
+    if (opts?.search) {
+      const where = buildTransactionSqlWhereClause(opts);
+      const rows = await prisma.$queryRaw<{ count: bigint }[]>(Prisma.sql`
+        SELECT COUNT(*) AS count
+        FROM transactions
+        ${where}
+      `);
+      return Number(rows[0]?.count || 0);
+    }
+
     const where = buildTransactionWhere(opts);
     return prisma.transaction.count({ where });
   } catch {
