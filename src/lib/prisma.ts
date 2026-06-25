@@ -14,7 +14,11 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
-  const adapter = new PrismaMariaDb(process.env.DATABASE_URL!);
+  const raw = process.env.DATABASE_URL!;
+  const url = new URL(raw);
+  url.searchParams.set("charset", "utf8mb4");
+  url.searchParams.set("collation", "utf8mb4_unicode_ci");
+  const adapter = new PrismaMariaDb(url.toString());
   return new PrismaClient({
     adapter,
     log:
