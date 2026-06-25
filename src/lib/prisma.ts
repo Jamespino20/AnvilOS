@@ -16,9 +16,18 @@ const globalForPrisma = globalThis as unknown as {
 function createPrismaClient(): PrismaClient {
   const raw = process.env.DATABASE_URL!;
   const url = new URL(raw);
-  url.searchParams.set("charset", "utf8mb4");
-  url.searchParams.set("collation", "utf8mb4_unicode_ci");
-  const adapter = new PrismaMariaDb(url.toString());
+  const adapter = new PrismaMariaDb({
+    host: url.hostname,
+    port: url.port ? Number(url.port) : 3306,
+    user: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
+    database: url.pathname.replace(/^\//, ""),
+    connectionLimit: Number(url.searchParams.get("connectionLimit") || 3),
+    idleTimeout: Number(url.searchParams.get("idleTimeout") || 120000),
+    acquireTimeout: Number(url.searchParams.get("acquireTimeout") || 10000),
+    charset: "utf8mb4",
+    collation: "utf8mb4_unicode_ci",
+  });
   return new PrismaClient({
     adapter,
     log:
