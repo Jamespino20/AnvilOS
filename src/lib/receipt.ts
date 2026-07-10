@@ -18,7 +18,9 @@ const TXN_LABELS: Record<string, string> = {
   Damage: "Damage",
 };
 
-export async function downloadReceipt(data: Parameters<typeof downloadReceiptPdf>[0]) {
+export async function downloadReceipt(
+  data: Parameters<typeof downloadReceiptPdf>[0],
+) {
   await downloadReceiptPdf(data);
 }
 
@@ -40,7 +42,7 @@ export async function downloadReceiptPdf(data: {
   transactionType: string;
   invoiceNumber?: string;
   salesInvoiceNumber?: string;
-  deliveryInvoiceNumber?: string;
+  deliveryReceiptNumber?: string;
   tin?: string;
   isCredit?: boolean;
   creditDueDate?: Date;
@@ -75,7 +77,9 @@ export async function downloadReceiptPdf(data: {
     });
     const img = new Image();
     img.src = b64;
-    await new Promise((resolve) => { img.onload = resolve; });
+    await new Promise((resolve) => {
+      img.onload = resolve;
+    });
     const aspect = img.naturalWidth / img.naturalHeight;
     const maxLogoW = 32;
     const maxLogoH = 14;
@@ -97,7 +101,9 @@ export async function downloadReceiptPdf(data: {
     const jpegPure = jpegB64.includes(",") ? jpegB64.split(",")[1] : jpegB64;
     doc.addImage(jpegPure, "JPEG", cx - logoW / 2, y, logoW, logoH);
     y += logoH + 3;
-  } catch { console.warn("Logo not available, skipping in receipt"); }
+  } catch {
+    console.warn("Logo not available, skipping in receipt");
+  }
 
   doc.setTextColor(14, 33, 44);
   doc.setFont("courier", "bold");
@@ -129,19 +135,27 @@ export async function downloadReceiptPdf(data: {
     doc.setFont("courier", "bold");
     doc.setFontSize(7);
     doc.setTextColor(14, 33, 44);
-    doc.text(`SALES INV #${data.salesInvoiceNumber}`, cx, y, { align: "center" });
+    doc.text(`SALES INV #${data.salesInvoiceNumber}`, cx, y, {
+      align: "center",
+    });
     y += 4;
     doc.setFont("courier", "normal");
   }
-  if (data.deliveryInvoiceNumber) {
+  if (data.deliveryReceiptNumber) {
     doc.setFont("courier", "bold");
     doc.setFontSize(7);
     doc.setTextColor(14, 33, 44);
-    doc.text(`DELIVERY INV #${data.deliveryInvoiceNumber}`, cx, y, { align: "center" });
+    doc.text(`DELIVERY RECEIPT #${data.deliveryReceiptNumber}`, cx, y, {
+      align: "center",
+    });
     y += 4;
     doc.setFont("courier", "normal");
   }
-  if (data.invoiceNumber && !data.salesInvoiceNumber && !data.deliveryInvoiceNumber) {
+  if (
+    data.invoiceNumber &&
+    !data.salesInvoiceNumber &&
+    !data.deliveryReceiptNumber
+  ) {
     doc.setFont("courier", "bold");
     doc.setFontSize(7);
     doc.setTextColor(14, 33, 44);
@@ -203,7 +217,11 @@ export async function downloadReceiptPdf(data: {
   doc.setFont("courier", "normal");
   doc.setFontSize(7);
   doc.setTextColor(100, 116, 139);
-  doc.text(`Type: ${TXN_LABELS[data.transactionType] || data.transactionType}`, l, y);
+  doc.text(
+    `Type: ${TXN_LABELS[data.transactionType] || data.transactionType}`,
+    l,
+    y,
+  );
   y += 4;
   if (data.paymentMethod) {
     doc.text(`Payment: ${data.paymentMethod}`, l, y);
@@ -229,7 +247,7 @@ export async function downloadReceiptPdf(data: {
     doc.setFont("courier", "normal");
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
-    
+
     if (data.chequeDetails.chequeNumber) {
       doc.text(`Cheque #: ${data.chequeDetails.chequeNumber}`, l, y);
       y += 4;
@@ -284,7 +302,10 @@ export async function downloadReceiptPdf(data: {
   doc.setTextColor(14, 33, 44);
   for (let i = 0; i < data.items.length; i++) {
     const item = data.items[i];
-    const name = item.productName.length > 22 ? item.productName.substring(0, 21) + "\u2026" : item.productName;
+    const name =
+      item.productName.length > 22
+        ? item.productName.substring(0, 21) + "\u2026"
+        : item.productName;
     const bg = i % 2 === 1 ? 248 : 255;
     doc.setFillColor(bg, bg, bg);
     doc.rect(l, y - 2, r - l, 4, "F");
@@ -329,9 +350,13 @@ export async function downloadReceiptPdf(data: {
     doc.setTextColor(100, 116, 139);
   }
   doc.setTextColor(100, 116, 139);
-  doc.text(`${COMPANY}  |  Receipt #${data.receiptNumber}`, cx, y, { align: "center" });
+  doc.text(`${COMPANY}  |  Receipt #${data.receiptNumber}`, cx, y, {
+    align: "center",
+  });
   y += 3.5;
-  doc.text(`(c) ${new Date().getFullYear()} ${COMPANY}`, cx, y, { align: "center" });
+  doc.text(`(c) ${new Date().getFullYear()} ${COMPANY}`, cx, y, {
+    align: "center",
+  });
 
   // Force last page height
   const finalHeight = y + 10;
@@ -341,5 +366,3 @@ export async function downloadReceiptPdf(data: {
 
   doc.save(`receipt-${data.receiptNumber}.pdf`);
 }
-
-

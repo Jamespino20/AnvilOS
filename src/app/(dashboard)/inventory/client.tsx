@@ -335,11 +335,29 @@ export function InventoryClient({
     setShowEdit(product.id);
   }
 
+  const [pendingQtyConfirm, setPendingQtyConfirm] = useState<{
+    productId: number;
+    name: string;
+    oldQty: number;
+    newQty: number;
+  } | null>(null);
+
   async function handleEditProduct(e: React.FormEvent) {
     e.preventDefault();
     if (!form.productName || showEdit === null) return;
     if (duplicate) {
       setFormError("A product with this name already exists in the selected category and brand.");
+      return;
+    }
+    const orig = initialProducts.find((p) => p.id === showEdit);
+    const newQty = Number(form.quantity) || 0;
+    if (orig && newQty !== orig.quantity) {
+      setPendingQtyConfirm({
+        productId: showEdit,
+        name: orig.productName,
+        oldQty: orig.quantity,
+        newQty,
+      });
       return;
     }
     setFormError("");
@@ -366,6 +384,47 @@ export function InventoryClient({
           ? Number(form.boxQuantity) || undefined
           : undefined,
       });
+      setPendingQtyConfirm(null);
+      setShowEdit(null);
+      setForm(defaultForm);
+      router.refresh();
+      toast.success("Product updated successfully");
+    } catch (e: any) {
+      console.error("Failed to update product", e);
+      const message = e?.message || "Failed to update product";
+      setFormError(message);
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function confirmEditQuantity() {
+    if (!pendingQtyConfirm) return;
+    setSaving(true);
+    try {
+      await updateProduct(pendingQtyConfirm.productId, {
+        productName: form.productName,
+        category: form.categoryName.trim() || "Uncategorized",
+        categoryName: form.categoryName,
+        categoryId: form.categoryId === "" ? null : Number(form.categoryId) || null,
+        supplierName: form.supplierName || "Unknown",
+        supplierId: form.supplierId === "" ? null : Number(form.supplierId) || null,
+        brandId: form.brandId === "" ? null : Number(form.brandId) || null,
+        brandName: form.brandName,
+        unitPrice: form.costPrice === "" ? undefined : Number(form.costPrice),
+        sellingPrice: form.sellingPrice === "" ? undefined : Number(form.sellingPrice),
+        quantity: pendingQtyConfirm.newQty,
+        minThreshold: form.minThreshold === "" ? 5 : Number(form.minThreshold),
+        imageUrl: form.imageUrl || undefined,
+        isFastMoving: form.isFastMoving,
+        sellByWeight: form.sellByWeight,
+        sellByBox: form.sellByBox,
+        boxQuantity: form.sellByBox
+          ? Number(form.boxQuantity) || undefined
+          : undefined,
+      });
+      setPendingQtyConfirm(null);
       setShowEdit(null);
       setForm(defaultForm);
       router.refresh();
@@ -1479,6 +1538,21 @@ export function InventoryClient({
           </div>
         </div>
       )}
+
+      {/* Stock Change Confirm Modal */}
+      <ConfirmModal
+        open={pendingQtyConfirm !== null}
+        onClose={() => setPendingQtyConfirm(null)}
+        onConfirm={confirmEditQuantity}
+        title="Confirm Stock Change"
+        message={
+          pendingQtyConfirm
+            ? `Changing stock of "${pendingQtyConfirm.name}" from ${pendingQtyConfirm.oldQty} to ${pendingQtyConfirm.newQty}. This is a direct stock override that bypasses normal transaction flow.`
+            : ""
+        }
+        confirmLabel={saving ? "Saving..." : "Confirm Change"}
+        variant="warning"
+      />
 
       {/* Delete Confirm Modal */}
       <ConfirmModal

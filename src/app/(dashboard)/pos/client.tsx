@@ -107,7 +107,7 @@ export function POSClient({
   const [loadingReturn, setLoadingReturn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [salesInvoiceNumber, setSalesInvoiceNumber] = useState("");
-  const [deliveryInvoiceNumber, setDeliveryInvoiceNumber] = useState("");
+  const [deliveryReceiptNumber, setdeliveryReceiptNumber] = useState("");
   const [tin, setTin] = useState("");
   const [creditDueDate, setCreditDueDate] = useState("");
   const [chequeNumber, setChequeNumber] = useState("");
@@ -120,7 +120,7 @@ export function POSClient({
     buyerName: string;
     grandTotal: number;
     salesInvoiceNumber?: string;
-    deliveryInvoiceNumber?: string;
+    deliveryReceiptNumber?: string;
     tin?: string;
     invoiceNumber?: string;
     isCredit?: boolean;
@@ -212,7 +212,8 @@ export function POSClient({
     setCart((prev) =>
       prev
         .map((c) => {
-          const effectiveQty = c.product.quantity - (pendingPOQty[c.product.id] || 0);
+          const effectiveQty =
+            c.product.quantity - (pendingPOQty[c.product.id] || 0);
           const maxQty =
             txnType === "Return"
               ? c.originalQty || c.product.quantity
@@ -236,7 +237,8 @@ export function POSClient({
     setCart((prev) =>
       prev.map((c) => {
         if (c.product.id !== productId) return c;
-        const effectiveQty = c.product.quantity - (pendingPOQty[c.product.id] || 0);
+        const effectiveQty =
+          c.product.quantity - (pendingPOQty[c.product.id] || 0);
         const maxQty =
           txnType === "Return"
             ? c.originalQty || c.product.quantity
@@ -285,9 +287,9 @@ export function POSClient({
         buyerAddress: buyerAddress || undefined,
         buyerContact: buyerContact || undefined,
         buyerEmail: buyerEmail || undefined,
-        invoiceNumber: salesInvoiceNumber || deliveryInvoiceNumber || undefined,
+        invoiceNumber: salesInvoiceNumber || deliveryReceiptNumber || undefined,
         salesInvoiceNumber: salesInvoiceNumber || undefined,
-        deliveryInvoiceNumber: deliveryInvoiceNumber || undefined,
+        deliveryReceiptNumber: deliveryReceiptNumber || undefined,
         tin: tin || undefined,
         isCredit: paymentMethod === "Credit",
         creditDueDate:
@@ -345,9 +347,9 @@ export function POSClient({
         buyerAddress: buyerAddress || undefined,
         buyerContact: buyerContact || undefined,
         salesInvoiceNumber: salesInvoiceNumber || undefined,
-        deliveryInvoiceNumber: deliveryInvoiceNumber || undefined,
+        deliveryReceiptNumber: deliveryReceiptNumber || undefined,
         tin: tin || undefined,
-        invoiceNumber: salesInvoiceNumber || deliveryInvoiceNumber || undefined,
+        invoiceNumber: salesInvoiceNumber || deliveryReceiptNumber || undefined,
         isCredit,
         creditDueDate:
           isCredit && creditDueDate ? new Date(creditDueDate) : undefined,
@@ -380,9 +382,9 @@ export function POSClient({
         grandTotal: doneGrandTotal,
         items: doneItems,
         salesInvoiceNumber: salesInvoiceNumber || undefined,
-        deliveryInvoiceNumber: deliveryInvoiceNumber || undefined,
+        deliveryReceiptNumber: deliveryReceiptNumber || undefined,
         tin: tin || undefined,
-        invoiceNumber: salesInvoiceNumber || deliveryInvoiceNumber || undefined,
+        invoiceNumber: salesInvoiceNumber || deliveryReceiptNumber || undefined,
         isCredit,
         creditDueDate:
           isCredit && creditDueDate ? new Date(creditDueDate) : undefined,
@@ -403,7 +405,7 @@ export function POSClient({
       setBuyerEmail("");
       setReturnReceipt("");
       setSalesInvoiceNumber("");
-      setDeliveryInvoiceNumber("");
+      setdeliveryReceiptNumber("");
       setTin("");
       setCreditDueDate("");
       setChequeNumber("");
@@ -433,7 +435,12 @@ export function POSClient({
   const [shortcutHint, setShortcutHint] = useState<"ready" | "done" | "">("");
 
   useEffect(() => {
-    if (txnType !== "Return" && txnType !== "Damage" && txnType !== "Adjustment") return;
+    if (
+      txnType !== "Return" &&
+      txnType !== "Damage" &&
+      txnType !== "Adjustment"
+    )
+      return;
     if (!returnReceipt) return;
     const num = parseInt(returnReceipt, 10);
     setLoadingReturn(true);
@@ -442,12 +449,12 @@ export function POSClient({
       .then((orig) => {
         setBuyerName(orig.buyerName);
         const autoItems = orig.items
-          .map((i) => {
+          .map((i: { productId: number; quantity: any }) => {
             const prod = products.find((p) => p.id === i.productId);
             if (!prod) return null;
             return {
               product: prod,
-              quantity: txnType === "Return" ? 0 : i.quantity ?? 0,
+              quantity: txnType === "Return" ? 0 : (i.quantity ?? 0),
               originalQty: i.quantity ?? 0,
             } as CartItem;
           })
@@ -456,7 +463,9 @@ export function POSClient({
       })
       .catch((err) => {
         setCart([]);
-        toast.error(err instanceof Error ? err.message : "Failed to load receipt");
+        toast.error(
+          err instanceof Error ? err.message : "Failed to load receipt",
+        );
       })
       .finally(() => setLoadingReturn(false));
   }, [returnReceipt, txnType, products]);
@@ -622,13 +631,16 @@ export function POSClient({
                     })}
                   </p>
                   {(() => {
-                    const effectiveQty = product.quantity - (pendingPOQty[product.id] || 0);
+                    const effectiveQty =
+                      product.quantity - (pendingPOQty[product.id] || 0);
                     return (
                       <p
                         className={`text-[10px] ${effectiveQty <= product.minThreshold && effectiveQty > 0 ? "text-rose-500 font-bold" : "text-[#94a3b8]"}`}
                       >
                         {effectiveQty}
-                        {pendingPOQty[product.id] ? ` (${product.quantity})` : ""}
+                        {pendingPOQty[product.id]
+                          ? ` (${product.quantity})`
+                          : ""}
                       </p>
                     );
                   })()}
@@ -741,9 +753,9 @@ export function POSClient({
               <Receipt className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
               <input
                 type="text"
-                value={deliveryInvoiceNumber}
-                onChange={(e) => setDeliveryInvoiceNumber(e.target.value)}
-                placeholder="Delivery Invoice #"
+                value={deliveryReceiptNumber}
+                onChange={(e) => setdeliveryReceiptNumber(e.target.value)}
+                placeholder="Delivery Receipt #"
                 className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
               />
             </div>
@@ -1118,7 +1130,7 @@ export function POSClient({
                       transactionType: txnType,
                       invoiceNumber: done.invoiceNumber,
                       salesInvoiceNumber: done.salesInvoiceNumber,
-                      deliveryInvoiceNumber: done.deliveryInvoiceNumber,
+                      deliveryReceiptNumber: done.deliveryReceiptNumber,
                       tin: done.tin,
                       isCredit: done.isCredit,
                       creditDueDate: done.creditDueDate,

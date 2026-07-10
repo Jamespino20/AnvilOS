@@ -16,7 +16,11 @@ import { auth } from "@/lib/auth";
 import { withTimeout } from "@/lib/timeout";
 import { IMPORT_CONFIGS } from "@/lib/import-configs";
 import { actionFingerprint } from "@/lib/access";
-import { requireAdmin, requireSuperAdmin, requireUser } from "@/lib/server-access";
+import {
+  requireAdmin,
+  requireSuperAdmin,
+  requireUser,
+} from "@/lib/server-access";
 import { formatMoney } from "@/lib/format";
 import { createTotpSecret, verifyTotp } from "@/lib/totp";
 import { cache } from "react";
@@ -66,7 +70,9 @@ export async function getProduct(id: number) {
   });
 }
 
-export async function getPendingPOQuantities(): Promise<Record<number, number>> {
+export async function getPendingPOQuantities(): Promise<
+  Record<number, number>
+> {
   const pendingItems = await prisma.transactionItem.findMany({
     where: {
       transaction: {
@@ -95,7 +101,10 @@ function assertNonNegative(value: number | undefined, label: string) {
   }
 }
 
-async function resolveProductCategory(categoryId?: number | null, categoryName?: string) {
+async function resolveProductCategory(
+  categoryId?: number | null,
+  categoryName?: string,
+) {
   const name = categoryName?.trim().replace(/\s+/g, " ");
   if (!name) {
     return { categoryId: categoryId ?? null, category: "Uncategorized" };
@@ -117,7 +126,10 @@ async function resolveProductCategory(categoryId?: number | null, categoryName?:
   return { categoryId: created.id, category: created.name };
 }
 
-async function resolveProductBrand(brandId?: number | null, brandName?: string) {
+async function resolveProductBrand(
+  brandId?: number | null,
+  brandName?: string,
+) {
   const name = brandName?.trim().replace(/\s+/g, " ");
   if (!name) return brandId ?? null;
 
@@ -136,7 +148,10 @@ async function resolveProductBrand(brandId?: number | null, brandName?: string) 
   return created.id;
 }
 
-async function resolveProductSupplier(supplierId?: number | null, supplierName?: string) {
+async function resolveProductSupplier(
+  supplierId?: number | null,
+  supplierName?: string,
+) {
   const name = supplierName?.trim().replace(/\s+/g, " ");
   if (!name) return { supplierId: supplierId ?? null, supplierName: "" };
 
@@ -146,12 +161,17 @@ async function resolveProductSupplier(supplierId?: number | null, supplierName?:
   const existing = suppliers.find(
     (s) => normalizeLookupName(s.supplierName) === normalizeLookupName(name),
   );
-  if (existing) return { supplierId: existing.id, supplierName: existing.supplierName };
+  if (existing)
+    return { supplierId: existing.id, supplierName: existing.supplierName };
 
   const created = await prisma.supplier.create({
     data: { supplierName: name },
   });
-  await logAudit("InventoryPanel", "Add Supplier", `${created.supplierName} created`);
+  await logAudit(
+    "InventoryPanel",
+    "Add Supplier",
+    `${created.supplierName} created`,
+  );
   return { supplierId: created.id, supplierName: created.supplierName };
 }
 
@@ -210,7 +230,10 @@ export async function createProduct(data: {
     data.categoryName || data.category,
   );
   const brandId = await resolveProductBrand(data.brandId, data.brandName);
-  const resolvedSupplier = await resolveProductSupplier(data.supplierId, data.supplierName);
+  const resolvedSupplier = await resolveProductSupplier(
+    data.supplierId,
+    data.supplierName,
+  );
   await assertUniqueProductName(productName, category.categoryId, brandId);
 
   const { categoryName, brandName, ...productData } = data;
@@ -376,14 +399,18 @@ export async function deleteProduct(id: number) {
 
 export async function deleteProducts(ids: number[]) {
   await requireAdmin();
-  const products = await prisma.product.findMany({ where: { id: { in: ids } } });
+  const products = await prisma.product.findMany({
+    where: { id: { in: ids } },
+  });
   const blocked = products.filter((product) => product.quantity > 0);
   if (blocked.length > 0) {
     throw new Error(
       `Cannot delete ${blocked.length} product(s) while they still have stock.`,
     );
   }
-  const result = await prisma.product.deleteMany({ where: { id: { in: ids } } });
+  const result = await prisma.product.deleteMany({
+    where: { id: { in: ids } },
+  });
   await logAudit(
     "InventoryPanel",
     "Delete Products (Bulk)",
@@ -391,7 +418,11 @@ export async function deleteProducts(ids: number[]) {
   );
   revalidatePath("/inventory");
   revalidateTag("products", "default");
-  return { deleted: result.count, skipped: ids.length - result.count, names: products.map(p => p.productName) };
+  return {
+    deleted: result.count,
+    skipped: ids.length - result.count,
+    names: products.map((p) => p.productName),
+  };
 }
 
 // ─────────── Categories ───────────
@@ -414,7 +445,11 @@ export async function createCategory(name: string, parentCategoryId?: number) {
   await requireUser();
   try {
     const cat = await prisma.category.create({
-      data: { name, parentCategoryId: parentCategoryId || null, createdAt: new Date() },
+      data: {
+        name,
+        parentCategoryId: parentCategoryId || null,
+        createdAt: new Date(),
+      },
     });
     await logAudit(
       "InventoryPanel",
@@ -517,19 +552,30 @@ export async function deleteCategory(id: number) {
 
 export async function deleteCategories(ids: number[]) {
   await requireAdmin();
-  const results: { deleted: string[]; skipped: { id: number; reason: string }[] } = { deleted: [], skipped: [] };
+  const results: {
+    deleted: string[];
+    skipped: { id: number; reason: string }[];
+  } = { deleted: [], skipped: [] };
   for (const id of ids) {
     try {
       const linked = await prisma.product.count({ where: { categoryId: id } });
       if (linked > 0) {
         const cat = await prisma.category.findUniqueOrThrow({ where: { id } });
-        results.skipped.push({ id, reason: `${cat.name} has ${linked} product(s)` });
+        results.skipped.push({
+          id,
+          reason: `${cat.name} has ${linked} product(s)`,
+        });
         continue;
       }
-      const children = await prisma.category.count({ where: { parentCategoryId: id } });
+      const children = await prisma.category.count({
+        where: { parentCategoryId: id },
+      });
       if (children > 0) {
         const cat = await prisma.category.findUniqueOrThrow({ where: { id } });
-        results.skipped.push({ id, reason: `${cat.name} has ${children} subcategory(ies)` });
+        results.skipped.push({
+          id,
+          reason: `${cat.name} has ${children} subcategory(ies)`,
+        });
         continue;
       }
       const cat = await prisma.category.findUniqueOrThrow({ where: { id } });
@@ -540,7 +586,11 @@ export async function deleteCategories(ids: number[]) {
     }
   }
   if (results.deleted.length > 0) {
-    await logAudit("InventoryPanel", "Delete Categories (Bulk)", `${results.deleted.length} category(ies) deleted: ${results.deleted.join(", ")}`);
+    await logAudit(
+      "InventoryPanel",
+      "Delete Categories (Bulk)",
+      `${results.deleted.length} category(ies) deleted: ${results.deleted.join(", ")}`,
+    );
     revalidatePath("/inventory");
     revalidatePath("/categories");
     revalidateTag("categories", "default");
@@ -560,7 +610,9 @@ export const getBrands = cache(async () => {
 export async function createBrand(name: string) {
   await requireUser();
   try {
-    const brand = await prisma.brand.create({ data: { name, createdAt: new Date() } });
+    const brand = await prisma.brand.create({
+      data: { name, createdAt: new Date() },
+    });
     await logAudit("InventoryPanel", "Add Brand", `${brand.name} created`);
     revalidatePath("/inventory");
     revalidatePath("/brands");
@@ -617,13 +669,19 @@ export async function deleteBrand(id: number) {
 
 export async function deleteBrands(ids: number[]) {
   await requireAdmin();
-  const results: { deleted: string[]; skipped: { id: number; reason: string }[] } = { deleted: [], skipped: [] };
+  const results: {
+    deleted: string[];
+    skipped: { id: number; reason: string }[];
+  } = { deleted: [], skipped: [] };
   for (const id of ids) {
     try {
       const linked = await prisma.product.count({ where: { brandId: id } });
       if (linked > 0) {
         const brand = await prisma.brand.findUniqueOrThrow({ where: { id } });
-        results.skipped.push({ id, reason: `${brand.name} has ${linked} product(s)` });
+        results.skipped.push({
+          id,
+          reason: `${brand.name} has ${linked} product(s)`,
+        });
         continue;
       }
       const brand = await prisma.brand.findUniqueOrThrow({ where: { id } });
@@ -634,7 +692,11 @@ export async function deleteBrands(ids: number[]) {
     }
   }
   if (results.deleted.length > 0) {
-    await logAudit("InventoryPanel", "Delete Brands (Bulk)", `${results.deleted.length} brand(s) deleted: ${results.deleted.join(", ")}`);
+    await logAudit(
+      "InventoryPanel",
+      "Delete Brands (Bulk)",
+      `${results.deleted.length} brand(s) deleted: ${results.deleted.join(", ")}`,
+    );
     revalidatePath("/inventory");
     revalidatePath("/brands");
     revalidateTag("brands", "default");
@@ -738,7 +800,10 @@ export async function deleteSupplier(id: number) {
 
 export async function deleteSuppliers(ids: number[]) {
   await requireAdmin();
-  const results: { deleted: string[]; skipped: { id: number; reason: string }[] } = { deleted: [], skipped: [] };
+  const results: {
+    deleted: string[];
+    skipped: { id: number; reason: string }[];
+  } = { deleted: [], skipped: [] };
   for (const id of ids) {
     try {
       const supplier = await prisma.supplier.findUniqueOrThrow({
@@ -746,7 +811,10 @@ export async function deleteSuppliers(ids: number[]) {
         include: { _count: { select: { products: true } } },
       });
       if (supplier._count.products > 0) {
-        results.skipped.push({ id, reason: `${supplier.supplierName} has ${supplier._count.products} product(s)` });
+        results.skipped.push({
+          id,
+          reason: `${supplier.supplierName} has ${supplier._count.products} product(s)`,
+        });
         continue;
       }
       await prisma.supplier.delete({ where: { id } });
@@ -756,7 +824,11 @@ export async function deleteSuppliers(ids: number[]) {
     }
   }
   if (results.deleted.length > 0) {
-    await logAudit("SupplierPanel", "Delete Suppliers (Bulk)", `${results.deleted.length} supplier(s) deleted: ${results.deleted.join(", ")}`);
+    await logAudit(
+      "SupplierPanel",
+      "Delete Suppliers (Bulk)",
+      `${results.deleted.length} supplier(s) deleted: ${results.deleted.join(", ")}`,
+    );
     revalidatePath("/suppliers");
     revalidateTag("suppliers", "default");
   }
@@ -907,7 +979,8 @@ export async function getTransactions(opts?: {
       const skip = ((opts?.page || 1) - 1) * take;
       const where = buildTransactionSqlWhereClause(opts);
       const orderColumn = transactionSortColumn(opts?.sortBy);
-      const orderDirection = opts?.sortDir === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+      const orderDirection =
+        opts?.sortDir === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
       const [rows] = await Promise.all([
         prisma.$queryRaw<{ id: number }[]>(Prisma.sql`
           SELECT TRANSACTION_ID AS id
@@ -1062,7 +1135,7 @@ export async function createTransaction(data: {
   returnForReceiptNumber?: number;
   invoiceNumber?: string;
   salesInvoiceNumber?: string;
-  deliveryInvoiceNumber?: string;
+  deliveryReceiptNumber?: string;
   tin?: string;
   isCredit?: boolean;
   creditDueDate?: Date;
@@ -1087,7 +1160,7 @@ export async function createTransaction(data: {
   const invoiceFields = [
     { field: "Invoice", value: data.invoiceNumber },
     { field: "Sales Invoice", value: data.salesInvoiceNumber },
-    { field: "Delivery Invoice", value: data.deliveryInvoiceNumber },
+    { field: "Delivery Receipt", value: data.deliveryReceiptNumber },
   ];
   for (const inv of invoiceFields) {
     if (!inv.value) continue;
@@ -1096,7 +1169,7 @@ export async function createTransaction(data: {
         OR: [
           { invoiceNumber: inv.value },
           { salesInvoiceNumber: inv.value },
-          { deliveryInvoiceNumber: inv.value },
+          { deliveryReceiptNumber: inv.value },
         ],
       },
       select: { id: true, receiptNumber: true },
@@ -1188,7 +1261,7 @@ export async function createTransaction(data: {
         returnForReceiptNumber: data.returnForReceiptNumber,
         invoiceNumber: data.invoiceNumber,
         salesInvoiceNumber: data.salesInvoiceNumber,
-        deliveryInvoiceNumber: data.deliveryInvoiceNumber,
+        deliveryReceiptNumber: data.deliveryReceiptNumber,
         tin: data.tin,
         isCredit: data.isCredit || false,
         creditDueDate: data.creditDueDate,
@@ -1218,7 +1291,9 @@ export async function createTransaction(data: {
     // Returns decrement totalSpent (refund), Damage/Adjustment don't affect it
     // SalePO skips totalSpent at creation — only incremented on completion
     const isReturn = data.transactionType === "Return";
-    const isNonMonetary = data.transactionType === "Damage" || data.transactionType === "Adjustment";
+    const isNonMonetary =
+      data.transactionType === "Damage" ||
+      data.transactionType === "Adjustment";
     const isSalePO = data.transactionType === "SalePO";
     const skipTotalSpent = isNonMonetary || isSalePO;
 
@@ -1246,7 +1321,11 @@ export async function createTransaction(data: {
           phone: data.buyerContact || null,
           email: data.buyerEmail || null,
           totalOrders: 1,
-          totalSpent: skipTotalSpent ? 0 : isReturn ? -data.grandTotal : data.grandTotal,
+          totalSpent: skipTotalSpent
+            ? 0
+            : isReturn
+              ? -data.grandTotal
+              : data.grandTotal,
           sellerId: sellerId || undefined,
         },
       });
@@ -1343,36 +1422,50 @@ export async function getDeliverers() {
   return result.map((r) => r.delivererName!);
 }
 
-export async function getReturnTransaction(receiptNumber: number, invoiceString?: string) {
-  let txn = await prisma.transaction.findFirst({
-    where: { receiptNumber },
+export async function getReturnTransaction(
+  receiptNumber: number,
+  invoiceString?: string,
+) {
+  const txn = await prisma.transaction.findFirst({
+    where: {
+      OR: [
+        { receiptNumber },
+        ...(invoiceString
+          ? [
+              { salesInvoiceNumber: invoiceString },
+              { deliveryReceiptNumber: invoiceString },
+              { invoiceNumber: invoiceString },
+            ]
+          : []),
+      ],
+    },
     include: { items: true },
   });
-  if (!txn && invoiceString) {
-    txn = await prisma.transaction.findFirst({
-      where: {
-        OR: [
-          { salesInvoiceNumber: invoiceString },
-          { deliveryInvoiceNumber: invoiceString },
-          { invoiceNumber: invoiceString },
-        ],
-      },
-      include: { items: true },
-    });
-  }
   if (!txn) throw new Error("Receipt not found");
   // Returns can only reference Sale transactions; Damage/Adjustment allows any
-  if (txn.transactionType === "Return" || txn.transactionType === "Damage" || txn.transactionType === "Adjustment")
+  if (
+    txn.transactionType === "Return" ||
+    txn.transactionType === "Damage" ||
+    txn.transactionType === "Adjustment"
+  )
     throw new Error("Cannot reference another Return/Damage/Adjustment");
   return {
     buyerName: txn.buyerName,
-    items: txn.items.map((i) => ({
-      productId: i.productId,
-      productName: i.productName,
-      quantity: i.quantity,
-      unitPrice: Number(i.unitPrice),
-      totalPrice: Number(i.totalPrice),
-    })),
+    items: txn.items.map(
+      (i: {
+        productId: any;
+        productName: any;
+        quantity: any;
+        unitPrice: any;
+        totalPrice: any;
+      }) => ({
+        productId: i.productId,
+        productName: i.productName,
+        quantity: i.quantity,
+        unitPrice: Number(i.unitPrice),
+        totalPrice: Number(i.totalPrice),
+      }),
+    ),
   };
 }
 
@@ -1552,7 +1645,9 @@ export async function updateTransaction(
       delivererName: data.delivererName,
       transactionStatus: data.transactionStatus,
       isCredit: data.isCredit,
-      creditDueDate: data.creditDueDate ? new Date(data.creditDueDate) : undefined,
+      creditDueDate: data.creditDueDate
+        ? new Date(data.creditDueDate)
+        : undefined,
     },
   });
 
@@ -1775,7 +1870,11 @@ export async function markAllNotificationsRead(userId: number) {
 export async function deleteNotification(id: number) {
   await requireAdmin();
   await prisma.notification.delete({ where: { id } });
-  await logAudit("System", "Delete Notification", `Notification #${id} deleted`);
+  await logAudit(
+    "System",
+    "Delete Notification",
+    `Notification #${id} deleted`,
+  );
   revalidatePath("/notifications");
 }
 
@@ -2111,11 +2210,7 @@ export async function createBuyer(data: {
       sellerId: sellerId || undefined,
     },
   });
-  await logAudit(
-    "Buyers",
-    "Add Buyer",
-    `${data.name} created`,
-  );
+  await logAudit("Buyers", "Add Buyer", `${data.name} created`);
   revalidatePath("/buyers");
   revalidateTag("buyers", "default");
   return buyer;
@@ -2225,11 +2320,7 @@ export async function deleteCustomDownloadable(id: number) {
     where: { id },
   });
   await prisma.customDownloadable.delete({ where: { id } });
-  await logAudit(
-    "Downloadables",
-    "Delete File",
-    `${item.name} deleted`,
-  );
+  await logAudit("Downloadables", "Delete File", `${item.name} deleted`);
   revalidatePath("/downloadables");
 }
 
@@ -2435,7 +2526,13 @@ export async function getCashFlowTrend(
   const toPH = (d: Date) => {
     const utc = d.getTime() + d.getTimezoneOffset() * 60000;
     const ph = new Date(utc + PH_OFFSET * 3600000);
-    return { year: ph.getFullYear(), month: ph.getMonth(), date: ph.getDate(), day: ph.getDay(), hour: ph.getHours() };
+    return {
+      year: ph.getFullYear(),
+      month: ph.getMonth(),
+      date: ph.getDate(),
+      day: ph.getDay(),
+      hour: ph.getHours(),
+    };
   };
 
   const start =
@@ -2492,7 +2589,12 @@ export async function getCashFlowTrend(
       const h = toPHHour(e.transactionDate);
       expMap.set(h, (expMap.get(h) || 0) + Number(e.grandTotal || 0));
     }
-    const data: { date: string; revenue: number; expenses: number; net: number }[] = [];
+    const data: {
+      date: string;
+      revenue: number;
+      expenses: number;
+      net: number;
+    }[] = [];
     for (let h = 0; h < 24; h++) {
       const rev = revMap.get(h) || 0;
       const exp = expMap.get(h) || 0;
@@ -2521,16 +2623,26 @@ export async function getCashFlowTrend(
       expMap.set(key, (expMap.get(key) || 0) + Number(e.grandTotal || 0));
     }
     // Iterate month by month from start to end
-    const data: { date: string; revenue: number; expenses: number; net: number }[] = [];
+    const data: {
+      date: string;
+      revenue: number;
+      expenses: number;
+      net: number;
+    }[] = [];
     const phStartMonth = toPH(start);
     const phEndMonth = toPH(end);
     const cur = new Date(phStartMonth.year, phStartMonth.month, 1);
     const endMonth = new Date(phEndMonth.year, phEndMonth.month, 1);
-    const totalSpanMonths = Math.round((end.getTime() - start.getTime()) / (30 * 86400000));
+    const totalSpanMonths = Math.round(
+      (end.getTime() - start.getTime()) / (30 * 86400000),
+    );
     const useFullYear = totalSpanMonths > 24;
     while (cur <= endMonth) {
       const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`;
-      const label = cur.toLocaleDateString("en-US", { month: "short", year: useFullYear ? "numeric" : "2-digit" });
+      const label = cur.toLocaleDateString("en-US", {
+        month: "short",
+        year: useFullYear ? "numeric" : "2-digit",
+      });
       const rev = revMap.get(key) || 0;
       const exp = expMap.get(key) || 0;
       data.push({ date: label, revenue: rev, expenses: exp, net: rev - exp });
@@ -2562,15 +2674,30 @@ export async function getCashFlowTrend(
       expMap.set(key, (expMap.get(key) || 0) + Number(e.grandTotal || 0));
     }
     // Iterate weeks from start to end
-    const data: { date: string; revenue: number; expenses: number; net: number }[] = [];
+    const data: {
+      date: string;
+      revenue: number;
+      expenses: number;
+      net: number;
+    }[] = [];
     const phStart = toPH(start);
     const dayOfWeek = phStart.day;
-    const cur = new Date(phStart.year, phStart.month, phStart.date - ((dayOfWeek + 6) % 7));
-    const totalSpanMonthsW = Math.round((end.getTime() - start.getTime()) / (30 * 86400000));
+    const cur = new Date(
+      phStart.year,
+      phStart.month,
+      phStart.date - ((dayOfWeek + 6) % 7),
+    );
+    const totalSpanMonthsW = Math.round(
+      (end.getTime() - start.getTime()) / (30 * 86400000),
+    );
     const useFullYearW = totalSpanMonthsW > 24;
     while (cur <= end) {
       const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
-      const label = cur.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(useFullYearW ? { year: "numeric" } : {}) });
+      const label = cur.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        ...(useFullYearW ? { year: "numeric" } : {}),
+      });
       const rev = revMap.get(key) || 0;
       const exp = expMap.get(key) || 0;
       data.push({ date: label, revenue: rev, expenses: exp, net: rev - exp });
@@ -2598,7 +2725,9 @@ export async function getCashFlowTrend(
     expenses: number;
     net: number;
   }[] = [];
-  const totalSpanMonthsD = Math.round((end.getTime() - start.getTime()) / (30 * 86400000));
+  const totalSpanMonthsD = Math.round(
+    (end.getTime() - start.getTime()) / (30 * 86400000),
+  );
   const useFullYearD = totalSpanMonthsD > 24;
   for (let i = effectiveDays - 1; i >= 0; i--) {
     const d = endDate
@@ -3131,13 +3260,31 @@ export async function bulkToggleUsers(ids: number[], activate: boolean) {
   await requireAdmin();
   const session = await auth();
   const currentRole = (session?.user as any)?.role;
-  const results: { updated: string[]; skipped: { id: number; reason: string }[] } = { updated: [], skipped: [] };
+  const results: {
+    updated: string[];
+    skipped: { id: number; reason: string }[];
+  } = { updated: [], skipped: [] };
   for (const id of ids) {
     try {
       const user = await prisma.user.findUnique({ where: { id } });
-      if (!user) { results.skipped.push({ id, reason: "Not found" }); continue; }
-      if (user.role === "SUPERADMIN") { results.skipped.push({ id, reason: `${user.sellerName} is SUPERADMIN` }); continue; }
-      if (user.role === "ADMIN" && currentRole !== "SUPERADMIN") { results.skipped.push({ id, reason: `Only SUPERADMIN can toggle ADMIN users` }); continue; }
+      if (!user) {
+        results.skipped.push({ id, reason: "Not found" });
+        continue;
+      }
+      if (user.role === "SUPERADMIN") {
+        results.skipped.push({
+          id,
+          reason: `${user.sellerName} is SUPERADMIN`,
+        });
+        continue;
+      }
+      if (user.role === "ADMIN" && currentRole !== "SUPERADMIN") {
+        results.skipped.push({
+          id,
+          reason: `Only SUPERADMIN can toggle ADMIN users`,
+        });
+        continue;
+      }
       await prisma.user.update({ where: { id }, data: { isActive: activate } });
       invalidateUserCache(id);
       results.updated.push(user.sellerName);
@@ -3147,7 +3294,11 @@ export async function bulkToggleUsers(ids: number[], activate: boolean) {
   }
   if (results.updated.length > 0) {
     const action = activate ? "Activated" : "Deactivated";
-    await logAudit("User Management", `Bulk ${action} Users`, `${results.updated.length} user(s) ${action.toLowerCase()}: ${results.updated.join(", ")}`);
+    await logAudit(
+      "User Management",
+      `Bulk ${action} Users`,
+      `${results.updated.length} user(s) ${action.toLowerCase()}: ${results.updated.join(", ")}`,
+    );
     revalidatePath("/users");
   }
   return { updated: results.updated.length, skipped: results.skipped };
@@ -3157,13 +3308,31 @@ export async function bulkDeleteUsers(ids: number[]) {
   await requireAdmin();
   const session = await auth();
   const currentRole = (session?.user as any)?.role;
-  const results: { toggled: string[]; skipped: { id: number; reason: string }[] } = { toggled: [], skipped: [] };
+  const results: {
+    toggled: string[];
+    skipped: { id: number; reason: string }[];
+  } = { toggled: [], skipped: [] };
   for (const id of ids) {
     try {
       const user = await prisma.user.findUnique({ where: { id } });
-      if (!user) { results.skipped.push({ id, reason: "Not found" }); continue; }
-      if (user.role === "SUPERADMIN") { results.skipped.push({ id, reason: `${user.sellerName} is SUPERADMIN` }); continue; }
-      if (user.role === "ADMIN" && currentRole !== "SUPERADMIN") { results.skipped.push({ id, reason: "Only SUPERADMIN can deactivate ADMIN users" }); continue; }
+      if (!user) {
+        results.skipped.push({ id, reason: "Not found" });
+        continue;
+      }
+      if (user.role === "SUPERADMIN") {
+        results.skipped.push({
+          id,
+          reason: `${user.sellerName} is SUPERADMIN`,
+        });
+        continue;
+      }
+      if (user.role === "ADMIN" && currentRole !== "SUPERADMIN") {
+        results.skipped.push({
+          id,
+          reason: "Only SUPERADMIN can deactivate ADMIN users",
+        });
+        continue;
+      }
       await prisma.user.update({ where: { id }, data: { isActive: false } });
       invalidateUserCache(id);
       results.toggled.push(user.sellerName);
@@ -3172,7 +3341,11 @@ export async function bulkDeleteUsers(ids: number[]) {
     }
   }
   if (results.toggled.length > 0) {
-    await logAudit("User Management", "Bulk Deactivate Users", `${results.toggled.length} user(s) deactivated: ${results.toggled.join(", ")}`);
+    await logAudit(
+      "User Management",
+      "Bulk Deactivate Users",
+      `${results.toggled.length} user(s) deactivated: ${results.toggled.join(", ")}`,
+    );
     revalidatePath("/users");
   }
   return { deactivated: results.toggled.length, skipped: results.skipped };

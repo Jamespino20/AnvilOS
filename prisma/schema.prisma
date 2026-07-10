@@ -202,7 +202,7 @@ model Transaction {
   receiptNumber          Int               @map("RECEIPT_NUMBER")
   invoiceNumber          String?           @map("INVOICE_NUMBER")
   salesInvoiceNumber     String?           @map("SALES_INVOICE_NUMBER")
-  deliveryInvoiceNumber  String?           @map("DELIVERY_INVOICE_NUMBER")
+  deliveryReceiptNumber  String?           @map("DELIVERY_RECEIPT_NUMBER")
   tin                    String?           @map("TIN")
   buyerName              String            @map("BUYER_NAME")
   buyerAddress           String?           @map("BUYER_ADDRESS")
