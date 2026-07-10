@@ -24,7 +24,8 @@ type AuditPanel =
   | "Data Import"
   | "Dashboard"
   | "System"
-  | "User Management";
+  | "User Management"
+  | "Downloadables";
 type AuditAction = string;
 
 interface AuditEntry {

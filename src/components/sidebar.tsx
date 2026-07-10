@@ -28,6 +28,7 @@ import {
   PanelLeft,
   Wallet,
   Tag,
+  Download,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useState, useEffect, useCallback } from "react";
@@ -64,7 +65,10 @@ const groups = [
   },
   {
     label: "Monitoring",
-    items: [{ href: "/audit-log", label: "Audit Logs", icon: Shield }],
+    items: [
+      { href: "/audit-log", label: "Audit Logs", icon: Shield },
+      { href: "/downloadables", label: "Downloadables", icon: Download },
+    ],
   },
   {
     label: "Administration",

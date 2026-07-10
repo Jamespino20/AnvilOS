@@ -88,11 +88,12 @@ model User {
   notifDailySales       Boolean @default(true) @map("NOTIF_DAILY_SALES")
   notifTransaction      Boolean @default(true) @map("NOTIF_TRANSACTION")
 
-  transactions     Transaction[]
-  buyers           Buyer[]
-  auditLogs        AuditLog[]
-  emailTokens      EmailToken[]
-  notificationReads NotificationRead[]
+  transactions        Transaction[]
+  buyers              Buyer[]
+  auditLogs           AuditLog[]
+  emailTokens         EmailToken[]
+  notificationReads   NotificationRead[]
+  customDownloadables CustomDownloadable[]
 
   @@map("users")
 }
@@ -200,6 +201,9 @@ model Transaction {
   id                     Int               @id @default(autoincrement()) @map("TRANSACTION_ID")
   receiptNumber          Int               @map("RECEIPT_NUMBER")
   invoiceNumber          String?           @map("INVOICE_NUMBER")
+  salesInvoiceNumber     String?           @map("SALES_INVOICE_NUMBER")
+  deliveryInvoiceNumber  String?           @map("DELIVERY_INVOICE_NUMBER")
+  tin                    String?           @map("TIN")
   buyerName              String            @map("BUYER_NAME")
   buyerAddress           String?           @map("BUYER_ADDRESS")
   buyerContact           String?           @map("BUYER_CONTACT")
@@ -310,6 +314,23 @@ model Buyer {
 
   @@index([sellerId])
   @@map("buyers")
+}
+
+/// User-uploaded downloadable files
+model CustomDownloadable {
+  id          Int      @id @default(autoincrement()) @map("CUSTOM_DOWNLOADABLE_ID")
+  name        String   @map("NAME")
+  description String?  @map("DESCRIPTION")
+  fileName    String   @map("FILE_NAME")
+  fileData    String   @db.LongText @map("FILE_DATA")
+  fileType    String   @map("FILE_TYPE")
+  fileSize    Int      @map("FILE_SIZE")
+  uploadedBy  Int?     @map("UPLOADED_BY")
+  createdAt   DateTime @default(now()) @map("CREATED_AT")
+
+  uploader User? @relation(fields: [uploadedBy], references: [id])
+
+  @@map("custom_downloadables")
 }
 
 /// Full audit trail for all user actions

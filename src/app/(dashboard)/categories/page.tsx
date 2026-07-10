@@ -42,9 +42,7 @@ const PER_PAGE = 10;
 export default function CategoriesPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const isAdmin =
-    (session?.user as any)?.role === "ADMIN" ||
-    (session?.user as any)?.role === "SUPERADMIN";
+  const isLoggedIn = !!(session?.user as any)?.role;
   const [categories, setCategories] = useState<(Category & { _count: { products: number } })[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -261,7 +259,7 @@ export default function CategoriesPage() {
               )
             }
           />
-          {isAdmin && (
+          {isLoggedIn && (
             <button
               onClick={() => {
                 setShowAdd(true);
@@ -291,7 +289,7 @@ export default function CategoriesPage() {
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Created
                 </th>
-                {isAdmin && (
+                {isLoggedIn && (
                   <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-28">
                     Actions
                   </th>
@@ -337,7 +335,7 @@ export default function CategoriesPage() {
                         )
                       : "—"}
                   </td>
-                  {isAdmin && (
+                  {isLoggedIn && (
                     <td className="p-4 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
@@ -367,7 +365,7 @@ export default function CategoriesPage() {
               {paginated.length === 0 && (
                 <tr>
                   <td
-                    colSpan={isAdmin ? 5 : 3}
+                    colSpan={isLoggedIn ? 5 : 3}
                     className="p-8 text-center text-[#94a3b8]"
                   >
                     No categories found. Click &quot;Add Category&quot; to

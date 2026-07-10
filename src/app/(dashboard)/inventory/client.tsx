@@ -121,6 +121,7 @@ export function InventoryClient({
   const [editQtyId, setEditQtyId] = useState<number | null>(null);
   const [editQtyVal, setEditQtyVal] = useState("");
   const [savingQty, setSavingQty] = useState(false);
+  const [confirmQty, setConfirmQty] = useState<{ id: number; name: string; oldQty: number; newQty: number } | null>(null);
   const editQtyRef = useRef<HTMLInputElement>(null);
 
   function normalizeName(value: string) {
@@ -167,16 +168,24 @@ export function InventoryClient({
       setEditQtyId(null);
       return;
     }
+    const product = initialProducts.find((p) => p.id === productId);
+    if (!product) return;
+    setConfirmQty({ id: productId, name: product.productName, oldQty: product.quantity, newQty: val });
+    setEditQtyId(null);
+  }
+
+  async function confirmAdjustStock() {
+    if (!confirmQty) return;
     setSavingQty(true);
     try {
-      await adjustStock(productId, val);
+      await adjustStock(confirmQty.id, confirmQty.newQty);
+      setConfirmQty(null);
       router.refresh();
       toast.success("Quantity updated");
     } catch (e) {
       toast.error("Failed to update quantity");
     } finally {
       setSavingQty(false);
-      setEditQtyId(null);
     }
   }
 
@@ -738,7 +747,7 @@ export function InventoryClient({
                     <td
                       className={`p-4 text-right font-mono ${product.quantity <= product.minThreshold ? "text-[#fd761a] font-bold" : "text-[#0e212c]"}`}
                     >
-                      {isSuperAdmin && editQtyId === product.id ? (
+                      {isAdmin && editQtyId === product.id ? (
                         <span className="inline-flex items-center gap-1">
                           <input
                             ref={editQtyRef}
@@ -757,7 +766,7 @@ export function InventoryClient({
                             <Loader2 className="h-3 w-3 animate-spin text-[#64748b]" />
                           )}
                         </span>
-                      ) : isSuperAdmin ? (
+                      ) : isAdmin ? (
                         <button
                           onClick={() => {
                             setEditQtyId(product.id);
@@ -1540,6 +1549,21 @@ export function InventoryClient({
           </div>
         </div>
       )}
+
+      {/* Stock Adjustment Confirmation Modal */}
+      <ConfirmModal
+        open={confirmQty !== null}
+        onClose={() => setConfirmQty(null)}
+        onConfirm={confirmAdjustStock}
+        title="Confirm Stock Change"
+        message={
+          confirmQty
+            ? `Changing stock of "${confirmQty.name}" from ${confirmQty.oldQty} to ${confirmQty.newQty}. This is a direct stock override that bypasses normal transaction flow. Consider using Restocks or POS instead.`
+            : ""
+        }
+        confirmLabel={savingQty ? "Confirming..." : "Confirm Change"}
+        variant="warning"
+      />
 
       {/* Delete Confirm Modal */}
       <ConfirmModal

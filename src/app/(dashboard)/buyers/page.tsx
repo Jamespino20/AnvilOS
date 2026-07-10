@@ -14,10 +14,12 @@ import {
   getBuyerTransactions,
   getProducts,
   updateBuyerInfo,
+  createBuyer,
 } from "@/actions";
 import {
   Search,
   Loader2,
+  Plus,
   Users,
   Receipt,
   ArrowLeft,
@@ -78,6 +80,12 @@ export default function BuyersPage() {
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [perPage, setPerPage] = useState(10);
   const [detailPage, setDetailPage] = useState(1);
+  const [showAddBuyer, setShowAddBuyer] = useState(false);
+  const [addBuyerName, setAddBuyerName] = useState("");
+  const [addBuyerAddress, setAddBuyerAddress] = useState("");
+  const [addBuyerContact, setAddBuyerContact] = useState("");
+  const [addBuyerEmail, setAddBuyerEmail] = useState("");
+  const [addingBuyer, setAddingBuyer] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -705,6 +713,18 @@ export default function BuyersPage() {
             label="Export"
             title="Export buyers list"
           />
+          <button
+            onClick={() => {
+              setShowAddBuyer(true);
+              setAddBuyerName("");
+              setAddBuyerAddress("");
+              setAddBuyerContact("");
+              setAddBuyerEmail("");
+            }}
+            className="flex items-center justify-center gap-2 px-5 h-10 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all duration-200 active:scale-[0.98]"
+          >
+            <Plus className="h-4 w-4" /> Add Buyer
+          </button>
         </div>
       </div>
 
@@ -892,6 +912,129 @@ export default function BuyersPage() {
           )}
         </div>
       </div>
+
+      {/* Add Buyer Modal */}
+      {showAddBuyer && (
+        <div
+          className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center"
+          onClick={() => setShowAddBuyer(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-sm mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#e2e8f0]">
+              <h2 className="text-lg font-bold text-[#0e212c]">Add Buyer</h2>
+              <button
+                onClick={() => setShowAddBuyer(false)}
+                className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                  Buyer Name *
+                </label>
+                <input
+                  value={addBuyerName}
+                  onChange={(e) => setAddBuyerName(e.target.value)}
+                  placeholder="e.g. Juan Dela Cruz"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const btn = document.getElementById("confirm-add-buyer");
+                      btn?.click();
+                    }
+                  }}
+                  autoFocus
+                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                  Address
+                </label>
+                <input
+                  value={addBuyerAddress}
+                  onChange={(e) => setAddBuyerAddress(e.target.value)}
+                  placeholder="Address (Optional)"
+                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                  Contact
+                </label>
+                <input
+                  value={addBuyerContact}
+                  onChange={(e) => setAddBuyerContact(e.target.value)}
+                  placeholder="Contact (Optional)"
+                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                  Email
+                </label>
+                <input
+                  value={addBuyerEmail}
+                  onChange={(e) => setAddBuyerEmail(e.target.value)}
+                  placeholder="Email (Optional)"
+                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowAddBuyer(false)}
+                  className="flex-1 py-2.5 border border-[#e2e8f0] text-sm font-medium text-[#64748b] rounded-lg hover:bg-[#f8fafc] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  id="confirm-add-buyer"
+                  onClick={async () => {
+                    if (!addBuyerName.trim()) return;
+                    setAddingBuyer(true);
+                    try {
+                      await createBuyer({
+                        name: addBuyerName.trim(),
+                        address: addBuyerAddress || undefined,
+                        contact: addBuyerContact || undefined,
+                        email: addBuyerEmail || undefined,
+                      });
+                      setShowAddBuyer(false);
+                      setAddBuyerName("");
+                      setAddBuyerAddress("");
+                      setAddBuyerContact("");
+                      setAddBuyerEmail("");
+                      const data = await getBuyers(
+                        buyerType === "all" ? undefined : buyerType,
+                      );
+                      setBuyers(data as Buyer[]);
+                      toast.success("Buyer added successfully");
+                    } catch (e: any) {
+                      toast.error(e.message || "Failed to add buyer");
+                    } finally {
+                      setAddingBuyer(false);
+                    }
+                  }}
+                  disabled={!addBuyerName.trim() || addingBuyer}
+                  className="flex-1 py-2.5 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {addingBuyer ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Adding...
+                    </>
+                  ) : (
+                    "Add Buyer"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

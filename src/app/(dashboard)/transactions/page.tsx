@@ -35,6 +35,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { getDateScopeStart, getDateScopeEnd, DATE_SCOPES } from "@/lib/format";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
+import { downloadReceiptPdf } from "@/lib/receipt";
 
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 import { toast } from "sonner";
@@ -609,6 +610,36 @@ export default function TransactionsPage() {
                             t.transactionStatus === "Cancelled") && (
                             <span className="w-7" />
                           )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const items = t.items.map((i) => ({
+                                productName: i.productName || `#${i.productId}`,
+                                quantity: i.quantity || 0,
+                                unitPrice: Number(i.unitPrice || 0),
+                                totalPrice: Number(i.totalPrice || 0),
+                              }));
+                              downloadReceiptPdf({
+                                receiptNumber: t.receiptNumber,
+                                date: new Date(t.transactionDate),
+                                sellerName: t.sellerName || "Unknown",
+                                buyerName: t.buyerName,
+                                buyerAddress: t.buyerAddress || undefined,
+                                buyerContact: t.buyerContact || undefined,
+                                items,
+                                grandTotal: Number(t.grandTotal || 0),
+                                paymentMethod: t.paymentMethod || undefined,
+                                transactionType: t.transactionType,
+                                invoiceNumber: t.invoiceNumber || undefined,
+                                isCredit: t.isCredit || undefined,
+                                creditDueDate: t.creditDueDate || undefined,
+                              });
+                            }}
+                            className="p-1.5 text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 rounded-md transition-all"
+                            title="Download receipt"
+                          >
+                            <Receipt className="h-3.5 w-3.5" />
+                          </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

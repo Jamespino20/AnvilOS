@@ -106,7 +106,9 @@ export function POSClient({
   const [returnReceipt, setReturnReceipt] = useState("");
   const [loadingReturn, setLoadingReturn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
-  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [salesInvoiceNumber, setSalesInvoiceNumber] = useState("");
+  const [deliveryInvoiceNumber, setDeliveryInvoiceNumber] = useState("");
+  const [tin, setTin] = useState("");
   const [creditDueDate, setCreditDueDate] = useState("");
   const [chequeNumber, setChequeNumber] = useState("");
   const [bankName, setBankName] = useState("");
@@ -117,6 +119,9 @@ export function POSClient({
     items: any[];
     buyerName: string;
     grandTotal: number;
+    salesInvoiceNumber?: string;
+    deliveryInvoiceNumber?: string;
+    tin?: string;
     invoiceNumber?: string;
     isCredit?: boolean;
     creditDueDate?: Date;
@@ -268,8 +273,8 @@ export function POSClient({
     const hasItems =
       txnType === "Return" ? cart.some((c) => c.quantity > 0) : cart.length > 0;
     if (!hasItems || !buyerName) return;
-    if (!invoiceNumber.trim()) {
-      setError("Invoice number is required");
+    if (!salesInvoiceNumber.trim()) {
+      setError("Sales Invoice number is required");
       return;
     }
     setError("");
@@ -280,7 +285,10 @@ export function POSClient({
         buyerAddress: buyerAddress || undefined,
         buyerContact: buyerContact || undefined,
         buyerEmail: buyerEmail || undefined,
-        invoiceNumber: invoiceNumber || undefined,
+        invoiceNumber: salesInvoiceNumber || deliveryInvoiceNumber || undefined,
+        salesInvoiceNumber: salesInvoiceNumber || undefined,
+        deliveryInvoiceNumber: deliveryInvoiceNumber || undefined,
+        tin: tin || undefined,
         isCredit: paymentMethod === "Credit",
         creditDueDate:
           paymentMethod === "Credit" && creditDueDate
@@ -336,7 +344,10 @@ export function POSClient({
         buyerName: buyerName,
         buyerAddress: buyerAddress || undefined,
         buyerContact: buyerContact || undefined,
-        invoiceNumber: invoiceNumber || undefined,
+        salesInvoiceNumber: salesInvoiceNumber || undefined,
+        deliveryInvoiceNumber: deliveryInvoiceNumber || undefined,
+        tin: tin || undefined,
+        invoiceNumber: salesInvoiceNumber || deliveryInvoiceNumber || undefined,
         isCredit,
         creditDueDate:
           isCredit && creditDueDate ? new Date(creditDueDate) : undefined,
@@ -368,7 +379,10 @@ export function POSClient({
         buyerName: buyerName,
         grandTotal: doneGrandTotal,
         items: doneItems,
-        invoiceNumber: invoiceNumber || undefined,
+        salesInvoiceNumber: salesInvoiceNumber || undefined,
+        deliveryInvoiceNumber: deliveryInvoiceNumber || undefined,
+        tin: tin || undefined,
+        invoiceNumber: salesInvoiceNumber || deliveryInvoiceNumber || undefined,
         isCredit,
         creditDueDate:
           isCredit && creditDueDate ? new Date(creditDueDate) : undefined,
@@ -388,7 +402,9 @@ export function POSClient({
       setBuyerContact("");
       setBuyerEmail("");
       setReturnReceipt("");
-      setInvoiceNumber("");
+      setSalesInvoiceNumber("");
+      setDeliveryInvoiceNumber("");
+      setTin("");
       setCreditDueDate("");
       setChequeNumber("");
       setBankName("");
@@ -417,7 +433,8 @@ export function POSClient({
   const [shortcutHint, setShortcutHint] = useState<"ready" | "done" | "">("");
 
   useEffect(() => {
-    if (txnType !== "Return" || !returnReceipt) return;
+    if (txnType !== "Return" && txnType !== "Damage" && txnType !== "Adjustment") return;
+    if (!returnReceipt) return;
     const num = parseInt(returnReceipt, 10);
     if (isNaN(num)) return;
     setLoadingReturn(true);
@@ -431,7 +448,7 @@ export function POSClient({
             if (!prod) return null;
             return {
               product: prod,
-              quantity: 0,
+              quantity: txnType === "Return" ? 0 : i.quantity ?? 0,
               originalQty: i.quantity ?? 0,
             } as CartItem;
           })
@@ -714,9 +731,29 @@ export function POSClient({
               <Receipt className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
               <input
                 type="text"
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)}
-                placeholder="Invoice # *"
+                value={salesInvoiceNumber}
+                onChange={(e) => setSalesInvoiceNumber(e.target.value)}
+                placeholder="Sales Invoice # *"
+                className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
+              />
+            </div>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Receipt className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+              <input
+                type="text"
+                value={deliveryInvoiceNumber}
+                onChange={(e) => setDeliveryInvoiceNumber(e.target.value)}
+                placeholder="Delivery Invoice #"
+                className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
+              />
+            </div>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Receipt className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+              <input
+                type="text"
+                value={tin}
+                onChange={(e) => setTin(e.target.value)}
+                placeholder="TIN (Optional)"
                 className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
               />
             </div>
@@ -1080,6 +1117,9 @@ export function POSClient({
                       paymentMethod,
                       transactionType: txnType,
                       invoiceNumber: done.invoiceNumber,
+                      salesInvoiceNumber: done.salesInvoiceNumber,
+                      deliveryInvoiceNumber: done.deliveryInvoiceNumber,
+                      tin: done.tin,
                       isCredit: done.isCredit,
                       creditDueDate: done.creditDueDate,
                       chequeDetails: done.chequeDetails,

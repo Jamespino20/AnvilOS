@@ -7,6 +7,33 @@ import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
 import { formatReportMoney } from "@/lib/format";
 
+async function saveFile(blob: Blob, defaultName: string) {
+  try {
+    const handle = await (window as any).showSaveFilePicker?.({
+      suggestedName: defaultName,
+      types: [
+        {
+          description: "Export File",
+          accept: { "application/octet-stream": [defaultName.split(".").pop()] },
+        },
+      ],
+    });
+    if (handle) {
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    }
+  } catch {
+    // Fallback to download
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = defaultName;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function stripExt(name: string): string {
   return name.replace(/\.[^/.]+$/, "");
 }
@@ -42,7 +69,7 @@ function reportRows(headers: string[], rows: string[][]) {
   );
 }
 
-export function exportCSV(filename: string, headers: string[], rows: string[][]) {
+export async function exportCSV(filename: string, headers: string[], rows: string[][]) {
   const now = new Date();
   const outputRows = reportRows(headers, rows);
   const meta = [
@@ -58,11 +85,7 @@ export function exportCSV(filename: string, headers: string[], rows: string[][])
     ...outputRows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")),
   ].join("\n");
   const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
+  await saveFile(blob, filename);
 }
 
 export async function exportXLSX(filename: string, headers: string[], rows: string[][]) {
@@ -173,11 +196,7 @@ export async function exportXLSX(filename: string, headers: string[], rows: stri
 
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = stripExt(filename) + ".xlsx";
-  a.click();
-  URL.revokeObjectURL(a.href);
+  await saveFile(blob, stripExt(filename) + ".xlsx");
 }
 
 export async function exportPDF(filename: string, headers: string[], rows: string[][]) {
@@ -326,7 +345,8 @@ export async function exportPDF(filename: string, headers: string[], rows: strin
     },
   });
 
-  doc.save(stripExt(filename) + ".pdf");
+  const pdfBlob = doc.output("blob");
+  await saveFile(pdfBlob, stripExt(filename) + ".pdf");
 }
 
 

@@ -320,7 +320,7 @@ export async function updateProduct(
 }
 
 export async function adjustStock(productId: number, newQuantity: number) {
-  await requireSuperAdmin();
+  await requireAdmin();
   const product = await prisma.product.findUniqueOrThrow({
     where: { id: productId },
   });
@@ -411,7 +411,7 @@ export const getAllCategories = cache(async () => {
 });
 
 export async function createCategory(name: string, parentCategoryId?: number) {
-  await requireAdmin();
+  await requireUser();
   try {
     const cat = await prisma.category.create({
       data: { name, parentCategoryId: parentCategoryId || null, createdAt: new Date() },
@@ -442,7 +442,7 @@ export async function editCategory(
   name: string,
   parentCategoryId?: number,
 ) {
-  await requireAdmin();
+  await requireUser();
 
   // Prevent circular nesting: check if new parent is a descendant of this category
   if (parentCategoryId && parentCategoryId === id) {
@@ -558,7 +558,7 @@ export const getBrands = cache(async () => {
 });
 
 export async function createBrand(name: string) {
-  await requireAdmin();
+  await requireUser();
   try {
     const brand = await prisma.brand.create({ data: { name, createdAt: new Date() } });
     await logAudit("InventoryPanel", "Add Brand", `${brand.name} created`);
@@ -575,7 +575,7 @@ export async function createBrand(name: string) {
 }
 
 export async function editBrand(id: number, name: string) {
-  await requireAdmin();
+  await requireUser();
   try {
     const brand = await prisma.brand.update({ where: { id }, data: { name } });
     await logAudit(
@@ -1061,6 +1061,9 @@ export async function createTransaction(data: {
   }[];
   returnForReceiptNumber?: number;
   invoiceNumber?: string;
+  salesInvoiceNumber?: string;
+  deliveryInvoiceNumber?: string;
+  tin?: string;
   isCredit?: boolean;
   creditDueDate?: Date;
   chequeDetails?: {
@@ -1081,14 +1084,26 @@ export async function createTransaction(data: {
   const receiptNumber = (lastReceipt?.receiptNumber ?? 1000) + 1;
 
   // Duplicate invoice check
-  if (data.invoiceNumber) {
+  const invoiceFields = [
+    { field: "Invoice", value: data.invoiceNumber },
+    { field: "Sales Invoice", value: data.salesInvoiceNumber },
+    { field: "Delivery Invoice", value: data.deliveryInvoiceNumber },
+  ];
+  for (const inv of invoiceFields) {
+    if (!inv.value) continue;
     const existingInvoice = await prisma.transaction.findFirst({
-      where: { invoiceNumber: data.invoiceNumber },
+      where: {
+        OR: [
+          { invoiceNumber: inv.value },
+          { salesInvoiceNumber: inv.value },
+          { deliveryInvoiceNumber: inv.value },
+        ],
+      },
       select: { id: true, receiptNumber: true },
     });
     if (existingInvoice) {
       throw new Error(
-        `Invoice number "${data.invoiceNumber}" already used on receipt #${existingInvoice.receiptNumber}`,
+        `${inv.field} number "${inv.value}" already used on receipt #${existingInvoice.receiptNumber}`,
       );
     }
   }
@@ -1172,6 +1187,9 @@ export async function createTransaction(data: {
         grandTotal: data.grandTotal,
         returnForReceiptNumber: data.returnForReceiptNumber,
         invoiceNumber: data.invoiceNumber,
+        salesInvoiceNumber: data.salesInvoiceNumber,
+        deliveryInvoiceNumber: data.deliveryInvoiceNumber,
+        tin: data.tin,
         isCredit: data.isCredit || false,
         creditDueDate: data.creditDueDate,
         chequeNumber: data.chequeDetails?.chequeNumber || undefined,
@@ -2058,6 +2076,38 @@ export async function processRestock(transactionId: number) {
   return txn;
 }
 
+export async function createBuyer(data: {
+  name: string;
+  address?: string;
+  contact?: string;
+  email?: string;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const sellerId = Number(session.user.id);
+  const existing = await prisma.buyer.findFirst({
+    where: { name: data.name },
+  });
+  if (existing) throw new Error("A buyer with this name already exists.");
+  const buyer = await prisma.buyer.create({
+    data: {
+      name: data.name,
+      address: data.address || null,
+      phone: data.contact || null,
+      email: data.email || null,
+      sellerId: sellerId || undefined,
+    },
+  });
+  await logAudit(
+    "Buyers",
+    "Add Buyer",
+    `${data.name} created`,
+  );
+  revalidatePath("/buyers");
+  revalidateTag("buyers", "default");
+  return buyer;
+}
+
 export async function updateBuyerInfo(
   buyerName: string,
   data: {
@@ -2102,6 +2152,82 @@ export async function updateBuyerInfo(
   revalidatePath("/buyers");
   revalidateTag("buyers", "default");
   return txns;
+}
+
+// ─────────── Custom Downloadables ───────────
+
+export async function getCustomDownloadables() {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  return prisma.customDownloadable.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      fileName: true,
+      fileType: true,
+      fileSize: true,
+      createdAt: true,
+      uploadedBy: true,
+    },
+  });
+}
+
+export async function createCustomDownloadable(data: {
+  name: string;
+  description?: string;
+  fileName: string;
+  fileData: string;
+  fileType: string;
+  fileSize: number;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const userId = Number(session.user.id);
+  const item = await prisma.customDownloadable.create({
+    data: {
+      name: data.name,
+      description: data.description || null,
+      fileName: data.fileName,
+      fileData: data.fileData,
+      fileType: data.fileType,
+      fileSize: data.fileSize,
+      uploadedBy: userId || undefined,
+    },
+  });
+  await logAudit(
+    "Downloadables",
+    "Add File",
+    `${data.name} (${data.fileName}) uploaded`,
+  );
+  revalidatePath("/downloadables");
+  return item;
+}
+
+export async function deleteCustomDownloadable(id: number) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const item = await prisma.customDownloadable.findUniqueOrThrow({
+    where: { id },
+  });
+  await prisma.customDownloadable.delete({ where: { id } });
+  await logAudit(
+    "Downloadables",
+    "Delete File",
+    `${item.name} deleted`,
+  );
+  revalidatePath("/downloadables");
+}
+
+export async function getCustomDownloadableData(id: number) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const item = await prisma.customDownloadable.findUniqueOrThrow({
+    where: { id },
+    select: { fileData: true, fileName: true, fileType: true },
+  });
+  return item;
 }
 
 // ─────────── Financial Dashboard ───────────

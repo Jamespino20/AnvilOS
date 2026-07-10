@@ -39,6 +39,9 @@ export async function downloadReceiptPdf(data: {
   paymentMethod?: string;
   transactionType: string;
   invoiceNumber?: string;
+  salesInvoiceNumber?: string;
+  deliveryInvoiceNumber?: string;
+  tin?: string;
   isCredit?: boolean;
   creditDueDate?: Date;
   chequeDetails?: {
@@ -122,12 +125,28 @@ export async function downloadReceiptPdf(data: {
   doc.setTextColor(14, 33, 44);
   doc.text(`RECEIPT #${data.receiptNumber}`, cx, y, { align: "center" });
   y += 5;
-  if (data.invoiceNumber) {
+  if (data.salesInvoiceNumber) {
     doc.setFont("courier", "bold");
-    doc.setFontSize(8);
+    doc.setFontSize(7);
+    doc.setTextColor(14, 33, 44);
+    doc.text(`SALES INV #${data.salesInvoiceNumber}`, cx, y, { align: "center" });
+    y += 4;
+    doc.setFont("courier", "normal");
+  }
+  if (data.deliveryInvoiceNumber) {
+    doc.setFont("courier", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(14, 33, 44);
+    doc.text(`DELIVERY INV #${data.deliveryInvoiceNumber}`, cx, y, { align: "center" });
+    y += 4;
+    doc.setFont("courier", "normal");
+  }
+  if (data.invoiceNumber && !data.salesInvoiceNumber && !data.deliveryInvoiceNumber) {
+    doc.setFont("courier", "bold");
+    doc.setFontSize(7);
     doc.setTextColor(14, 33, 44);
     doc.text(`INVOICE #${data.invoiceNumber}`, cx, y, { align: "center" });
-    y += 5;
+    y += 4;
     doc.setFont("courier", "normal");
   }
   doc.setFontSize(7);
@@ -162,6 +181,10 @@ export async function downloadReceiptPdf(data: {
   }
   if (data.buyerContact) {
     doc.text(data.buyerContact, l, y);
+    y += 4;
+  }
+  if (data.tin) {
+    doc.text(`TIN: ${data.tin}`, l, y);
     y += 4;
   }
   y += 2;

@@ -20,6 +20,7 @@ export const STAFF_PATHS = [
   "/restocks",
   "/notifications",
   "/orders",
+  "/downloadables",
 ];
 
 export function isSuperAdminRole(role?: string | null) {

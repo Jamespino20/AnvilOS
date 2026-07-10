@@ -42,9 +42,7 @@ const PER_PAGE = 10;
 export default function BrandsPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const isAdmin =
-    (session?.user as any)?.role === "ADMIN" ||
-    (session?.user as any)?.role === "SUPERADMIN";
+  const isLoggedIn = !!(session?.user as any)?.role;
   const [brands, setBrands] = useState<
     (Brand & { _count: { products: number } })[]
   >([]);
@@ -264,7 +262,7 @@ export default function BrandsPage() {
               )
             }
           />
-          {isAdmin && (
+          {isLoggedIn && (
             <button
               onClick={() => {
                 setShowAdd(true);
@@ -294,7 +292,7 @@ export default function BrandsPage() {
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Created
                 </th>
-                {isAdmin && (
+                {isLoggedIn && (
                   <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-28">
                     Actions
                   </th>
@@ -337,7 +335,7 @@ export default function BrandsPage() {
                         })
                       : "—"}
                   </td>
-                  {isAdmin && (
+                  {isLoggedIn && (
                     <td className="p-4 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
@@ -367,7 +365,7 @@ export default function BrandsPage() {
               {paginated.length === 0 && (
                 <tr>
                   <td
-                    colSpan={isAdmin ? 5 : 3}
+                    colSpan={isLoggedIn ? 5 : 3}
                     className="p-8 text-center text-[#94a3b8]"
                   >
                     No brands found. Click &quot;Add Brand&quot; to create one.
