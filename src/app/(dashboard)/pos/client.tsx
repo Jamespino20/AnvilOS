@@ -450,17 +450,11 @@ export function POSClient({
     getReturnTransaction(num)
       .then((orig) => {
         setBuyerName(orig.buyerName);
-        const autoItems = orig.items
-          .map((i: { productId: number; quantity: any }) => {
-            const prod = products.find((p) => p.id === i.productId);
-            if (!prod) return null;
-            return {
-              product: prod,
-              quantity: txnType === "Return" ? 0 : (i.quantity ?? 0),
-              originalQty: i.quantity ?? 0,
-            } as CartItem;
-          })
-          .filter((x): x is CartItem => x !== null);
+        const autoItems = orig.items.map((i) => ({
+          product: i.product,
+          quantity: txnType === "Return" ? 0 : (i.quantity ?? 0),
+          originalQty: i.quantity ?? 0,
+        } as unknown as CartItem));
         setCart(autoItems);
       })
       .catch((err) => {
@@ -470,7 +464,7 @@ export function POSClient({
         );
       })
       .finally(() => setLoadingReturn(false));
-  }, [returnReceipt, txnType, products]);
+  }, [returnReceipt, txnType]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {

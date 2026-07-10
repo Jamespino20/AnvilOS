@@ -1430,11 +1430,14 @@ export async function getReturnTransaction(receiptNumber: number) {
   console.log(`[getReturnTransaction] lookup receiptNumber=${receiptNumber} (type=${typeof receiptNumber})`);
   const txn = await prisma.transaction.findFirst({
     where: { receiptNumber },
-    include: { items: true },
+    include: {
+      items: {
+        include: { product: true },
+      },
+    },
   });
   console.log(`[getReturnTransaction] result=${txn ? `found id=${txn.id} type=${txn.transactionType} items=${txn.items.length}` : "null"}`);
   if (!txn) throw new Error(`Receipt #${receiptNumber} not found`);
-  // Returns can only reference Sale transactions; Damage/Adjustment allows any
   if (
     txn.transactionType === "Return" ||
     txn.transactionType === "Damage" ||
@@ -1443,21 +1446,26 @@ export async function getReturnTransaction(receiptNumber: number) {
     throw new Error("Cannot reference another Return/Damage/Adjustment");
   return {
     buyerName: txn.buyerName,
-    items: txn.items.map(
-      (i: {
-        productId: any;
-        productName: any;
-        quantity: any;
-        unitPrice: any;
-        totalPrice: any;
-      }) => ({
-        productId: i.productId,
-        productName: i.productName,
-        quantity: i.quantity,
-        unitPrice: Number(i.unitPrice),
-        totalPrice: Number(i.totalPrice),
-      }),
-    ),
+    items: txn.items.map((i) => ({
+      productId: i.productId,
+      productName: i.productName,
+      quantity: i.quantity,
+      unitPrice: Number(i.unitPrice),
+      totalPrice: Number(i.totalPrice),
+      product: i.product
+        ? {
+            id: i.product.id,
+            productName: i.product.productName,
+            sellingPrice: Number(i.product.sellingPrice),
+            quantity: i.product.quantity,
+          }
+        : {
+            id: i.productId ?? 0,
+            productName: i.productName,
+            sellingPrice: Number(i.unitPrice),
+            quantity: 0,
+          },
+    })),
   };
 }
 
