@@ -84,6 +84,7 @@ export default function TransactionsPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [editingInvoice, setEditingInvoice] = useState<{
     id: number;
+    field: "salesInvoiceNumber" | "deliveryReceiptNumber";
     value: string;
   } | null>(null);
   const [dateScope, setDateScope] = useState("today");
@@ -192,6 +193,53 @@ export default function TransactionsPage() {
 
   const totalPages = Math.ceil(total / perPage);
 
+  function renderInvoiceCell(
+    t: TxnWithItems,
+    field: "salesInvoiceNumber" | "deliveryReceiptNumber",
+    value: string | null,
+  ) {
+    const isEditing =
+      editingInvoice?.id === t.id && editingInvoice?.field === field;
+    return (
+      <td
+        className="p-4 text-sm text-[#0e212c] cursor-pointer"
+        onClick={(e) => {
+          if (!isEditing) {
+            e.stopPropagation();
+            setEditingInvoice({ id: t.id, field, value: value || "" });
+          }
+        }}
+      >
+        {isEditing ? (
+          <input
+            type="text"
+            value={editingInvoice!.value}
+            autoFocus
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) =>
+              setEditingInvoice({ ...editingInvoice!, value: e.target.value })
+            }
+            onBlur={() => {
+              updateTransactionInvoice(
+                editingInvoice!.id,
+                field,
+                editingInvoice!.value,
+              );
+              setEditingInvoice(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              if (e.key === "Escape") setEditingInvoice(null);
+            }}
+            className="w-full max-w-[160px] px-2 py-1 text-xs border border-[#fd761a] rounded focus:outline-none"
+          />
+        ) : (
+          <span className="text-[#64748b]">{value || "—"}</span>
+        )}
+      </td>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -273,7 +321,8 @@ export default function TransactionsPage() {
             filename={`cwl-hardware-transactions${dateScope !== "all" ? `-${getDateScopeStart(dateScope) || ""}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`}
             allColumns={[
               { key: "receiptNumber", label: "Receipt #" },
-              { key: "invoiceNumber", label: "Invoice #" },
+              { key: "salesInvoiceNumber", label: "Sales Inv #" },
+              { key: "deliveryReceiptNumber", label: "Delivery Rcpt #" },
               { key: "buyerName", label: "Buyer" },
               { key: "transactionType", label: "Type" },
               { key: "transactionDate", label: "Date" },
@@ -289,7 +338,8 @@ export default function TransactionsPage() {
               transactions.map((t) =>
                 selectedColumns.map((key) => {
                   if (key === "receiptNumber") return String(t.receiptNumber);
-                  if (key === "invoiceNumber") return t.invoiceNumber || "";
+                  if (key === "salesInvoiceNumber") return (t as any).salesInvoiceNumber || "";
+                  if (key === "deliveryReceiptNumber") return (t as any).deliveryReceiptNumber || "";
                   if (key === "buyerName") return t.buyerName;
                   if (key === "transactionType")
                     return t.transactionType.replace(/([A-Z])/g, " $1").trim();
@@ -365,21 +415,43 @@ export default function TransactionsPage() {
                   <th
                     className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
                     onClick={() => {
-                      if (sortBy === "invoiceNumber") {
+                      if (sortBy === "salesInvoiceNumber") {
                         setSortDir(sortDir === "asc" ? "desc" : "asc");
                       } else {
-                        setSortBy("invoiceNumber");
+                        setSortBy("salesInvoiceNumber");
                         setSortDir("desc");
                       }
                     }}
                   >
-                    Invoice #
+                    Sales Inv #
                     <span
-                      className={`ml-1 ${sortBy === "invoiceNumber" ? "text-[#fd761a]" : "text-[#cbd5e1]"}`}
+                      className={`ml-1 ${sortBy === "salesInvoiceNumber" ? "text-[#fd761a]" : "text-[#cbd5e1]"}`}
                     >
-                      {sortBy === "invoiceNumber" && sortDir === "asc"
+                      {sortBy === "salesInvoiceNumber" && sortDir === "asc"
                         ? "\u25B2"
-                        : sortBy === "invoiceNumber" && sortDir === "desc"
+                        : sortBy === "salesInvoiceNumber" && sortDir === "desc"
+                          ? "\u25BC"
+                          : "\u25B2"}
+                    </span>
+                  </th>
+                  <th
+                    className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider cursor-pointer select-none hover:text-[#fd761a] transition-colors"
+                    onClick={() => {
+                      if (sortBy === "deliveryReceiptNumber") {
+                        setSortDir(sortDir === "asc" ? "desc" : "asc");
+                      } else {
+                        setSortBy("deliveryReceiptNumber");
+                        setSortDir("desc");
+                      }
+                    }}
+                  >
+                    Delivery Rcpt #
+                    <span
+                      className={`ml-1 ${sortBy === "deliveryReceiptNumber" ? "text-[#fd761a]" : "text-[#cbd5e1]"}`}
+                    >
+                      {sortBy === "deliveryReceiptNumber" && sortDir === "asc"
+                        ? "\u25B2"
+                        : sortBy === "deliveryReceiptNumber" && sortDir === "desc"
                           ? "\u25BC"
                           : "\u25B2"}
                     </span>
@@ -423,53 +495,16 @@ export default function TransactionsPage() {
                       <td className="p-4 font-mono text-sm text-[#0e212c]">
                         #{t.receiptNumber}
                       </td>
-                      <td
-                        className="p-4 text-sm text-[#0e212c] cursor-pointer"
-                        onClick={(e) => {
-                          if (editingInvoice?.id !== t.id) {
-                            e.stopPropagation();
-                            setEditingInvoice({
-                              id: t.id,
-                              value: t.invoiceNumber || "",
-                            });
-                          }
-                        }}
-                      >
-                        {editingInvoice?.id === t.id ? (
-                          <input
-                            type="text"
-                            value={editingInvoice.value}
-                            autoFocus
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) =>
-                              setEditingInvoice({
-                                ...editingInvoice,
-                                value: e.target.value,
-                              })
-                            }
-                            onBlur={() => {
-                              updateTransactionInvoice(
-                                editingInvoice.id,
-                                editingInvoice.value,
-                              );
-                              setEditingInvoice(null);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                (e.target as HTMLInputElement).blur();
-                              }
-                              if (e.key === "Escape") {
-                                setEditingInvoice(null);
-                              }
-                            }}
-                            className="w-full max-w-[160px] px-2 py-1 text-xs border border-[#fd761a] rounded focus:outline-none"
-                          />
-                        ) : (
-                          <span className="text-[#64748b]">
-                            {t.invoiceNumber || "\u2014"}
-                          </span>
-                        )}
-                      </td>
+                      {renderInvoiceCell(
+                        t,
+                        "salesInvoiceNumber",
+                        (t as any).salesInvoiceNumber || null,
+                      )}
+                      {renderInvoiceCell(
+                        t,
+                        "deliveryReceiptNumber",
+                        (t as any).deliveryReceiptNumber || null,
+                      )}
                       <td className="p-4 font-medium text-[#0e212c]">
                         {t.buyerName}
                       </td>
@@ -630,7 +665,9 @@ export default function TransactionsPage() {
                                 grandTotal: Number(t.grandTotal || 0),
                                 paymentMethod: t.paymentMethod || undefined,
                                 transactionType: t.transactionType,
-                                invoiceNumber: t.invoiceNumber || undefined,
+                                salesInvoiceNumber: (t as any).salesInvoiceNumber || undefined,
+                                deliveryReceiptNumber: (t as any).deliveryReceiptNumber || undefined,
+                                tin: (t as any).tin || undefined,
                                 isCredit: t.isCredit || undefined,
                                 creditDueDate: t.creditDueDate || undefined,
                               });
@@ -822,13 +859,33 @@ export default function TransactionsPage() {
                         {t.paymentMethod || "\u2014"}
                       </p>
                     </div>
-                    {t.invoiceNumber && (
+                    {(t as any).salesInvoiceNumber && (
                       <div>
                         <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                          Invoice #
+                          Sales Invoice #
                         </span>
                         <p className="text-[#0e212c] font-medium">
-                          {t.invoiceNumber}
+                          {(t as any).salesInvoiceNumber}
+                        </p>
+                      </div>
+                    )}
+                    {(t as any).deliveryReceiptNumber && (
+                      <div>
+                        <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                          Delivery Receipt #
+                        </span>
+                        <p className="text-[#0e212c] font-medium">
+                          {(t as any).deliveryReceiptNumber}
+                        </p>
+                      </div>
+                    )}
+                    {(t as any).tin && (
+                      <div>
+                        <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                          TIN
+                        </span>
+                        <p className="text-[#0e212c] font-medium">
+                          {(t as any).tin}
                         </p>
                       </div>
                     )}

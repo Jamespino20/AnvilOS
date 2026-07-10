@@ -137,6 +137,7 @@ export function POSClient({
   const [qtyInput, setQtyInput] = useState("");
   const [cartWidth, setCartWidth] = useState(550);
   const [isDragging, setIsDragging] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   const handleDragStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -545,8 +546,9 @@ export function POSClient({
         </div>
         {/* Product Selection Area */}
         <div className="flex-[2] flex flex-col gap-4 min-w-0">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-3">
+            {/* Search bar - own full-width line so it never gets squished */}
+            <div className="relative w-full">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
               <input
                 type="text"
@@ -556,50 +558,136 @@ export function POSClient({
                 className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
               />
             </div>
-            <select
-              value={parentCategory}
-              onChange={(e) => {
-                setParentCategory(e.target.value ? Number(e.target.value) : "");
-              }}
-              className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-            >
-              <option value="">All Categories</option>
-              {parentCategories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterBrand}
-              onChange={(e) =>
-                setFilterBrand(e.target.value ? Number(e.target.value) : "")
-              }
-              className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
-            >
-              <option value="">All Brands</option>
-              {brands.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterSupplier}
-              onChange={(e) =>
-                setFilterSupplier(e.target.value ? Number(e.target.value) : "")
-              }
-              className="px-3 py-2.5 min-w-[200px] border border-[#e2e8f0] rounded-lg text-sm bg-white text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
-            >
-              <option value="">All Suppliers</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id} style={{ color: "#0e212c" }}>
-                  {s.supplierName}
-                </option>
-              ))}
-            </select>
+            {/* Filters - second line, wrap on small screens */}
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={parentCategory}
+                onChange={(e) => {
+                  setParentCategory(e.target.value ? Number(e.target.value) : "");
+                }}
+                className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+              >
+                <option value="">All Categories</option>
+                {parentCategories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filterBrand}
+                onChange={(e) =>
+                  setFilterBrand(e.target.value ? Number(e.target.value) : "")
+                }
+                className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
+              >
+                <option value="">All Brands</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filterSupplier}
+                onChange={(e) =>
+                  setFilterSupplier(e.target.value ? Number(e.target.value) : "")
+                }
+                className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+              >
+                <option value="">All Suppliers</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id} style={{ color: "#0e212c" }}>
+                    {s.supplierName}
+                  </option>
+                ))}
+              </select>
+              <div className="flex items-center gap-1 border border-[#e2e8f0] rounded-lg p-0.5 bg-white shrink-0 sm:ml-auto">
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                    viewMode === "list"
+                      ? "bg-[#fd761a] text-white shadow-sm"
+                      : "text-[#64748b] hover:bg-[#f1f5f9]"
+                  }`}
+                  title="List view"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                  List
+                </button>
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                    viewMode === "grid"
+                      ? "bg-[#fd761a] text-white shadow-sm"
+                      : "text-[#64748b] hover:bg-[#f1f5f9]"
+                  }`}
+                  title="Grid view"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h4v4H4zM10 6h4v4h-4zM16 6h4v4h-4zM4 12h4v4H4zM10 12h4v4h-4zM16 12h4v4h-4zM4 18h4v4H4zM10 18h4v4h-4zM16 18h4v4h-4z" /></svg>
+                  Grid
+                </button>
+              </div>
+            </div>
           </div>
 
+          {viewMode === "list" ? (
+            <div className="flex-1 overflow-y-auto min-w-0 border border-[#e2e8f0] rounded-xl bg-white">
+              <table className="w-full">
+                <thead className="bg-[#f8fafc] border-b border-[#e2e8f0] sticky top-0">
+                  <tr>
+                    <th className="text-left p-3 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">Product</th>
+                    <th className="text-right p-3 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">Price</th>
+                    <th className="text-right p-3 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-20">Stock</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#e2e8f0]">
+                  {filtered.map((product) => (
+                    <tr
+                      key={product.id}
+                      onClick={() => addToCart(product)}
+                      className={`cursor-pointer hover:bg-[#f1f5f9] transition-colors ${product.quantity <= 0 ? "opacity-60" : ""}`}
+                    >
+                      <td className="p-3">
+                        <div className="flex items-center gap-3">
+                          {(product as any).imageUrl ? (
+                            <img src={(product as any).imageUrl} alt="" className="w-9 h-9 rounded-lg object-cover border border-[#e2e8f0] shrink-0" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-lg bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center shrink-0">
+                              <Package className="h-4 w-4 text-[#94a3b8]" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm text-[#0e212c] truncate">{product.productName}</p>
+                            <p className="text-[11px] text-[#94a3b8] truncate">{product.category}{(product as any).brandRel?.name ? ` · ${(product as any).brandRel.name}` : ""}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3 text-right font-bold text-[#fd761a] text-sm whitespace-nowrap">
+                        {Number(product.sellingPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="p-3 text-right font-mono text-sm">
+                        <span className={(() => {
+                          const effectiveQty = product.quantity - (pendingPOQty[product.id] || 0);
+                          return effectiveQty <= product.minThreshold && effectiveQty > 0 ? "text-rose-500 font-bold" : "text-[#94a3b8]";
+                        })()}>
+                          {product.quantity - (pendingPOQty[product.id] || 0)}
+                          {pendingPOQty[product.id] ? ` (${product.quantity})` : ""}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="p-8 text-center text-[#94a3b8] text-sm">
+                        No available products match your search
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : (
           <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 content-start min-w-0">
             {filtered.map((product) => (
               <button
@@ -654,6 +742,7 @@ export function POSClient({
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Cart Sidebar (Desktop) / Drawer (Mobile) */}

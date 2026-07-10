@@ -219,7 +219,7 @@ export async function createProduct(data: {
   sellByBox?: boolean;
   boxQuantity?: number;
 }) {
-  await requireAdmin();
+  await requireUser();
   const productName = data.productName.trim().replace(/\s+/g, " ");
   if (!productName) throw new Error("Product name is required.");
   assertNonNegative(data.sellingPrice, "Selling Price");
@@ -286,7 +286,7 @@ export async function updateProduct(
     boxQuantity: number;
   }>,
 ) {
-  await requireAdmin();
+  await requireUser();
   const current = await prisma.product.findUniqueOrThrow({ where: { id } });
   const productName = data.productName
     ? data.productName.trim().replace(/\s+/g, " ")
@@ -939,6 +939,10 @@ function transactionSortColumn(sortBy?: string) {
       return Prisma.sql`TRANSACTION_ID`;
     case "invoiceNumber":
       return Prisma.sql`INVOICE_NUMBER`;
+    case "salesInvoiceNumber":
+      return Prisma.sql`SALES_INVOICE_NUMBER`;
+    case "deliveryReceiptNumber":
+      return Prisma.sql`DELIVERY_RECEIPT_NUMBER`;
     case "buyerName":
       return Prisma.sql`BUYER_NAME`;
     case "transactionType":
@@ -1423,11 +1427,13 @@ export async function getDeliverers() {
 }
 
 export async function getReturnTransaction(receiptNumber: number) {
+  console.log(`[getReturnTransaction] lookup receiptNumber=${receiptNumber} (type=${typeof receiptNumber})`);
   const txn = await prisma.transaction.findFirst({
     where: { receiptNumber },
     include: { items: true },
   });
-  if (!txn) throw new Error("Receipt not found");
+  console.log(`[getReturnTransaction] result=${txn ? `found id=${txn.id} type=${txn.transactionType} items=${txn.items.length}` : "null"}`);
+  if (!txn) throw new Error(`Receipt #${receiptNumber} not found`);
   // Returns can only reference Sale transactions; Damage/Adjustment allows any
   if (
     txn.transactionType === "Return" ||
@@ -1457,32 +1463,39 @@ export async function getReturnTransaction(receiptNumber: number) {
 
 export async function updateTransactionInvoice(
   id: number,
-  invoiceNumber: string,
+  field: "invoiceNumber" | "salesInvoiceNumber" | "deliveryReceiptNumber",
+  value: string,
 ) {
   await requireAdmin();
   const txn = await prisma.transaction.findUniqueOrThrow({
     where: { id },
     select: { receiptNumber: true },
   });
-  if (invoiceNumber) {
+  if (value) {
     const existing = await prisma.transaction.findFirst({
-      where: { invoiceNumber, id: { not: id } },
+      where: { [field]: value, id: { not: id } },
       select: { id: true, receiptNumber: true },
     });
     if (existing) {
       throw new Error(
-        `Invoice number "${invoiceNumber}" already used on receipt #${existing.receiptNumber}`,
+        `Invoice number "${value}" already used on receipt #${existing.receiptNumber}`,
       );
     }
   }
   await prisma.transaction.update({
     where: { id },
-    data: { invoiceNumber: invoiceNumber || null },
+    data: { [field]: value || null },
   });
+  const label =
+    field === "salesInvoiceNumber"
+      ? "Sales Invoice"
+      : field === "deliveryReceiptNumber"
+        ? "Delivery Receipt"
+        : "Invoice";
   await logAudit(
     "Transactions",
     "Update Invoice",
-    `#${txn.receiptNumber}: invoice set to "${invoiceNumber}"`,
+    `#${txn.receiptNumber}: ${label} set to "${value}"`,
   );
   revalidatePath("/transactions");
 }

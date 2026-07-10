@@ -9,7 +9,7 @@ Last Update Date: June 13, 2026
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { prisma, getCachedUser, invalidateUserCache } from "./prisma";
+import { prisma, invalidateUserCache } from "./prisma";
 import { verifyTotp } from "@/lib/totp";
 import { checkRateLimit, RateLimitError } from "@/lib/rate-limit";
 
@@ -112,12 +112,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           session.user.id = token.sub as string;
           (session.user as any).username = token.username as string;
           (session.user as any).sellerId = token.sellerId as number;
-          (session.user as any).role = token.role as string;
           try {
-            const u = await getCachedUser(Number(token.sub));
-            (session.user as any).imageUrl = u.imageUrl;
-            (session.user as any).role = u.role;
-            (session.user as any).totpEnabled = u.totpEnabled;
+            const u = await prisma.user.findUnique({
+              where: { id: Number(token.sub) },
+              select: { imageUrl: true, role: true, totpEnabled: true },
+            });
+            (session.user as any).imageUrl = u?.imageUrl ?? null;
+            (session.user as any).role = u?.role ?? (token.role as string) ?? "STAFF";
+            (session.user as any).totpEnabled = u?.totpEnabled ?? false;
           } catch {
             (session.user as any).imageUrl = null;
             (session.user as any).role = token.role ?? "STAFF";

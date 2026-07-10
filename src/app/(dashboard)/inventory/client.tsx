@@ -116,6 +116,7 @@ export function InventoryClient({
   const perPage = 15;
   const isAdmin = role === "ADMIN" || role === "SUPERADMIN";
   const isSuperAdmin = role === "SUPERADMIN";
+  const isLoggedIn = Boolean(role);
 
   function normalizeName(value: string) {
     return value.trim().replace(/\s+/g, " ").toLowerCase();
@@ -590,7 +591,7 @@ export function InventoryClient({
             label="Export"
             title="Export inventory"
           />
-          {isAdmin && (
+          {isLoggedIn && (
             <button
               onClick={() => {
                 setForm(defaultForm);
@@ -695,11 +696,9 @@ export function InventoryClient({
                 <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Status
                 </th>
-                {isAdmin && (
-                  <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-24">
-                    Actions
-                  </th>
-                )}
+                <th className="text-center p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-24">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e2e8f0]">
@@ -778,16 +777,16 @@ export function InventoryClient({
                         {badge.label}
                       </span>
                     </td>
-                    {isAdmin && (
-                      <td className="p-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => openEdit(product)}
-                            className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all"
-                            title="Edit product"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => openEdit(product)}
+                          className="p-1.5 rounded-md text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 transition-all"
+                          title="Edit product"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        {isAdmin && (
                           <button
                             onClick={() => {
                               if (product.quantity > 0) {
@@ -810,16 +809,16 @@ export function InventoryClient({
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        </div>
-                      </td>
-                    )}
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
                 <tr>
                   <td
-                    colSpan={isAdmin ? 11 : 9}
+                    colSpan={10}
                     className="p-8 text-center text-[#94a3b8]"
                   >
                     No products found
