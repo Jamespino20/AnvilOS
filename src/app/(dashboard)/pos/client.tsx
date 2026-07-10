@@ -445,25 +445,28 @@ export function POSClient({
     if (!returnReceipt) return;
     const num = parseInt(returnReceipt, 10);
     if (isNaN(num)) return;
-    setLoadingReturn(true);
-    setCart([]);
-    getReturnTransaction(num)
-      .then((orig) => {
-        setBuyerName(orig.buyerName);
-        const autoItems = orig.items.map((i) => ({
-          product: i.product,
-          quantity: txnType === "Return" ? 0 : (i.quantity ?? 0),
-          originalQty: i.quantity ?? 0,
-        } as unknown as CartItem));
-        setCart(autoItems);
-      })
-      .catch((err) => {
-        setCart([]);
-        toast.error(
-          err instanceof Error ? err.message : "Failed to load receipt",
-        );
-      })
-      .finally(() => setLoadingReturn(false));
+    const timer = setTimeout(() => {
+      setLoadingReturn(true);
+      setCart([]);
+      getReturnTransaction(num)
+        .then((orig) => {
+          setBuyerName(orig.buyerName);
+          const autoItems = orig.items.map((i) => ({
+            product: i.product,
+            quantity: txnType === "Return" ? 0 : (i.quantity ?? 0),
+            originalQty: i.quantity ?? 0,
+          } as unknown as CartItem));
+          setCart(autoItems);
+        })
+        .catch((err) => {
+          setCart([]);
+          const msg =
+            err instanceof Error ? err.message : "Failed to load receipt";
+          toast.error(msg.replace(/^Receipt #(\d+) not found$/, "Receipt [$1] was not found."));
+        })
+        .finally(() => setLoadingReturn(false));
+    }, 500);
+    return () => clearTimeout(timer);
   }, [returnReceipt, txnType]);
 
   useEffect(() => {
