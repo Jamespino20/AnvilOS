@@ -8,7 +8,7 @@ Last Update Date: June 23, 2026
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -30,9 +30,9 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
-  adjustStock,
 } from "@/actions";
 import { PageHeader } from "@/components/ui/page-header";
+
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
 import type { Product, Category, Supplier, Brand } from "@prisma/client";
@@ -117,13 +117,6 @@ export function InventoryClient({
   const isAdmin = role === "ADMIN" || role === "SUPERADMIN";
   const isSuperAdmin = role === "SUPERADMIN";
 
-  // Inline quantity editing
-  const [editQtyId, setEditQtyId] = useState<number | null>(null);
-  const [editQtyVal, setEditQtyVal] = useState("");
-  const [savingQty, setSavingQty] = useState(false);
-  const [confirmQty, setConfirmQty] = useState<{ id: number; name: string; oldQty: number; newQty: number } | null>(null);
-  const editQtyRef = useRef<HTMLInputElement>(null);
-
   function normalizeName(value: string) {
     return value.trim().replace(/\s+/g, " ").toLowerCase();
   }
@@ -152,42 +145,8 @@ export function InventoryClient({
     });
   }
 
-  useEffect(() => {
-    if (editQtyId !== null && editQtyRef.current) {
-      editQtyRef.current.focus();
-      editQtyRef.current.select();
-    }
-  }, [editQtyId]);
-
   const duplicate = duplicateProductName();
   const deleteTargetProduct = initialProducts.find((p) => p.id === deleteTarget);
-
-  async function handleSaveQty(productId: number) {
-    const val = parseInt(editQtyVal, 10);
-    if (isNaN(val) || val < 0) {
-      setEditQtyId(null);
-      return;
-    }
-    const product = initialProducts.find((p) => p.id === productId);
-    if (!product) return;
-    setConfirmQty({ id: productId, name: product.productName, oldQty: product.quantity, newQty: val });
-    setEditQtyId(null);
-  }
-
-  async function confirmAdjustStock() {
-    if (!confirmQty) return;
-    setSavingQty(true);
-    try {
-      await adjustStock(confirmQty.id, confirmQty.newQty);
-      setConfirmQty(null);
-      router.refresh();
-      toast.success("Quantity updated");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update quantity");
-    } finally {
-      setSavingQty(false);
-    }
-  }
 
   const filtered = initialProducts
     .filter((p) => {
@@ -397,6 +356,7 @@ export function InventoryClient({
         brandName: form.brandName,
         unitPrice: form.costPrice === "" ? undefined : Number(form.costPrice),
         sellingPrice: form.sellingPrice === "" ? undefined : Number(form.sellingPrice),
+        quantity: Number(form.quantity) || 0,
         minThreshold: form.minThreshold === "" ? 5 : Number(form.minThreshold),
         imageUrl: form.imageUrl || undefined,
         isFastMoving: form.isFastMoving,
@@ -747,39 +707,7 @@ export function InventoryClient({
                     <td
                       className={`p-4 text-right font-mono ${product.quantity <= product.minThreshold ? "text-[#fd761a] font-bold" : "text-[#0e212c]"}`}
                     >
-                      {isAdmin && editQtyId === product.id ? (
-                        <span className="inline-flex items-center gap-1">
-                          <input
-                            ref={editQtyRef}
-                            type="number"
-                            min={0}
-                            value={editQtyVal}
-                            onChange={(e) => setEditQtyVal(e.target.value)}
-                            onBlur={() => handleSaveQty(product.id)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleSaveQty(product.id);
-                              if (e.key === "Escape") setEditQtyId(null);
-                            }}
-                            className="w-16 h-8 px-2 text-right text-xs font-mono border border-[#fd761a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fd761a]/20"
-                          />
-                          {savingQty && (
-                            <Loader2 className="h-3 w-3 animate-spin text-[#64748b]" />
-                          )}
-                        </span>
-                      ) : isAdmin ? (
-                        <button
-                          onClick={() => {
-                            setEditQtyId(product.id);
-                            setEditQtyVal(String(product.quantity));
-                          }}
-                          className="cursor-pointer hover:bg-[#f1f5f9] px-2 py-1 -ml-2 rounded transition-colors text-right font-mono w-full"
-                          title="Click to edit quantity"
-                        >
-                          {product.quantity}
-                        </button>
-                      ) : (
-                        product.quantity
-                      )}
+                      {product.quantity}
                     </td>
                     <td className="p-4 text-right font-mono text-[#94a3b8]">
                       {product.minThreshold}
@@ -1388,8 +1316,10 @@ export function InventoryClient({
                   <input
                     type="number"
                     value={form.quantity}
-                    disabled
-                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#94a3b8] bg-[#f8fafc] focus:outline-none cursor-not-allowed"
+                    onChange={(e) =>
+                      setForm({ ...form, quantity: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
                 </div>
                 <div>
@@ -1549,21 +1479,6 @@ export function InventoryClient({
           </div>
         </div>
       )}
-
-      {/* Stock Adjustment Confirmation Modal */}
-      <ConfirmModal
-        open={confirmQty !== null}
-        onClose={() => setConfirmQty(null)}
-        onConfirm={confirmAdjustStock}
-        title="Confirm Stock Change"
-        message={
-          confirmQty
-            ? `Changing stock of "${confirmQty.name}" from ${confirmQty.oldQty} to ${confirmQty.newQty}. This is a direct stock override that bypasses normal transaction flow. Consider using Restocks or POS instead.`
-            : ""
-        }
-        confirmLabel={savingQty ? "Confirming..." : "Confirm Change"}
-        variant="warning"
-      />
 
       {/* Delete Confirm Modal */}
       <ConfirmModal

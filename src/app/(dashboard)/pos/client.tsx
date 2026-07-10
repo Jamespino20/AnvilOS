@@ -436,10 +436,9 @@ export function POSClient({
     if (txnType !== "Return" && txnType !== "Damage" && txnType !== "Adjustment") return;
     if (!returnReceipt) return;
     const num = parseInt(returnReceipt, 10);
-    if (isNaN(num)) return;
     setLoadingReturn(true);
     setCart([]);
-    getReturnTransaction(num)
+    getReturnTransaction(isNaN(num) ? -1 : num, returnReceipt)
       .then((orig) => {
         setBuyerName(orig.buyerName);
         const autoItems = orig.items

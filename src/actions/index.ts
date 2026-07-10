@@ -1343,11 +1343,23 @@ export async function getDeliverers() {
   return result.map((r) => r.delivererName!);
 }
 
-export async function getReturnTransaction(receiptNumber: number) {
-  const txn = await prisma.transaction.findFirst({
+export async function getReturnTransaction(receiptNumber: number, invoiceString?: string) {
+  let txn = await prisma.transaction.findFirst({
     where: { receiptNumber },
     include: { items: true },
   });
+  if (!txn && invoiceString) {
+    txn = await prisma.transaction.findFirst({
+      where: {
+        OR: [
+          { salesInvoiceNumber: invoiceString },
+          { deliveryInvoiceNumber: invoiceString },
+          { invoiceNumber: invoiceString },
+        ],
+      },
+      include: { items: true },
+    });
+  }
   if (!txn) throw new Error("Receipt not found");
   // Returns can only reference Sale transactions; Damage/Adjustment allows any
   if (txn.transactionType === "Return" || txn.transactionType === "Damage" || txn.transactionType === "Adjustment")
