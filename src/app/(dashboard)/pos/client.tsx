@@ -455,8 +455,9 @@ export function POSClient({
           .filter((x): x is CartItem => x !== null);
         setCart(autoItems);
       })
-      .catch(() => {
+      .catch((err) => {
         setCart([]);
+        toast.error(err instanceof Error ? err.message : "Failed to load receipt");
       })
       .finally(() => setLoadingReturn(false));
   }, [returnReceipt, txnType, products]);

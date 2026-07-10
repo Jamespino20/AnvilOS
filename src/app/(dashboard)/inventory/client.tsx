@@ -183,7 +183,7 @@ export function InventoryClient({
       router.refresh();
       toast.success("Quantity updated");
     } catch (e) {
-      toast.error("Failed to update quantity");
+      toast.error(e instanceof Error ? e.message : "Failed to update quantity");
     } finally {
       setSavingQty(false);
     }

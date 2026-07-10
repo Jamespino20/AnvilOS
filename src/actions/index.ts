@@ -1349,8 +1349,9 @@ export async function getReturnTransaction(receiptNumber: number) {
     include: { items: true },
   });
   if (!txn) throw new Error("Receipt not found");
-  if (txn.transactionType !== "SaleWalkIn" && txn.transactionType !== "SalePO")
-    throw new Error("Can only return Sale transactions");
+  // Returns can only reference Sale transactions; Damage/Adjustment allows any
+  if (txn.transactionType === "Return" || txn.transactionType === "Damage" || txn.transactionType === "Adjustment")
+    throw new Error("Cannot reference another Return/Damage/Adjustment");
   return {
     buyerName: txn.buyerName,
     items: txn.items.map((i) => ({
