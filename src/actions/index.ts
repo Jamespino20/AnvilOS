@@ -1422,23 +1422,9 @@ export async function getDeliverers() {
   return result.map((r) => r.delivererName!);
 }
 
-export async function getReturnTransaction(
-  receiptNumber: number,
-  invoiceString?: string,
-) {
+export async function getReturnTransaction(receiptNumber: number) {
   const txn = await prisma.transaction.findFirst({
-    where: {
-      OR: [
-        { receiptNumber },
-        ...(invoiceString
-          ? [
-              { salesInvoiceNumber: invoiceString },
-              { deliveryReceiptNumber: invoiceString },
-              { invoiceNumber: invoiceString },
-            ]
-          : []),
-      ],
-    },
+    where: { receiptNumber },
     include: { items: true },
   });
   if (!txn) throw new Error("Receipt not found");

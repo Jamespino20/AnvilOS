@@ -443,9 +443,10 @@ export function POSClient({
       return;
     if (!returnReceipt) return;
     const num = parseInt(returnReceipt, 10);
+    if (isNaN(num)) return;
     setLoadingReturn(true);
     setCart([]);
-    getReturnTransaction(isNaN(num) ? -1 : num, returnReceipt)
+    getReturnTransaction(num)
       .then((orig) => {
         setBuyerName(orig.buyerName);
         const autoItems = orig.items
