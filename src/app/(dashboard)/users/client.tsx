@@ -24,6 +24,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { createUser, updateUser, deleteUser, bulkDeleteUsers } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ExportDialog } from "@/components/export-dialog";
@@ -162,7 +163,7 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
     if (!form.sellerName || !form.username || !form.password) return;
     setSaving(true);
     try {
-      await createUser(form);
+      await callAction(createUser(form));
       setShowAdd(false);
       resetForm();
       router.refresh();
@@ -186,7 +187,7 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
         role: form.role,
       };
       if (form.password) payload.password = form.password;
-      await updateUser(showEdit, payload);
+      await callAction(updateUser(showEdit, payload));
       setShowEdit(null);
       resetForm();
       router.refresh();
@@ -202,7 +203,7 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
     if (!toggleTarget) return;
     setToggling(true);
     try {
-      await deleteUser(toggleTarget.id);
+      await callAction(deleteUser(toggleTarget.id));
       setToggleTarget(null);
       router.refresh();
       toast.success(

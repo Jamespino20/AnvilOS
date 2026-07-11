@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { getTransactions, getTransactionsCount, getProducts, processRestock, createTransaction } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import { Search, ArrowDownUp, Loader2, ChevronDown, ChevronUp, CheckCircle, Plus, ShoppingCart, Minus, Package, X, Truck, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
@@ -78,7 +79,7 @@ export default function RestocksPage() {
   async function handleProcess(id: number) {
     setProcessingId(id);
     try {
-      await processRestock(id);
+      await callAction(processRestock(id));
       refresh();
       toast.success("Restock processed successfully");
     } catch (e) {

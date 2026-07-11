@@ -16,6 +16,7 @@ import {
   updateTransaction,
   getDeliverers,
 } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import {
   Search,
   Loader2,
@@ -171,7 +172,7 @@ export default function OrdersPage() {
     if (!editId) return;
     setSaving(true);
     try {
-      await updateTransaction(editId, {
+      await callAction(updateTransaction(editId, {
         buyerName: editBuyer,
         buyerAddress: editAddress,
         buyerContact: editContact,
@@ -182,7 +183,7 @@ export default function OrdersPage() {
         isCredit: editIsCredit,
         creditDueDate: editIsCredit ? editCreditDueDate : null,
         items: editItems,
-      });
+      }));
       loadOrders();
       setEditId(null);
       toast.success("Order updated");

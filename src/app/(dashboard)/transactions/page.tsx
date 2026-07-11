@@ -17,6 +17,7 @@ import {
   markCreditAsPaid,
   getProducts,
 } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import {
   Search,
   Receipt,
@@ -548,7 +549,15 @@ export default function TransactionsPage() {
                           )}
                           {(t as any).isCredit && !(t as any).creditPaidAt && (
                             <button
-                              onClick={() => markCreditAsPaid(t.id)}
+                              onClick={async () => {
+                                try {
+                                  await callAction(markCreditAsPaid(t.id));
+                                  toast.success("Credit marked as paid");
+                                  window.location.reload();
+                                } catch (e: any) {
+                                  toast.error(e.message || "Failed to mark credit as paid");
+                                }
+                              }}
                               className="px-2 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded hover:bg-blue-700"
                             >
                               Mark Paid

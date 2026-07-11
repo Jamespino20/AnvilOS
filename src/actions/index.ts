@@ -1573,6 +1573,7 @@ export async function updateTransaction(
     }[];
   },
 ) {
+  return safeCall(async () => {
   await requireAdmin();
   const txn = await prisma.transaction.findUniqueOrThrow({
     where: { id },
@@ -1668,9 +1669,11 @@ export async function updateTransaction(
   );
   revalidatePath("/transactions");
   return updated;
+  });
 }
 
 export async function markCreditAsPaid(id: number) {
+  return safeCall(async () => {
   await requireAdmin();
   const txn = await prisma.transaction.findUniqueOrThrow({ where: { id } });
   if (!txn.isCredit) throw new Error("Transaction is not a credit sale");
@@ -1686,9 +1689,8 @@ export async function markCreditAsPaid(id: number) {
   );
   revalidatePath("/transactions");
   return updated;
+  });
 }
-
-// ─────────── Stock KPIs ───────────
 
 export async function getDailySales(date?: string) {
   const start = date ? new Date(date) : new Date();
@@ -2015,6 +2017,7 @@ export async function getDashboardCharts() {
 }
 
 export async function updateProfile(data: { name: string; imageUrl?: string }) {
+  return safeCall(async () => {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
   const updateData: any = { sellerName: data.name };
@@ -2027,9 +2030,11 @@ export async function updateProfile(data: { name: string; imageUrl?: string }) {
   await logAudit("Settings", "Update Profile", `Name changed to ${data.name}`);
   revalidatePath("/settings");
   return user;
+  });
 }
 
 export async function updatePassword(newPassword: string) {
+  return safeCall(async () => {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
   const bcrypt = await import("bcryptjs");
@@ -2048,6 +2053,7 @@ export async function updatePassword(newPassword: string) {
   await logAudit("Settings", "Change Password", "Password changed");
   revalidatePath("/settings");
   return user;
+  });
 }
 
 export async function startTotpSetup() {
@@ -2064,6 +2070,7 @@ export async function startTotpSetup() {
 }
 
 export async function confirmTotpSetup(code: string) {
+  return safeCall(async () => {
   const session = await requireUser();
   const userId = Number((session.user as any).id);
   const user = await prisma.user.findUniqueOrThrow({
@@ -2080,6 +2087,7 @@ export async function confirmTotpSetup(code: string) {
   invalidateUserCache(userId);
   await logAudit("Settings", "Enable TOTP", "Authenticator app enabled");
   return { success: true };
+  });
 }
 
 export async function disableTotp() {
@@ -2095,6 +2103,7 @@ export async function disableTotp() {
 }
 
 export async function processRestock(transactionId: number) {
+  return safeCall(async () => {
   await requireAdmin();
   const txn = await prisma.transaction.findUniqueOrThrow({
     where: { id: transactionId },
@@ -2135,6 +2144,7 @@ export async function processRestock(transactionId: number) {
   revalidatePath("/restocks");
   revalidatePath("/inventory");
   return txn;
+  });
 }
 
 export async function createBuyer(data: {
@@ -2143,6 +2153,7 @@ export async function createBuyer(data: {
   contact?: string;
   email?: string;
 }) {
+  return safeCall(async () => {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
   const sellerId = Number(session.user.id);
@@ -2163,6 +2174,7 @@ export async function createBuyer(data: {
   revalidatePath("/buyers");
   revalidateTag("buyers", "default");
   return buyer;
+  });
 }
 
 export async function updateBuyerInfo(
@@ -2174,6 +2186,7 @@ export async function updateBuyerInfo(
     imageUrl?: string | null;
   },
 ) {
+  return safeCall(async () => {
   await requireAdmin();
   const session = await auth();
   if (!session?.user?.email) throw new Error("Unauthorized");
@@ -2209,6 +2222,7 @@ export async function updateBuyerInfo(
   revalidatePath("/buyers");
   revalidateTag("buyers", "default");
   return txns;
+  });
 }
 
 // ─────────── Custom Downloadables ───────────
@@ -2933,6 +2947,7 @@ export async function importData(
   table: string,
   rows: Record<string, string>[],
 ) {
+  return safeCall(async () => {
   await requireAdmin();
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
@@ -3028,6 +3043,7 @@ export async function importData(
   );
   revalidatePath(`/${table}`);
   return { imported: count };
+  });
 }
 
 // ─────────── User Management (Admin) ───────────
@@ -3085,6 +3101,7 @@ export async function createUser(data: {
   password: string;
   role: "SUPERADMIN" | "ADMIN" | "STAFF";
 }) {
+  return safeCall(async () => {
   await requireAdmin();
   const bcrypt = await import("bcryptjs");
   const exists = await prisma.user.findFirst({
@@ -3116,6 +3133,7 @@ export async function createUser(data: {
   );
   revalidatePath("/users");
   return { id: user.id };
+  });
 }
 
 export async function updateUser(
@@ -3129,6 +3147,7 @@ export async function updateUser(
     password?: string;
   },
 ) {
+  return safeCall(async () => {
   await requireAdmin();
   const session = await auth();
   const currentRole = (session?.user as any)?.role;
@@ -3172,9 +3191,11 @@ export async function updateUser(
   );
   revalidatePath("/users");
   return { id: user.id };
+  });
 }
 
 export async function deleteUser(id: number) {
+  return safeCall(async () => {
   await requireAdmin();
   const session = await auth();
   const currentRole = (session?.user as any)?.role;
@@ -3203,6 +3224,7 @@ export async function deleteUser(id: number) {
   );
   revalidatePath("/users");
   return { success: true };
+  });
 }
 
 export async function bulkToggleUsers(ids: number[], activate: boolean) {

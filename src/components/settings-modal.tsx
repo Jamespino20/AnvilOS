@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { X, Settings as SettingsIcon, Save, Loader2, User, Moon, Sun, Key, Lock, Camera, Eye, EyeOff } from "lucide-react";
 import { updateProfile, updatePassword, startTotpSetup, confirmTotpSetup, disableTotp } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 
@@ -83,7 +84,7 @@ export function SettingsModal({ open, onClose }: Props) {
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await updateProfile({ name: name.trim(), imageUrl: profileImage || undefined });
+      await callAction(updateProfile({ name: name.trim(), imageUrl: profileImage || undefined }));
     await update({ name: name.trim(), imageUrl: profileImage || undefined });
     router.refresh();
     onClose();
@@ -102,7 +103,7 @@ export function SettingsModal({ open, onClose }: Props) {
     if (newPassword !== confirmPassword) { setPwError("Passwords do not match"); return; }
     setChangingPw(true);
     try {
-      await updatePassword(newPassword);
+      await callAction(updatePassword(newPassword));
       setNewPassword("");
       setConfirmPassword("");
     setPwError("");
@@ -146,7 +147,7 @@ export function SettingsModal({ open, onClose }: Props) {
     if (!totpCode || totpCode.length !== 6) return;
     setVerifyingTotp(true);
     try {
-      await confirmTotpSetup(totpCode);
+      await callAction(confirmTotpSetup(totpCode));
       await update();
       setTotpSecret(null);
       setTotpCode("");

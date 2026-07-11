@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import ExcelJS from "exceljs";
 import { Upload, X, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
 import { validateImportData, importData } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import { getImportConfig } from "@/lib/import-configs";
 
 interface Props {
@@ -114,7 +115,7 @@ export function ImportButton({ table, onImported, title }: Props) {
   async function handleImport() {
     setImporting(true);
     try {
-      const result = await importData(table, parsed);
+      const result = await callAction(importData(table, parsed));
       setResult(result);
       onImported();
     } catch (e: any) {

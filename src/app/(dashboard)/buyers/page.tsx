@@ -16,6 +16,7 @@ import {
   updateBuyerInfo,
   createBuyer,
 } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import {
   Search,
   Loader2,
@@ -588,12 +589,12 @@ export default function BuyersPage() {
                     onClick={async () => {
                       setSavingBuyer(true);
                       try {
-                        await updateBuyerInfo(selectedBuyer!, {
+                        await callAction(updateBuyerInfo(selectedBuyer!, {
                           buyerAddress: editAddress,
                           buyerContact: editContact,
                           buyerEmail: editEmail,
                           imageUrl: editImageUrl,
-                        });
+                        }));
                         setHistory((prev) =>
                           prev.map((t) => ({
                             ...t,
@@ -997,12 +998,12 @@ export default function BuyersPage() {
                     if (!addBuyerName.trim()) return;
                     setAddingBuyer(true);
                     try {
-                      await createBuyer({
+                      await callAction(createBuyer({
                         name: addBuyerName.trim(),
                         address: addBuyerAddress || undefined,
                         contact: addBuyerContact || undefined,
                         email: addBuyerEmail || undefined,
-                      });
+                      }));
                       setShowAddBuyer(false);
                       setAddBuyerName("");
                       setAddBuyerAddress("");

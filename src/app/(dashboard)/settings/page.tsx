@@ -28,6 +28,7 @@ import {
   startTotpSetup,
   updatePassword,
 } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 
@@ -146,7 +147,7 @@ export default function SettingsPage() {
     }
     setSaving(true);
     try {
-      await updatePassword(newPassword);
+      await callAction(updatePassword(newPassword));
       setPasswordMsg({
         type: "success",
         text: "Password changed successfully",
@@ -182,7 +183,7 @@ export default function SettingsPage() {
   async function handleConfirmTotp() {
     setSaving(true);
     try {
-      await confirmTotpSetup(totpCode);
+      await callAction(confirmTotpSetup(totpCode));
       setTotpEnabled(true);
       setTotpSecret("");
       setTotpCode("");
