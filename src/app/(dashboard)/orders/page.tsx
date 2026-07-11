@@ -830,10 +830,18 @@ export default function OrdersPage() {
                     </div>
                     <div>
                       <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                        Invoice #
+                        Sales Inv #
                       </p>
                       <p className="font-mono text-[#0e212c] font-medium mt-0.5">
-                        {order.invoiceNumber || "N/A"}
+                        {(order as any).salesInvoiceNumber || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                        Delivery Rcpt #
+                      </p>
+                      <p className="font-mono text-[#0e212c] font-medium mt-0.5">
+                        {(order as any).deliveryReceiptNumber || "N/A"}
                       </p>
                     </div>
                   </div>

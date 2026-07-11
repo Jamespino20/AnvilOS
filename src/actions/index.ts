@@ -937,8 +937,6 @@ function transactionSortColumn(sortBy?: string) {
   switch (sortBy) {
     case "receiptNumber":
       return Prisma.sql`TRANSACTION_ID`;
-    case "invoiceNumber":
-      return Prisma.sql`INVOICE_NUMBER`;
     case "salesInvoiceNumber":
       return Prisma.sql`SALES_INVOICE_NUMBER`;
     case "deliveryReceiptNumber":
@@ -1137,7 +1135,6 @@ export async function createTransaction(data: {
     costPrice?: number;
   }[];
   returnForReceiptNumber?: number;
-  invoiceNumber?: string;
   salesInvoiceNumber?: string;
   deliveryReceiptNumber?: string;
   tin?: string;
@@ -1159,31 +1156,6 @@ export async function createTransaction(data: {
     select: { receiptNumber: true },
   });
   const receiptNumber = (lastReceipt?.receiptNumber ?? 1000) + 1;
-
-  // Duplicate invoice check
-  const invoiceFields = [
-    { field: "Invoice", value: data.invoiceNumber },
-    { field: "Sales Invoice", value: data.salesInvoiceNumber },
-    { field: "Delivery Receipt", value: data.deliveryReceiptNumber },
-  ];
-  for (const inv of invoiceFields) {
-    if (!inv.value) continue;
-    const existingInvoice = await prisma.transaction.findFirst({
-      where: {
-        OR: [
-          { invoiceNumber: inv.value },
-          { salesInvoiceNumber: inv.value },
-          { deliveryReceiptNumber: inv.value },
-        ],
-      },
-      select: { id: true, receiptNumber: true },
-    });
-    if (existingInvoice) {
-      throw new Error(
-        `${inv.field} number "${inv.value}" already used on receipt #${existingInvoice.receiptNumber}`,
-      );
-    }
-  }
 
   // Return validation
   if (data.transactionType === "Return" && data.returnForReceiptNumber) {
@@ -1263,7 +1235,6 @@ export async function createTransaction(data: {
         transactionDate: new Date(),
         grandTotal: data.grandTotal,
         returnForReceiptNumber: data.returnForReceiptNumber,
-        invoiceNumber: data.invoiceNumber,
         salesInvoiceNumber: data.salesInvoiceNumber,
         deliveryReceiptNumber: data.deliveryReceiptNumber,
         tin: data.tin,
@@ -1471,7 +1442,7 @@ export async function getReturnTransaction(receiptNumber: number) {
 
 export async function updateTransactionInvoice(
   id: number,
-  field: "invoiceNumber" | "salesInvoiceNumber" | "deliveryReceiptNumber",
+  field: "salesInvoiceNumber" | "deliveryReceiptNumber",
   value: string,
 ) {
   await requireAdmin();
@@ -1479,17 +1450,6 @@ export async function updateTransactionInvoice(
     where: { id },
     select: { receiptNumber: true },
   });
-  if (value) {
-    const existing = await prisma.transaction.findFirst({
-      where: { [field]: value, id: { not: id } },
-      select: { id: true, receiptNumber: true },
-    });
-    if (existing) {
-      throw new Error(
-        `Invoice number "${value}" already used on receipt #${existing.receiptNumber}`,
-      );
-    }
-  }
   await prisma.transaction.update({
     where: { id },
     data: { [field]: value || null },
@@ -1497,9 +1457,7 @@ export async function updateTransactionInvoice(
   const label =
     field === "salesInvoiceNumber"
       ? "Sales Invoice"
-      : field === "deliveryReceiptNumber"
-        ? "Delivery Receipt"
-        : "Invoice";
+      : "Delivery Receipt";
   await logAudit(
     "Transactions",
     "Update Invoice",
@@ -2188,7 +2146,9 @@ export async function processRestock(transactionId: number) {
   );
 
   // Fire-and-forget low stock alert after restock
-  import("@/actions/email").then((m) => m.checkAndAlertLowStock());
+  import("@/actions/email")
+    .then((m) => m.checkAndAlertLowStock())
+    .catch((e) => console.error("Low stock alert failed:", e));
 
   revalidatePath("/restocks");
   revalidatePath("/inventory");

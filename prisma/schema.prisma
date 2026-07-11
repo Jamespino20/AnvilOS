@@ -200,7 +200,6 @@ model Product {
 model Transaction {
   id                     Int               @id @default(autoincrement()) @map("TRANSACTION_ID")
   receiptNumber          Int               @map("RECEIPT_NUMBER")
-  invoiceNumber          String?           @map("INVOICE_NUMBER")
   salesInvoiceNumber     String?           @map("SALES_INVOICE_NUMBER")
   deliveryReceiptNumber  String?           @map("DELIVERY_RECEIPT_NUMBER")
   tin                    String?           @map("TIN")

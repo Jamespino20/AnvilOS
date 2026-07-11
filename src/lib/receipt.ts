@@ -40,7 +40,6 @@ export async function downloadReceiptPdf(data: {
   grandTotal: number;
   paymentMethod?: string;
   transactionType: string;
-  invoiceNumber?: string;
   salesInvoiceNumber?: string;
   deliveryReceiptNumber?: string;
   tin?: string;
@@ -148,18 +147,6 @@ export async function downloadReceiptPdf(data: {
     doc.text(`DELIVERY RECEIPT #${data.deliveryReceiptNumber}`, cx, y, {
       align: "center",
     });
-    y += 4;
-    doc.setFont("courier", "normal");
-  }
-  if (
-    data.invoiceNumber &&
-    !data.salesInvoiceNumber &&
-    !data.deliveryReceiptNumber
-  ) {
-    doc.setFont("courier", "bold");
-    doc.setFontSize(7);
-    doc.setTextColor(14, 33, 44);
-    doc.text(`INVOICE #${data.invoiceNumber}`, cx, y, { align: "center" });
     y += 4;
     doc.setFont("courier", "normal");
   }

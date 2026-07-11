@@ -307,18 +307,17 @@ export async function sendSystemTransactionAlert(
 /** Check all products for low/out-of-stock and send alerts + create notifications */
 export async function checkAndAlertLowStock() {
   const [lowStockProducts, outOfStockProducts] = await Promise.all([
-    prisma.$queryRaw<
-      { productName: string; quantity: number; minThreshold: number }[]
-    >`
-      SELECT "productName", "quantity", "minThreshold" 
-      FROM "products" 
-      WHERE "quantity" <= "minThreshold" AND "quantity" > 0 AND "isAvailable" = true
-    `,
-    prisma.$queryRaw<{ productName: string }[]>`
-      SELECT "productName"
-      FROM "products"
-      WHERE "quantity" = 0 AND "isAvailable" = true
-    `,
+    prisma.product.findMany({
+      where: {
+        isAvailable: true,
+        quantity: { gt: 0, lte: prisma.product.fields.minThreshold },
+      },
+      select: { productName: true, quantity: true, minThreshold: true },
+    }),
+    prisma.product.findMany({
+      where: { isAvailable: true, quantity: 0 },
+      select: { productName: true },
+    }),
   ]);
 
   if (lowStockProducts.length > 0) {

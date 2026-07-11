@@ -122,7 +122,6 @@ export function POSClient({
     salesInvoiceNumber?: string;
     deliveryReceiptNumber?: string;
     tin?: string;
-    invoiceNumber?: string;
     isCredit?: boolean;
     creditDueDate?: Date;
     chequeDetails?: {
@@ -276,8 +275,8 @@ export function POSClient({
     const hasItems =
       txnType === "Return" ? cart.some((c) => c.quantity > 0) : cart.length > 0;
     if (!hasItems || !buyerName) return;
-    if (!salesInvoiceNumber.trim()) {
-      setError("Sales Invoice number is required");
+    if (!salesInvoiceNumber.trim() && !deliveryReceiptNumber.trim()) {
+      setError("Sales Invoice or Delivery Receipt number is required");
       return;
     }
     setError("");
@@ -288,7 +287,6 @@ export function POSClient({
         buyerAddress: buyerAddress || undefined,
         buyerContact: buyerContact || undefined,
         buyerEmail: buyerEmail || undefined,
-        invoiceNumber: salesInvoiceNumber || deliveryReceiptNumber || undefined,
         salesInvoiceNumber: salesInvoiceNumber || undefined,
         deliveryReceiptNumber: deliveryReceiptNumber || undefined,
         tin: tin || undefined,
@@ -350,7 +348,7 @@ export function POSClient({
         salesInvoiceNumber: salesInvoiceNumber || undefined,
         deliveryReceiptNumber: deliveryReceiptNumber || undefined,
         tin: tin || undefined,
-        invoiceNumber: salesInvoiceNumber || deliveryReceiptNumber || undefined,
+  
         isCredit,
         creditDueDate:
           isCredit && creditDueDate ? new Date(creditDueDate) : undefined,
@@ -385,7 +383,7 @@ export function POSClient({
         salesInvoiceNumber: salesInvoiceNumber || undefined,
         deliveryReceiptNumber: deliveryReceiptNumber || undefined,
         tin: tin || undefined,
-        invoiceNumber: salesInvoiceNumber || deliveryReceiptNumber || undefined,
+  
         isCredit,
         creditDueDate:
           isCredit && creditDueDate ? new Date(creditDueDate) : undefined,
@@ -1215,7 +1213,6 @@ export function POSClient({
                       grandTotal: done.grandTotal,
                       paymentMethod,
                       transactionType: txnType,
-                      invoiceNumber: done.invoiceNumber,
                       salesInvoiceNumber: done.salesInvoiceNumber,
                       deliveryReceiptNumber: done.deliveryReceiptNumber,
                       tin: done.tin,
