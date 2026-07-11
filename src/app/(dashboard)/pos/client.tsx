@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createTransaction, getReturnTransaction } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import { PageHeader } from "@/components/ui/page-header";
 import { downloadReceipt, downloadReceiptPdf } from "@/lib/receipt";
 import { toast } from "sonner";
@@ -282,7 +283,7 @@ export function POSClient({
     setError("");
     setCheckingOut(true);
     try {
-      const result = await createTransaction({
+      const result = await callAction(createTransaction({
         buyerName,
         buyerAddress: buyerAddress || undefined,
         buyerContact: buyerContact || undefined,
@@ -336,7 +337,7 @@ export function POSClient({
                 payeeName: payeeName || undefined,
               }
             : undefined,
-      });
+      }));
       const isCredit = paymentMethod === "Credit";
       const receiptData = {
         receiptNumber: result.receiptNumber,
@@ -446,9 +447,9 @@ export function POSClient({
     const timer = setTimeout(() => {
       setLoadingReturn(true);
       setCart([]);
-      getReturnTransaction(num)
+      callAction(getReturnTransaction(num))
         .then((orig) => {
-          setBuyerName(orig.buyerName);
+          setBuyerName(orig.buyerName ?? "");
           const autoItems = orig.items.map((i) => ({
             product: i.product,
             quantity: txnType === "Return" ? 0 : (i.quantity ?? 0),

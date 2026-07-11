@@ -17,6 +17,7 @@ import {
   deleteBrand,
   getProducts,
 } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import {
   Plus,
   X,
@@ -100,7 +101,7 @@ export default function BrandsPage() {
     setAdding(true);
     setError("");
     try {
-      await createBrand(brandName.trim());
+      await callAction(createBrand(brandName.trim()));
       refetch();
       setShowAdd(false);
       setBrandName("");
@@ -125,7 +126,7 @@ export default function BrandsPage() {
     setSaving(true);
     setError("");
     try {
-      await editBrand(editId, editName.trim());
+      await callAction(editBrand(editId, editName.trim()));
       refetch();
       setEditId(null);
       setEditName("");
@@ -144,7 +145,7 @@ export default function BrandsPage() {
     setDeleteLoading(true);
     setDeleteError("");
     try {
-      await deleteBrand(deleteTarget);
+      await callAction(deleteBrand(deleteTarget));
       refetch();
       setDeleteTarget(null);
       router.refresh();

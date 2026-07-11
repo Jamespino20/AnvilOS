@@ -27,6 +27,21 @@ import { cache } from "react";
 
 const DB_TIMEOUT = 20000;
 
+async function safeCall<T>(
+  fn: () => Promise<T>,
+  mapError?: (e: any) => string | undefined,
+): Promise<T | { error: string }> {
+  try {
+    return await fn();
+  } catch (e: any) {
+    if (mapError) {
+      const mapped = mapError(e);
+      if (mapped) return { error: mapped };
+    }
+    return { error: e?.message || "An unexpected error occurred" };
+  }
+}
+
 // ─────────── Products ───────────
 
 export async function getProducts(opts?: {
@@ -219,48 +234,50 @@ export async function createProduct(data: {
   sellByBox?: boolean;
   boxQuantity?: number;
 }) {
-  await requireUser();
-  const productName = data.productName.trim().replace(/\s+/g, " ");
-  if (!productName) throw new Error("Product name is required.");
-  assertNonNegative(data.sellingPrice, "Selling Price");
-  assertNonNegative(data.unitPrice, "Unit Price");
+  return safeCall(async () => {
+    await requireUser();
+    const productName = data.productName.trim().replace(/\s+/g, " ");
+    if (!productName) throw new Error("Product name is required.");
+    assertNonNegative(data.sellingPrice, "Selling Price");
+    assertNonNegative(data.unitPrice, "Unit Price");
 
-  const category = await resolveProductCategory(
-    data.categoryId,
-    data.categoryName || data.category,
-  );
-  const brandId = await resolveProductBrand(data.brandId, data.brandName);
-  const resolvedSupplier = await resolveProductSupplier(
-    data.supplierId,
-    data.supplierName,
-  );
-  await assertUniqueProductName(productName, category.categoryId, brandId);
+    const category = await resolveProductCategory(
+      data.categoryId,
+      data.categoryName || data.category,
+    );
+    const brandId = await resolveProductBrand(data.brandId, data.brandName);
+    const resolvedSupplier = await resolveProductSupplier(
+      data.supplierId,
+      data.supplierName,
+    );
+    await assertUniqueProductName(productName, category.categoryId, brandId);
 
-  const { categoryName, brandName, ...productData } = data;
-  const product = await prisma.product.create({
-    data: {
-      ...productData,
-      productName,
-      categoryId: category.categoryId,
-      category: category.category,
-      brandId,
-      supplierId: resolvedSupplier.supplierId,
-      supplierName: resolvedSupplier.supplierName || "Unknown",
-      isAvailable: true,
-    },
+    const { categoryName, brandName, ...productData } = data;
+    const product = await prisma.product.create({
+      data: {
+        ...productData,
+        productName,
+        categoryId: category.categoryId,
+        category: category.category,
+        brandId,
+        supplierId: resolvedSupplier.supplierId,
+        supplierName: resolvedSupplier.supplierName || "Unknown",
+        isAvailable: true,
+      },
+    });
+    await logAudit(
+      "ProductDialog",
+      "Add Product",
+      `${product.productName} created`,
+    );
+    revalidatePath("/inventory");
+    revalidatePath("/categories");
+    revalidatePath("/brands");
+    revalidateTag("products", "default");
+    revalidateTag("categories", "default");
+    revalidateTag("brands", "default");
+    return product;
   });
-  await logAudit(
-    "ProductDialog",
-    "Add Product",
-    `${product.productName} created`,
-  );
-  revalidatePath("/inventory");
-  revalidatePath("/categories");
-  revalidatePath("/brands");
-  revalidateTag("products", "default");
-  revalidateTag("categories", "default");
-  revalidateTag("brands", "default");
-  return product;
 }
 
 export async function updateProduct(
@@ -286,60 +303,62 @@ export async function updateProduct(
     boxQuantity: number;
   }>,
 ) {
-  await requireUser();
-  const current = await prisma.product.findUniqueOrThrow({ where: { id } });
-  const productName = data.productName
-    ? data.productName.trim().replace(/\s+/g, " ")
-    : current.productName;
-  if (!productName) throw new Error("Product name is required.");
-  assertNonNegative(data.sellingPrice, "Selling Price");
-  assertNonNegative(data.unitPrice, "Unit Price");
+  return safeCall(async () => {
+    await requireUser();
+    const current = await prisma.product.findUniqueOrThrow({ where: { id } });
+    const productName = data.productName
+      ? data.productName.trim().replace(/\s+/g, " ")
+      : current.productName;
+    if (!productName) throw new Error("Product name is required.");
+    assertNonNegative(data.sellingPrice, "Selling Price");
+    assertNonNegative(data.unitPrice, "Unit Price");
 
-  const category =
-    data.categoryName !== undefined ||
-    data.category !== undefined ||
-    data.categoryId !== undefined
-      ? await resolveProductCategory(
-          data.categoryId ?? null,
-          data.categoryName || data.category,
-        )
-      : { categoryId: current.categoryId, category: current.category };
-  const brandId =
-    data.brandName !== undefined || data.brandId !== undefined
-      ? await resolveProductBrand(data.brandId ?? null, data.brandName)
-      : current.brandId;
-  const resolvedSupplier =
-    data.supplierName !== undefined || data.supplierId !== undefined
-      ? await resolveProductSupplier(data.supplierId ?? null, data.supplierName)
-      : { supplierId: current.supplierId, supplierName: current.supplierName };
+    const category =
+      data.categoryName !== undefined ||
+      data.category !== undefined ||
+      data.categoryId !== undefined
+        ? await resolveProductCategory(
+            data.categoryId ?? null,
+            data.categoryName || data.category,
+          )
+        : { categoryId: current.categoryId, category: current.category };
+    const brandId =
+      data.brandName !== undefined || data.brandId !== undefined
+        ? await resolveProductBrand(data.brandId ?? null, data.brandName)
+        : current.brandId;
+    const resolvedSupplier =
+      data.supplierName !== undefined || data.supplierId !== undefined
+        ? await resolveProductSupplier(data.supplierId ?? null, data.supplierName)
+        : { supplierId: current.supplierId, supplierName: current.supplierName };
 
-  await assertUniqueProductName(productName, category.categoryId, brandId, id);
+    await assertUniqueProductName(productName, category.categoryId, brandId, id);
 
-  const { categoryName, brandName, ...productData } = data;
-  const product = await prisma.product.update({
-    where: { id },
-    data: {
-      ...productData,
-      productName,
-      categoryId: category.categoryId,
-      category: category.category,
-      brandId,
-      supplierId: resolvedSupplier.supplierId,
-      supplierName: resolvedSupplier.supplierName || "Unknown",
-    },
+    const { categoryName, brandName, ...productData } = data;
+    const product = await prisma.product.update({
+      where: { id },
+      data: {
+        ...productData,
+        productName,
+        categoryId: category.categoryId,
+        category: category.category,
+        brandId,
+        supplierId: resolvedSupplier.supplierId,
+        supplierName: resolvedSupplier.supplierName || "Unknown",
+      },
+    });
+    await logAudit(
+      "InventoryPanel",
+      "Edit Product",
+      `${product.productName} (#${id}) updated`,
+    );
+    revalidatePath("/inventory");
+    revalidatePath("/categories");
+    revalidatePath("/brands");
+    revalidateTag("products", "default");
+    revalidateTag("categories", "default");
+    revalidateTag("brands", "default");
+    return product;
   });
-  await logAudit(
-    "InventoryPanel",
-    "Edit Product",
-    `${product.productName} (#${id}) updated`,
-  );
-  revalidatePath("/inventory");
-  revalidatePath("/categories");
-  revalidatePath("/brands");
-  revalidateTag("products", "default");
-  revalidateTag("categories", "default");
-  revalidateTag("brands", "default");
-  return product;
 }
 
 export async function adjustStock(productId: number, newQuantity: number) {
@@ -382,47 +401,51 @@ export async function setProductAvailability(id: number, isAvailable: boolean) {
 }
 
 export async function deleteProduct(id: number) {
-  await requireAdmin();
-  const product = await prisma.product.findUniqueOrThrow({ where: { id } });
-  if (product.quantity > 0) {
-    throw new Error("Cannot delete product while it still has stock.");
-  }
-  await prisma.product.delete({ where: { id } });
-  await logAudit(
-    "InventoryPanel",
-    "Delete Product",
-    `${product.productName} (#${id}) deleted`,
-  );
-  revalidatePath("/inventory");
-  revalidateTag("products", "default");
+  return safeCall(async () => {
+    await requireAdmin();
+    const product = await prisma.product.findUniqueOrThrow({ where: { id } });
+    if (product.quantity > 0) {
+      throw new Error("Cannot delete product while it still has stock.");
+    }
+    await prisma.product.delete({ where: { id } });
+    await logAudit(
+      "InventoryPanel",
+      "Delete Product",
+      `${product.productName} (#${id}) deleted`,
+    );
+    revalidatePath("/inventory");
+    revalidateTag("products", "default");
+  });
 }
 
 export async function deleteProducts(ids: number[]) {
-  await requireAdmin();
-  const products = await prisma.product.findMany({
-    where: { id: { in: ids } },
-  });
-  const blocked = products.filter((product) => product.quantity > 0);
-  if (blocked.length > 0) {
-    throw new Error(
-      `Cannot delete ${blocked.length} product(s) while they still have stock.`,
+  return safeCall(async () => {
+    await requireAdmin();
+    const products = await prisma.product.findMany({
+      where: { id: { in: ids } },
+    });
+    const blocked = products.filter((product) => product.quantity > 0);
+    if (blocked.length > 0) {
+      throw new Error(
+        `Cannot delete ${blocked.length} product(s) while they still have stock.`,
+      );
+    }
+    const result = await prisma.product.deleteMany({
+      where: { id: { in: ids } },
+    });
+    await logAudit(
+      "InventoryPanel",
+      "Delete Products (Bulk)",
+      `${result.count} product(s) deleted (IDs: ${ids.join(", ")})`,
     );
-  }
-  const result = await prisma.product.deleteMany({
-    where: { id: { in: ids } },
+    revalidatePath("/inventory");
+    revalidateTag("products", "default");
+    return {
+      deleted: result.count,
+      skipped: ids.length - result.count,
+      names: products.map((p) => p.productName),
+    };
   });
-  await logAudit(
-    "InventoryPanel",
-    "Delete Products (Bulk)",
-    `${result.count} product(s) deleted (IDs: ${ids.join(", ")})`,
-  );
-  revalidatePath("/inventory");
-  revalidateTag("products", "default");
-  return {
-    deleted: result.count,
-    skipped: ids.length - result.count,
-    names: products.map((p) => p.productName),
-  };
 }
 
 // ─────────── Categories ───────────
@@ -442,8 +465,8 @@ export const getAllCategories = cache(async () => {
 });
 
 export async function createCategory(name: string, parentCategoryId?: number) {
-  await requireUser();
-  try {
+  return safeCall(async () => {
+    await requireUser();
     const cat = await prisma.category.create({
       data: {
         name,
@@ -462,14 +485,7 @@ export async function createCategory(name: string, parentCategoryId?: number) {
     revalidatePath("/categories");
     revalidateTag("categories", "default");
     return cat;
-  } catch (e: any) {
-    if (e?.code === "P2002") {
-      throw new Error(
-        `A category named "${name}" already exists in this parent.`,
-      );
-    }
-    throw e;
-  }
+  }, (e) => e?.code === "P2002" ? `A category named "${name}" already exists in this parent.` : undefined);
 }
 
 export async function editCategory(
@@ -477,24 +493,21 @@ export async function editCategory(
   name: string,
   parentCategoryId?: number,
 ) {
-  await requireUser();
-
-  // Prevent circular nesting: check if new parent is a descendant of this category
-  if (parentCategoryId && parentCategoryId === id) {
-    throw new Error("A category cannot be its own parent.");
-  }
-  if (parentCategoryId) {
-    const descendants = await prisma.category.findMany({
-      where: { parentCategoryId: id },
-      select: { id: true },
-    });
-    const descendantIds = descendants.map((d) => d.id);
-    if (descendantIds.includes(parentCategoryId)) {
-      throw new Error("Cannot assign a subcategory as its own parent.");
+  return safeCall(async () => {
+    await requireUser();
+    if (parentCategoryId && parentCategoryId === id) {
+      return { error: "A category cannot be its own parent." };
     }
-  }
-
-  try {
+    if (parentCategoryId) {
+      const descendants = await prisma.category.findMany({
+        where: { parentCategoryId: id },
+        select: { id: true },
+      });
+      const descendantIds = descendants.map((d) => d.id);
+      if (descendantIds.includes(parentCategoryId)) {
+        return { error: "Cannot assign a subcategory as its own parent." };
+      }
+    }
     const cat = await prisma.category.update({
       where: { id },
       data: {
@@ -512,42 +525,29 @@ export async function editCategory(
     revalidatePath("/categories");
     revalidateTag("categories", "default");
     return cat;
-  } catch (e: any) {
-    if (e?.code === "P2002") {
-      throw new Error(
-        `A category named "${name}" already exists in this parent.`,
-      );
-    }
-    throw e;
-  }
+  }, (e) => e?.code === "P2002" ? `A category named "${name}" already exists in this parent.` : undefined);
 }
 
 export async function deleteCategory(id: number) {
-  await requireAdmin();
-  const children = await prisma.category.count({
-    where: { parentCategoryId: id },
+  return safeCall(async () => {
+    await requireAdmin();
+    const children = await prisma.category.count({
+      where: { parentCategoryId: id },
+    });
+    if (children > 0) {
+      return { error: `Cannot delete category: it has ${children} subcategory(ies). Remove them first.` };
+    }
+    const linked = await prisma.product.count({ where: { categoryId: id } });
+    if (linked > 0) {
+      return { error: `Cannot delete category: ${linked} product(s) are linked to it. Remove or reassign them first.` };
+    }
+    const cat = await prisma.category.findUniqueOrThrow({ where: { id } });
+    await prisma.category.delete({ where: { id } });
+    await logAudit("InventoryPanel", "Delete Category", `${cat.name} (#${id}) deleted`);
+    revalidatePath("/inventory");
+    revalidatePath("/categories");
+    revalidateTag("categories", "default");
   });
-  if (children > 0) {
-    throw new Error(
-      `Cannot delete category: it has ${children} subcategory(ies). Remove them first.`,
-    );
-  }
-  const linked = await prisma.product.count({ where: { categoryId: id } });
-  if (linked > 0) {
-    throw new Error(
-      `Cannot delete category: ${linked} product(s) are linked to it. Remove or reassign them first.`,
-    );
-  }
-  const cat = await prisma.category.findUniqueOrThrow({ where: { id } });
-  await prisma.category.delete({ where: { id } });
-  await logAudit(
-    "InventoryPanel",
-    "Delete Category",
-    `${cat.name} (#${id}) deleted`,
-  );
-  revalidatePath("/inventory");
-  revalidatePath("/categories");
-  revalidateTag("categories", "default");
 }
 
 export async function deleteCategories(ids: number[]) {
@@ -608,8 +608,8 @@ export const getBrands = cache(async () => {
 });
 
 export async function createBrand(name: string) {
-  await requireUser();
-  try {
+  return safeCall(async () => {
+    await requireUser();
     const brand = await prisma.brand.create({
       data: { name, createdAt: new Date() },
     });
@@ -618,17 +618,12 @@ export async function createBrand(name: string) {
     revalidatePath("/brands");
     revalidateTag("brands", "default");
     return brand;
-  } catch (e: any) {
-    if (e?.code === "P2002") {
-      throw new Error(`A brand named "${name}" already exists.`);
-    }
-    throw e;
-  }
+  }, (e) => e?.code === "P2002" ? `A brand named "${name}" already exists.` : undefined);
 }
 
 export async function editBrand(id: number, name: string) {
-  await requireUser();
-  try {
+  return safeCall(async () => {
+    await requireUser();
     const brand = await prisma.brand.update({ where: { id }, data: { name } });
     await logAudit(
       "InventoryPanel",
@@ -639,32 +634,23 @@ export async function editBrand(id: number, name: string) {
     revalidatePath("/brands");
     revalidateTag("brands", "default");
     return brand;
-  } catch (e: any) {
-    if (e?.code === "P2002") {
-      throw new Error(`A brand named "${name}" already exists.`);
-    }
-    throw e;
-  }
+  }, (e) => e?.code === "P2002" ? `A brand named "${name}" already exists.` : undefined);
 }
 
 export async function deleteBrand(id: number) {
-  await requireAdmin();
-  const linked = await prisma.product.count({ where: { brandId: id } });
-  if (linked > 0) {
-    throw new Error(
-      `Cannot delete brand: ${linked} product(s) are linked to it. Remove or reassign them first.`,
-    );
-  }
-  const brand = await prisma.brand.findUniqueOrThrow({ where: { id } });
-  await prisma.brand.delete({ where: { id } });
-  await logAudit(
-    "InventoryPanel",
-    "Delete Brand",
-    `${brand.name} (#${id}) deleted`,
-  );
-  revalidatePath("/inventory");
-  revalidatePath("/brands");
-  revalidateTag("brands", "default");
+  return safeCall(async () => {
+    await requireAdmin();
+    const linked = await prisma.product.count({ where: { brandId: id } });
+    if (linked > 0) {
+      return { error: `Cannot delete brand: ${linked} product(s) are linked to it.` };
+    }
+    const brand = await prisma.brand.findUniqueOrThrow({ where: { id } });
+    await prisma.brand.delete({ where: { id } });
+    await logAudit("InventoryPanel", "Delete Brand", `${brand.name} (#${id}) deleted`);
+    revalidatePath("/inventory");
+    revalidatePath("/brands");
+    revalidateTag("brands", "default");
+  });
 }
 
 export async function deleteBrands(ids: number[]) {
@@ -728,8 +714,8 @@ export async function createSupplier(data: {
   address?: string;
   tin?: string;
 }) {
-  await requireAdmin();
-  const fn = async () => {
+  return safeCall(async () => {
+    await requireAdmin();
     const s = await prisma.supplier.create({
       data: { ...data, isAvailable: true },
     });
@@ -739,19 +725,7 @@ export async function createSupplier(data: {
       `${s.supplierName} created`,
     );
     return s;
-  };
-  try {
-    return await fn();
-  } catch (e: any) {
-    if (e?.code === "P2002") {
-      await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('suppliers', 'SUPPLIER_ID'), COALESCE((SELECT MAX("SUPPLIER_ID") FROM "suppliers"), 1))`;
-      const s = await fn();
-      revalidatePath("/suppliers");
-      revalidateTag("suppliers", "default");
-      return s;
-    }
-    throw e;
-  }
+  });
 }
 
 export async function updateSupplier(
@@ -766,36 +740,40 @@ export async function updateSupplier(
     isAvailable: boolean;
   }>,
 ) {
-  await requireAdmin();
-  const before = await prisma.supplier.findUniqueOrThrow({ where: { id } });
-  const s = await prisma.supplier.update({ where: { id }, data });
-  await logAudit(
-    "SupplierPanel",
-    "Edit Supplier",
-    `${before.supplierName} → ${s.supplierName}`,
-  );
-  revalidatePath("/suppliers");
-  revalidateTag("suppliers", "default");
-  return s;
+  return safeCall(async () => {
+    await requireAdmin();
+    const before = await prisma.supplier.findUniqueOrThrow({ where: { id } });
+    const s = await prisma.supplier.update({ where: { id }, data });
+    await logAudit(
+      "SupplierPanel",
+      "Edit Supplier",
+      `${before.supplierName} → ${s.supplierName}`,
+    );
+    revalidatePath("/suppliers");
+    revalidateTag("suppliers", "default");
+    return s;
+  });
 }
 
 export async function deleteSupplier(id: number) {
-  await requireAdmin();
-  const supplier = await prisma.supplier.findUniqueOrThrow({
-    where: { id },
-    include: { _count: { select: { products: true } } },
+  return safeCall(async () => {
+    await requireAdmin();
+    const supplier = await prisma.supplier.findUniqueOrThrow({
+      where: { id },
+      include: { _count: { select: { products: true } } },
+    });
+    if (supplier._count.products > 0) {
+      throw new Error("Cannot delete supplier with associated products");
+    }
+    await prisma.supplier.delete({ where: { id } });
+    await logAudit(
+      "SupplierPanel",
+      "Delete Supplier",
+      `${supplier.supplierName} deleted`,
+    );
+    revalidatePath("/suppliers");
+    revalidateTag("suppliers", "default");
   });
-  if (supplier._count.products > 0) {
-    throw new Error("Cannot delete supplier with associated products");
-  }
-  await prisma.supplier.delete({ where: { id } });
-  await logAudit(
-    "SupplierPanel",
-    "Delete Supplier",
-    `${supplier.supplierName} deleted`,
-  );
-  revalidatePath("/suppliers");
-  revalidateTag("suppliers", "default");
 }
 
 export async function deleteSuppliers(ids: number[]) {
@@ -1146,9 +1124,10 @@ export async function createTransaction(data: {
     chequeDate?: Date;
     payeeName?: string;
   };
-}) {
-  const session = await auth();
-  const sellerId = Number(session?.user?.id) || 0;
+  }) {
+  return safeCall(async () => {
+    const session = await auth();
+    const sellerId = Number(session?.user?.id) || 0;
   const sellerName = session?.user?.name || "Unknown";
 
   const lastReceipt = await prisma.transaction.findFirst({
@@ -1385,6 +1364,7 @@ export async function createTransaction(data: {
   revalidatePath("/inventory");
   revalidateTag("buyers", "default");
   return transaction;
+  });
 }
 
 export async function getDeliverers() {
@@ -1398,46 +1378,48 @@ export async function getDeliverers() {
 }
 
 export async function getReturnTransaction(receiptNumber: number) {
-  console.log(`[getReturnTransaction] lookup receiptNumber=${receiptNumber} (type=${typeof receiptNumber})`);
-  const txn = await prisma.transaction.findFirst({
-    where: { receiptNumber },
-    include: {
-      items: {
-        include: { product: true },
+  return safeCall(async () => {
+    console.log(`[getReturnTransaction] lookup receiptNumber=${receiptNumber} (type=${typeof receiptNumber})`);
+    const txn = await prisma.transaction.findFirst({
+      where: { receiptNumber },
+      include: {
+        items: {
+          include: { product: true },
+        },
       },
-    },
+    });
+    console.log(`[getReturnTransaction] result=${txn ? `found id=${txn.id} type=${txn.transactionType} items=${txn.items.length}` : "null"}`);
+    if (!txn) throw new Error(`Receipt #${receiptNumber} not found`);
+    if (
+      txn.transactionType === "Return" ||
+      txn.transactionType === "Damage" ||
+      txn.transactionType === "Adjustment"
+    )
+      throw new Error("Cannot reference another Return/Damage/Adjustment");
+    return {
+      buyerName: txn.buyerName,
+      items: txn.items.map((i) => ({
+        productId: i.productId,
+        productName: i.productName,
+        quantity: i.quantity,
+        unitPrice: Number(i.unitPrice),
+        totalPrice: Number(i.totalPrice),
+        product: i.product
+          ? {
+              id: i.product.id,
+              productName: i.product.productName,
+              sellingPrice: Number(i.product.sellingPrice),
+              quantity: i.product.quantity,
+            }
+          : {
+              id: i.productId ?? 0,
+              productName: i.productName,
+              sellingPrice: Number(i.unitPrice),
+              quantity: 0,
+            },
+      })),
+    };
   });
-  console.log(`[getReturnTransaction] result=${txn ? `found id=${txn.id} type=${txn.transactionType} items=${txn.items.length}` : "null"}`);
-  if (!txn) throw new Error(`Receipt #${receiptNumber} not found`);
-  if (
-    txn.transactionType === "Return" ||
-    txn.transactionType === "Damage" ||
-    txn.transactionType === "Adjustment"
-  )
-    throw new Error("Cannot reference another Return/Damage/Adjustment");
-  return {
-    buyerName: txn.buyerName,
-    items: txn.items.map((i) => ({
-      productId: i.productId,
-      productName: i.productName,
-      quantity: i.quantity,
-      unitPrice: Number(i.unitPrice),
-      totalPrice: Number(i.totalPrice),
-      product: i.product
-        ? {
-            id: i.product.id,
-            productName: i.product.productName,
-            sellingPrice: Number(i.product.sellingPrice),
-            quantity: i.product.quantity,
-          }
-        : {
-            id: i.productId ?? 0,
-            productName: i.productName,
-            sellingPrice: Number(i.unitPrice),
-            quantity: 0,
-          },
-    })),
-  };
 }
 
 export async function updateTransactionInvoice(

@@ -31,6 +31,7 @@ import {
   updateProduct,
   deleteProduct,
 } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import { PageHeader } from "@/components/ui/page-header";
 
 import { ConfirmModal } from "@/components/ui/confirm-modal";
@@ -276,7 +277,7 @@ export function InventoryClient({
     setFormError("");
     setAdding(true);
     try {
-      await createProduct({
+      await callAction(createProduct({
         productName: form.productName,
         category: form.categoryName.trim() || "Uncategorized",
         categoryName: form.categoryName,
@@ -296,7 +297,7 @@ export function InventoryClient({
         boxQuantity: form.sellByBox
           ? Number(form.boxQuantity) || undefined
           : undefined,
-      });
+      }));
       setShowAdd(false);
       setForm(defaultForm);
       router.refresh();
@@ -364,7 +365,7 @@ export function InventoryClient({
     setFormError("");
     setSaving(true);
     try {
-      await updateProduct(showEdit, {
+      await callAction(updateProduct(showEdit, {
         productName: form.productName,
         category: form.categoryName.trim() || "Uncategorized",
         categoryName: form.categoryName,
@@ -384,7 +385,7 @@ export function InventoryClient({
         boxQuantity: form.sellByBox
           ? Number(form.boxQuantity) || undefined
           : undefined,
-      });
+      }));
       setPendingQtyConfirm(null);
       setShowEdit(null);
       setForm(defaultForm);
@@ -404,7 +405,7 @@ export function InventoryClient({
     if (!pendingQtyConfirm) return;
     setSaving(true);
     try {
-      await updateProduct(pendingQtyConfirm.productId, {
+      await callAction(updateProduct(pendingQtyConfirm.productId, {
         productName: form.productName,
         category: form.categoryName.trim() || "Uncategorized",
         categoryName: form.categoryName,
@@ -424,7 +425,7 @@ export function InventoryClient({
         boxQuantity: form.sellByBox
           ? Number(form.boxQuantity) || undefined
           : undefined,
-      });
+      }));
       setPendingQtyConfirm(null);
       setShowEdit(null);
       setForm(defaultForm);
@@ -444,7 +445,7 @@ export function InventoryClient({
     if (deleteTarget === null) return;
     setDeleting(true);
     try {
-      await deleteProduct(deleteTarget);
+      await callAction(deleteProduct(deleteTarget));
       setDeleteTarget(null);
       router.refresh();
       toast.success("Product deleted successfully");

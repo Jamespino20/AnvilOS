@@ -18,6 +18,7 @@ import {
   deleteSupplier,
   getProducts as fetchProducts,
 } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import {
   Plus,
   Truck,
@@ -134,7 +135,7 @@ export default function SuppliersPage() {
     if (!form.supplierName) return;
     setAdding(true);
     try {
-      const supplier = await createSupplier(form);
+      const supplier = await callAction(createSupplier(form));
       setSuppliers((prev) => [supplier as any, ...prev]);
       setShowAdd(false);
       setForm({
@@ -171,7 +172,7 @@ export default function SuppliersPage() {
     if (!editId) return;
     setSaving(true);
     try {
-      await updateSupplier(editId, editForm);
+      await callAction(updateSupplier(editId, editForm));
       setSuppliers((prev) =>
         prev.map((s) => (s.id === editId ? { ...s, ...editForm } : s)),
       );
@@ -190,7 +191,7 @@ export default function SuppliersPage() {
     setDeleteLoading(true);
     setDeleteError("");
     try {
-      await deleteSupplier(deleteTarget);
+      await callAction(deleteSupplier(deleteTarget));
       setSuppliers((prev) => prev.filter((s) => s.id !== deleteTarget));
       setDeleteTarget(null);
       router.refresh();

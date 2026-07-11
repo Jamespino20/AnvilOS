@@ -17,6 +17,7 @@ import {
   deleteCategory,
   getProducts,
 } from "@/actions";
+import { callAction } from "@/lib/client-action";
 import {
   Plus,
   X,
@@ -97,7 +98,7 @@ export default function CategoriesPage() {
     setAdding(true);
     setError("");
     try {
-      const cat = await createCategory(catName.trim());
+      const cat = await callAction(createCategory(catName.trim()));
       refetch();
       setShowAdd(false);
       setCatName("");
@@ -122,7 +123,7 @@ export default function CategoriesPage() {
     setSaving(true);
     setError("");
     try {
-      await editCategory(editId, editName.trim());
+      await callAction(editCategory(editId, editName.trim()));
       refetch();
       setEditId(null);
       setEditName("");
@@ -141,7 +142,7 @@ export default function CategoriesPage() {
     setDeleteLoading(true);
     setDeleteError("");
     try {
-      await deleteCategory(deleteTarget);
+      await callAction(deleteCategory(deleteTarget));
       refetch();
       setDeleteTarget(null);
       router.refresh();
