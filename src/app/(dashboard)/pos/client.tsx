@@ -46,6 +46,7 @@ interface BuyerInfo {
   buyerAddress?: string | null;
   buyerContact?: string | null;
   buyerEmail?: string | null;
+  tin?: string | null;
 }
 
 type CategoryWithChildren = {
@@ -450,6 +451,7 @@ export function POSClient({
       callAction(getReturnTransaction(num))
         .then((orig) => {
           setBuyerName(orig.buyerName ?? "");
+          setTin((orig as any).tin ?? "");
           const autoItems = orig.items.map((i) => ({
             product: i.product,
             quantity: txnType === "Return" ? 0 : (i.quantity ?? 0),
@@ -886,6 +888,7 @@ export function POSClient({
                             setBuyerAddress(b.buyerAddress || "");
                             setBuyerContact(b.buyerContact || "");
                             setBuyerEmail(b.buyerEmail || "");
+                            setTin(b.tin || "");
                             setShowBuyerDropdown(false);
                           }}
                           className="w-full text-left px-3.5 py-2.5 text-xs text-[#0e212c] hover:bg-[#fff5ed] hover:text-[#fd761a] transition-colors border-b border-[#e2e8f0] last:border-b-0"

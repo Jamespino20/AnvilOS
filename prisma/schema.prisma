@@ -299,6 +299,7 @@ model Buyer {
   email        String?  @map("EMAIL")
   phone        String?  @map("PHONE")
   address      String?  @map("ADDRESS")
+  tin          String?  @map("TIN")
   notes        String?  @map("NOTES")
   imageUrl     String?  @db.LongText @map("IMAGE_URL")
   totalOrders  Int      @default(0) @map("TOTAL_ORDERS")

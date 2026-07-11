@@ -57,8 +57,10 @@ interface Buyer {
   totalSpent: number;
   buyerAddress?: string | null;
   buyerContact?: string | null;
+  buyerEmail?: string | null;
   lastOrder?: Date | null;
   imageUrl?: string | null;
+  tin?: string | null;
 }
 
 export default function BuyersPage() {
@@ -77,6 +79,7 @@ export default function BuyersPage() {
   const [editAddress, setEditAddress] = useState("");
   const [editContact, setEditContact] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editTin, setEditTin] = useState("");
   const [savingBuyer, setSavingBuyer] = useState(false);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [perPage, setPerPage] = useState(10);
@@ -86,6 +89,7 @@ export default function BuyersPage() {
   const [addBuyerAddress, setAddBuyerAddress] = useState("");
   const [addBuyerContact, setAddBuyerContact] = useState("");
   const [addBuyerEmail, setAddBuyerEmail] = useState("");
+  const [addBuyerTin, setAddBuyerTin] = useState("");
   const [addingBuyer, setAddingBuyer] = useState(false);
 
   useEffect(() => {
@@ -106,6 +110,7 @@ export default function BuyersPage() {
     setHistoryLoading(true);
     setExpandedReceipt(null);
     setDetailPage(1);
+    const buyerInfo = buyers.find((b) => b.buyerName === name);
     try {
       const data = await getBuyerTransactions(name);
       setHistory(data as TxnWithItems[]);
@@ -113,6 +118,7 @@ export default function BuyersPage() {
         setEditAddress(data[0].buyerAddress || "");
         setEditContact(data[0].buyerContact || "");
         setEditEmail((data[0] as any).buyer?.email || "");
+        setEditTin(buyerInfo?.tin || (data[0] as any).tin || "");
         setEditImageUrl((data[0] as any).buyer?.imageUrl || null);
       }
     } finally {
@@ -578,6 +584,17 @@ export default function BuyersPage() {
                     className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    TIN
+                  </label>
+                  <input
+                    value={editTin}
+                    onChange={(e) => setEditTin(e.target.value)}
+                    placeholder="Enter TIN"
+                    className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                  />
+                </div>
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => setShowEditBuyer(false)}
@@ -594,6 +611,7 @@ export default function BuyersPage() {
                           buyerContact: editContact,
                           buyerEmail: editEmail,
                           imageUrl: editImageUrl,
+                          tin: editTin || undefined,
                         }));
                         setHistory((prev) =>
                           prev.map((t) => ({
@@ -692,6 +710,7 @@ export default function BuyersPage() {
               { key: "totalSpent", label: "Total Spent" },
               { key: "buyerAddress", label: "Address" },
               { key: "buyerContact", label: "Contact" },
+              { key: "tin", label: "TIN" },
               { key: "lastOrder", label: "Last Order" },
             ]}
             fetchRows={async (selectedColumns) =>
@@ -703,6 +722,7 @@ export default function BuyersPage() {
                     return `${b.totalSpent.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   if (key === "buyerAddress") return b.buyerAddress || "";
                   if (key === "buyerContact") return b.buyerContact || "";
+                  if (key === "tin") return b.tin || "";
                   if (key === "lastOrder")
                     return b.lastOrder
                       ? new Date(b.lastOrder).toLocaleDateString("en-PH")
@@ -721,6 +741,7 @@ export default function BuyersPage() {
               setAddBuyerAddress("");
               setAddBuyerContact("");
               setAddBuyerEmail("");
+              setAddBuyerTin("");
             }}
             className="flex items-center justify-center gap-2 px-5 h-10 bg-gradient-to-r from-[#fd761a] to-[#e56600] text-white text-sm font-semibold rounded-lg shadow-lg shadow-[#fd761a]/20 hover:shadow-xl transition-all duration-200 active:scale-[0.98]"
           >
@@ -739,6 +760,9 @@ export default function BuyersPage() {
                 </th>
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Contact
+                </th>
+                <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                  TIN
                 </th>
                 <th className="text-left p-4 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
                   Address
@@ -784,6 +808,9 @@ export default function BuyersPage() {
                   </td>
                   <td className="p-4 text-[#64748b]">
                     {buyer.buyerContact || "—"}
+                  </td>
+                  <td className="p-4 text-[#64748b]">
+                    {buyer.tin || "—"}
                   </td>
                   <td className="p-4 text-[#64748b] max-w-[200px] truncate">
                     {buyer.buyerAddress || "—"}
@@ -985,6 +1012,17 @@ export default function BuyersPage() {
                   className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
                 />
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#64748b] uppercase tracking-wider mb-1.5">
+                  TIN
+                </label>
+                <input
+                  value={addBuyerTin}
+                  onChange={(e) => setAddBuyerTin(e.target.value)}
+                  placeholder="TIN (Optional)"
+                  className="w-full px-3.5 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
+                />
+              </div>
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowAddBuyer(false)}
@@ -1003,12 +1041,14 @@ export default function BuyersPage() {
                         address: addBuyerAddress || undefined,
                         contact: addBuyerContact || undefined,
                         email: addBuyerEmail || undefined,
+                        tin: addBuyerTin || undefined,
                       }));
                       setShowAddBuyer(false);
                       setAddBuyerName("");
                       setAddBuyerAddress("");
                       setAddBuyerContact("");
                       setAddBuyerEmail("");
+                      setAddBuyerTin("");
                       const data = await getBuyers(
                         buyerType === "all" ? undefined : buyerType,
                       );

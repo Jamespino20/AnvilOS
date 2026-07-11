@@ -1264,6 +1264,7 @@ export async function createTransaction(data: {
           address: data.buyerAddress || undefined,
           phone: data.buyerContact || undefined,
           email: data.buyerEmail || undefined,
+          tin: data.tin || undefined,
           sellerId: sellerId || undefined,
         },
       });
@@ -1274,6 +1275,7 @@ export async function createTransaction(data: {
           address: data.buyerAddress || null,
           phone: data.buyerContact || null,
           email: data.buyerEmail || null,
+          tin: data.tin || null,
           totalOrders: 1,
           totalSpent: skipTotalSpent
             ? 0
@@ -1398,6 +1400,7 @@ export async function getReturnTransaction(receiptNumber: number) {
       throw new Error("Cannot reference another Return/Damage/Adjustment");
     return {
       buyerName: txn.buyerName,
+      tin: txn.tin,
       items: txn.items.map((i) => ({
         productId: i.productId,
         productName: i.productName,
@@ -1878,6 +1881,7 @@ export const getBuyers = cache(async (type?: "WalkIn" | "PO") => {
     buyerContact: b.phone,
     buyerEmail: b.email,
     imageUrl: b.imageUrl,
+    tin: b.tin,
     lastOrder: latestMap.get(b.name) || null,
   }));
 
@@ -1928,6 +1932,7 @@ export const getBuyers = cache(async (type?: "WalkIn" | "PO") => {
         buyerContact: info.buyerContact,
         buyerEmail: null,
         imageUrl: null,
+        tin: null,
         lastOrder: info.lastOrder || null,
       });
     }
@@ -2152,6 +2157,7 @@ export async function createBuyer(data: {
   address?: string;
   contact?: string;
   email?: string;
+  tin?: string;
 }) {
   return safeCall(async () => {
   const session = await auth();
@@ -2167,6 +2173,7 @@ export async function createBuyer(data: {
       address: data.address || null,
       phone: data.contact || null,
       email: data.email || null,
+      tin: data.tin || null,
       sellerId: sellerId || undefined,
     },
   });
@@ -2184,6 +2191,7 @@ export async function updateBuyerInfo(
     buyerContact?: string;
     buyerEmail?: string;
     imageUrl?: string | null;
+    tin?: string;
   },
 ) {
   return safeCall(async () => {
@@ -2199,6 +2207,7 @@ export async function updateBuyerInfo(
       ...(data.buyerContact !== undefined && {
         buyerContact: data.buyerContact,
       }),
+      ...(data.tin !== undefined && { tin: data.tin }),
     },
   });
   // Also update Buyer table
@@ -2211,13 +2220,14 @@ export async function updateBuyerInfo(
         ...(data.buyerContact !== undefined && { phone: data.buyerContact }),
         ...(data.buyerEmail !== undefined && { email: data.buyerEmail }),
         ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
+        ...(data.tin !== undefined && { tin: data.tin }),
       },
     });
   }
   await logAudit(
     "Buyers",
     "Update Buyer Info",
-    `${buyerName}: address/contact/email/image updated`,
+    `${buyerName}: address/contact/email/tin/image updated`,
   );
   revalidatePath("/buyers");
   revalidateTag("buyers", "default");
