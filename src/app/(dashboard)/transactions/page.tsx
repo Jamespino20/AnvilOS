@@ -712,6 +712,10 @@ export default function TransactionsPage() {
                                           undefined,
                                       }
                                     : undefined,
+                                discountType:
+                                  (t as any).discountType || undefined,
+                                discountValue:
+                                  (t as any).discountValue ?? undefined,
                               });
                             }}
                             className="p-1.5 text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 rounded-md transition-all"
@@ -1130,16 +1134,66 @@ export default function TransactionsPage() {
                       </tbody>
                     </table>
                     <div className="flex justify-end mt-3 pt-3 border-t border-[#e2e8f0]">
-                      <div className="text-right">
-                        <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
-                          Grand Total
-                        </span>
-                        <p className="text-lg font-bold text-[#0e212c] font-mono">
-                          {Number(t.grandTotal).toLocaleString("en-PH", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </p>
+                      <div className="text-right space-y-1">
+                        {(t as any).discountType &&
+                          (t as any).discountValue > 0 && (
+                            <>
+                              <div className="flex justify-end gap-4 text-xs text-[#64748b]">
+                                <span>Subtotal</span>
+                                <span className="font-mono">
+                                  {(() => {
+                                    const subtotal = t.items.reduce(
+                                      (sum, i) =>
+                                        sum + Number(i.totalPrice || 0),
+                                      0,
+                                    );
+                                    return subtotal.toLocaleString("en-PH", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    });
+                                  })()}
+                                </span>
+                              </div>
+                              <div className="flex justify-end gap-4 text-xs text-red-500">
+                                <span>
+                                  Discount{" "}
+                                  {(t as any).discountType === "percent"
+                                    ? `(${(t as any).discountValue}%)`
+                                    : ""}
+                                </span>
+                                <span className="font-mono">
+                                  -
+                                  {(() => {
+                                    const subtotal = t.items.reduce(
+                                      (sum, i) =>
+                                        sum + Number(i.totalPrice || 0),
+                                      0,
+                                    );
+                                    const disc =
+                                      (t as any).discountType === "percent"
+                                        ? subtotal *
+                                          ((t as any).discountValue / 100)
+                                        : (t as any).discountValue;
+                                    return disc.toLocaleString("en-PH", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    });
+                                  })()}
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        <div className="flex justify-end gap-4">
+                          <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+                            Grand Total
+                          </span>
+                          <p className="text-lg font-bold text-[#0e212c] font-mono">
+                            {Number(t.grandTotal).toLocaleString("en-PH", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>

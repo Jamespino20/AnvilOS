@@ -323,8 +323,9 @@ export function POSClient({
           deliveryMethod: deliveryMethod as any,
           transactionType: txnType,
           transactionStatus:
-            (txnType === "SaleWalkIn" || txnType === "Return" || txnType === "Adjustment")
-              && !(paymentMethod === "Credit")
+            txnType === "SaleWalkIn" ||
+            txnType === "Return" ||
+            txnType === "Adjustment"
               ? "Completed"
               : txnType === "SalePO"
                 ? "Processing"
