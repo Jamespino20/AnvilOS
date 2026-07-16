@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 11, 2026
 */
 
 import { auth } from "@/lib/auth";
@@ -22,9 +22,7 @@ export default async function ProcessListPage() {
 
   let processes: any[] = [];
   try {
-    const rows = await prisma.$queryRawUnsafe(
-      "SHOW PROCESSLIST",
-    ) as any[];
+    const rows = (await prisma.$queryRawUnsafe("SHOW PROCESSLIST")) as any[];
 
     processes = rows.map((r: any) => ({
       Id: Number(r.Id),

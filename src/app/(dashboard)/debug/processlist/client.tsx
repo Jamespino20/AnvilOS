@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 11, 2026
 */
 
 "use client";
@@ -138,7 +138,9 @@ export default function ProcessListClient({ initial }: { initial: Process[] }) {
         <span>
           <strong>Total:</strong>{" "}
           <span
-            style={{ color: usage > 100 ? "#f44" : usage > 50 ? "#fa0" : "#4f4" }}
+            style={{
+              color: usage > 100 ? "#f44" : usage > 50 ? "#fa0" : "#4f4",
+            }}
           >
             {usage}
           </span>{" "}
@@ -190,8 +192,7 @@ export default function ProcessListClient({ initial }: { initial: Process[] }) {
         <tbody>
           {processes.map((p) => {
             const isApp =
-              p.User === "u774175064_kloudexa" &&
-              p.Info !== "SHOW PROCESSLIST";
+              p.User === "u774175064_kloudexa" && p.Info !== "SHOW PROCESSLIST";
             return (
               <tr
                 key={p.Id}

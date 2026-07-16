@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 11, 2026
 */
 
 "use client";
@@ -397,7 +397,10 @@ export default function SuppliersPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={isAdmin ? 9 : 8} className="p-8 text-center text-[#94a3b8]">
+                  <td
+                    colSpan={isAdmin ? 9 : 8}
+                    className="p-8 text-center text-[#94a3b8]"
+                  >
                     No suppliers registered yet
                   </td>
                 </tr>

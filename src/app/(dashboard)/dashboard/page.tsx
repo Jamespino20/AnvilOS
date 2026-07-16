@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 11, 2026
 */
 
 import {
@@ -37,8 +37,12 @@ export default async function DashboardPage() {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center space-y-2">
-          <p className="text-lg font-semibold text-[#0e212c]">Database Unavailable</p>
-          <p className="text-sm text-[#94a3b8]">Please try again in a few moments.</p>
+          <p className="text-lg font-semibold text-[#0e212c]">
+            Database Unavailable
+          </p>
+          <p className="text-sm text-[#94a3b8]">
+            Please try again in a few moments.
+          </p>
         </div>
       </div>
     );

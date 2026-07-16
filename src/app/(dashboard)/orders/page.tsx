@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 11, 2026
 */
 
 "use client";
@@ -172,18 +172,20 @@ export default function OrdersPage() {
     if (!editId) return;
     setSaving(true);
     try {
-      await callAction(updateTransaction(editId, {
-        buyerName: editBuyer,
-        buyerAddress: editAddress,
-        buyerContact: editContact,
-        deliveryRef: editDeliveryRef,
-        deliveryNotes: editDeliveryNotes,
-        delivererName: editDelivererName,
-        transactionStatus: editStatus,
-        isCredit: editIsCredit,
-        creditDueDate: editIsCredit ? editCreditDueDate : null,
-        items: editItems,
-      }));
+      await callAction(
+        updateTransaction(editId, {
+          buyerName: editBuyer,
+          buyerAddress: editAddress,
+          buyerContact: editContact,
+          deliveryRef: editDeliveryRef,
+          deliveryNotes: editDeliveryNotes,
+          delivererName: editDelivererName,
+          transactionStatus: editStatus,
+          isCredit: editIsCredit,
+          creditDueDate: editIsCredit ? editCreditDueDate : null,
+          items: editItems,
+        }),
+      );
       loadOrders();
       setEditId(null);
       toast.success("Order updated");

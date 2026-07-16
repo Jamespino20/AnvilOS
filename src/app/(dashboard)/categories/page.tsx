@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 11, 2026
 */
 
 "use client";
@@ -44,7 +44,9 @@ export default function CategoriesPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const isLoggedIn = !!(session?.user as any)?.role;
-  const [categories, setCategories] = useState<(Category & { _count: { products: number } })[]>([]);
+  const [categories, setCategories] = useState<
+    (Category & { _count: { products: number } })[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
@@ -326,14 +328,11 @@ export default function CategoriesPage() {
                   </td>
                   <td className="p-4 text-[#64748b]">
                     {cat.createdAt
-                      ? new Date(cat.createdAt).toLocaleDateString(
-                          "en-PH",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          },
-                        )
+                      ? new Date(cat.createdAt).toLocaleDateString("en-PH", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })
                       : "—"}
                   </td>
                   {isLoggedIn && (

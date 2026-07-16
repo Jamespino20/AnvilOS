@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 16, 2026
 */
 
 generator client {
@@ -226,6 +226,8 @@ model Transaction {
   chequePayeeName        String?           @map("CHEQUE_PAYEE_NAME")
   isReturned             Boolean           @default(false) @map("IS_RETURNED")
   returnForReceiptNumber Int?              @map("RETURN_FOR_RECEIPT_NUMBER")
+  discountType           String?           @db.VarChar(20) @map("DISCOUNT_TYPE")
+  discountValue          Decimal?          @db.Decimal(10, 2) @map("DISCOUNT_VALUE")
   buyerId                Int?              @map("BUYER_ID")
   createdAt              DateTime?         @map("CREATED_AT")
   updatedAt              DateTime          @default(now()) @updatedAt @map("UPDATED_AT")
@@ -348,4 +350,17 @@ model AuditLog {
   @@index([sellerId])
   @@index([logTime])
   @@map("audit_log")
+}
+
+/// Queued low-stock alerts pending email delivery at noon/8pm PH
+model LowStockAlert {
+  id          Int      @id @default(autoincrement()) @map("ALERT_ID")
+  productName String   @map("PRODUCT_NAME")
+  quantity    Int      @map("QUANTITY")
+  minThreshold Int     @map("MIN_THRESHOLD")
+  sentAt      DateTime? @map("SENT_AT")
+  createdAt   DateTime @default(now()) @map("CREATED_AT")
+
+  @@index([sentAt])
+  @@map("low_stock_alerts")
 }

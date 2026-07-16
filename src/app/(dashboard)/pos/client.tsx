@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 16, 2026
 */
 
 "use client";
@@ -132,6 +132,8 @@ export function POSClient({
       chequeDate?: Date;
       payeeName: string;
     };
+    discountType?: string;
+    discountValue?: number;
   } | null>(null);
   const [error, setError] = useState("");
   const [editingQty, setEditingQty] = useState<number | null>(null);
@@ -139,6 +141,10 @@ export function POSClient({
   const [cartWidth, setCartWidth] = useState(550);
   const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [discountType, setDiscountType] = useState<"amount" | "percent" | "">(
+    "",
+  );
+  const [discountValue, setDiscountValue] = useState("");
 
   const handleDragStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -264,13 +270,28 @@ export function POSClient({
     setQtyInput("");
   }
 
-  const grandTotal = useMemo(
+  const subtotal = useMemo(
     () =>
       cart.reduce(
         (sum, c) => sum + Number(c.product.sellingPrice) * c.quantity,
         0,
       ),
     [cart],
+  );
+
+  const discountAmount = useMemo(() => {
+    if (!discountType || !discountValue) return 0;
+    const val = Number(discountValue);
+    if (isNaN(val) || val < 0) return 0;
+    if (discountType === "percent") {
+      return Math.min(subtotal * (val / 100), subtotal);
+    }
+    return Math.min(val, subtotal);
+  }, [subtotal, discountType, discountValue]);
+
+  const grandTotal = useMemo(
+    () => Math.max(subtotal - discountAmount, 0),
+    [subtotal, discountAmount],
   );
 
   async function handleCheckout() {
@@ -284,61 +305,68 @@ export function POSClient({
     setError("");
     setCheckingOut(true);
     try {
-      const result = await callAction(createTransaction({
-        buyerName,
-        buyerAddress: buyerAddress || undefined,
-        buyerContact: buyerContact || undefined,
-        buyerEmail: buyerEmail || undefined,
-        salesInvoiceNumber: salesInvoiceNumber || undefined,
-        deliveryReceiptNumber: deliveryReceiptNumber || undefined,
-        tin: tin || undefined,
-        isCredit: paymentMethod === "Credit",
-        creditDueDate:
-          paymentMethod === "Credit" && creditDueDate
-            ? new Date(creditDueDate)
-            : undefined,
-        paymentMethod,
-        deliveryMethod: deliveryMethod as any,
-        transactionType: txnType,
-        transactionStatus:
-          txnType === "SaleWalkIn" ||
-          txnType === "Return" ||
-          txnType === "Adjustment"
-            ? "Completed"
-            : txnType === "SalePO"
-              ? "Processing"
-              : "Ongoing",
-        grandTotal: cart
-          .filter((c) => !(txnType === "Return" && c.quantity === 0))
-          .reduce(
-            (sum, c) => sum + Number(c.product.sellingPrice) * c.quantity,
-            0,
-          ),
-        items: cart
-          .filter((c) => !(txnType === "Return" && c.quantity === 0))
-          .map((c) => ({
-            productId: c.product.id,
-            quantity: c.quantity,
-            unitPrice: Number(c.product.sellingPrice),
-            totalPrice: Number(c.product.sellingPrice) * c.quantity,
-          })),
-        returnForReceiptNumber:
-          txnType === "Return" ||
-          txnType === "Damage" ||
-          txnType === "Adjustment"
-            ? Number(returnReceipt) || undefined
-            : undefined,
-        chequeDetails:
-          paymentMethod === "Credit" &&
-          (chequeNumber || bankName || chequeDate || payeeName)
-            ? {
-                chequeNumber: chequeNumber || undefined,
-                bankName: bankName || undefined,
-                chequeDate: chequeDate ? new Date(chequeDate) : undefined,
-                payeeName: payeeName || undefined,
-              }
-            : undefined,
-      }));
+      const result = await callAction(
+        createTransaction({
+          buyerName,
+          buyerAddress: buyerAddress || undefined,
+          buyerContact: buyerContact || undefined,
+          buyerEmail: buyerEmail || undefined,
+          salesInvoiceNumber: salesInvoiceNumber || undefined,
+          deliveryReceiptNumber: deliveryReceiptNumber || undefined,
+          tin: tin || undefined,
+          isCredit: paymentMethod === "Credit",
+          creditDueDate:
+            paymentMethod === "Credit" && creditDueDate
+              ? new Date(creditDueDate)
+              : undefined,
+          paymentMethod,
+          deliveryMethod: deliveryMethod as any,
+          transactionType: txnType,
+          transactionStatus:
+            txnType === "SaleWalkIn" ||
+            txnType === "Return" ||
+            txnType === "Adjustment"
+              ? "Completed"
+              : txnType === "SalePO"
+                ? "Processing"
+                : "Ongoing",
+        grandTotal: Math.max(
+          cart
+            .filter((c) => !(txnType === "Return" && c.quantity === 0))
+            .reduce(
+              (sum, c) => sum + Number(c.product.sellingPrice) * c.quantity,
+              0,
+            ) - discountAmount,
+          0,
+        ),
+          items: cart
+            .filter((c) => !(txnType === "Return" && c.quantity === 0))
+            .map((c) => ({
+              productId: c.product.id,
+              quantity: c.quantity,
+              unitPrice: Number(c.product.sellingPrice),
+              totalPrice: Number(c.product.sellingPrice) * c.quantity,
+            })),
+          returnForReceiptNumber:
+            txnType === "Return" ||
+            txnType === "Damage" ||
+            txnType === "Adjustment"
+              ? Number(returnReceipt) || undefined
+              : undefined,
+          chequeDetails:
+            paymentMethod === "Credit" &&
+            (chequeNumber || bankName || chequeDate || payeeName)
+              ? {
+                  chequeNumber: chequeNumber || undefined,
+                  bankName: bankName || undefined,
+                  chequeDate: chequeDate ? new Date(chequeDate) : undefined,
+                  payeeName: payeeName || undefined,
+                }
+              : undefined,
+          discountType: discountType || undefined,
+          discountValue: discountValue ? Number(discountValue) : undefined,
+        }),
+      );
       const isCredit = paymentMethod === "Credit";
       const receiptData = {
         receiptNumber: result.receiptNumber,
@@ -350,7 +378,7 @@ export function POSClient({
         salesInvoiceNumber: salesInvoiceNumber || undefined,
         deliveryReceiptNumber: deliveryReceiptNumber || undefined,
         tin: tin || undefined,
-  
+
         isCredit,
         creditDueDate:
           isCredit && creditDueDate ? new Date(creditDueDate) : undefined,
@@ -376,16 +404,15 @@ export function POSClient({
             : undefined,
       };
       const doneItems = receiptData.items;
-      const doneGrandTotal = doneItems.reduce((s, i) => s + i.totalPrice, 0);
       setDone({
         receipt: result.receiptNumber,
         buyerName: buyerName,
-        grandTotal: doneGrandTotal,
+        grandTotal: grandTotal,
         items: doneItems,
         salesInvoiceNumber: salesInvoiceNumber || undefined,
         deliveryReceiptNumber: deliveryReceiptNumber || undefined,
         tin: tin || undefined,
-  
+
         isCredit,
         creditDueDate:
           isCredit && creditDueDate ? new Date(creditDueDate) : undefined,
@@ -398,6 +425,8 @@ export function POSClient({
                 payeeName,
               }
             : undefined,
+        discountType: discountType || undefined,
+        discountValue: discountValue ? Number(discountValue) : undefined,
       });
       setCart([]);
       setBuyerName("");
@@ -415,6 +444,8 @@ export function POSClient({
       setPayeeName("");
       setPaymentMethod("Cash");
       setDeliveryMethod("WalkIn");
+      setDiscountType("");
+      setDiscountValue("");
       if (txnType !== "SalePO") {
         setTimeout(() => {
           downloadReceipt(receiptData).catch(() => {});
@@ -452,18 +483,26 @@ export function POSClient({
         .then((orig) => {
           setBuyerName(orig.buyerName ?? "");
           setTin((orig as any).tin ?? "");
-          const autoItems = orig.items.map((i) => ({
-            product: i.product,
-            quantity: txnType === "Return" ? 0 : (i.quantity ?? 0),
-            originalQty: i.quantity ?? 0,
-          } as unknown as CartItem));
+          const autoItems = orig.items.map(
+            (i) =>
+              ({
+                product: i.product,
+                quantity: txnType === "Return" ? 0 : (i.quantity ?? 0),
+                originalQty: i.quantity ?? 0,
+              }) as unknown as CartItem,
+          );
           setCart(autoItems);
         })
         .catch((err) => {
           setCart([]);
           const msg =
             err instanceof Error ? err.message : "Failed to load receipt";
-          toast.error(msg.replace(/^Receipt #(\d+) not found$/, "Receipt [$1] was not found."));
+          toast.error(
+            msg.replace(
+              /^Receipt #(\d+) not found$/,
+              "Receipt [$1] was not found.",
+            ),
+          );
         })
         .finally(() => setLoadingReturn(false));
     }, 500);
@@ -561,7 +600,9 @@ export function POSClient({
               <select
                 value={parentCategory}
                 onChange={(e) => {
-                  setParentCategory(e.target.value ? Number(e.target.value) : "");
+                  setParentCategory(
+                    e.target.value ? Number(e.target.value) : "",
+                  );
                 }}
                 className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a]"
               >
@@ -589,7 +630,9 @@ export function POSClient({
               <select
                 value={filterSupplier}
                 onChange={(e) =>
-                  setFilterSupplier(e.target.value ? Number(e.target.value) : "")
+                  setFilterSupplier(
+                    e.target.value ? Number(e.target.value) : "",
+                  )
                 }
                 className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white text-[#0e212c] focus:outline-none focus:border-[#fd761a]"
               >
@@ -610,7 +653,19 @@ export function POSClient({
                   }`}
                   title="List view"
                 >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
                   List
                 </button>
                 <button
@@ -622,7 +677,19 @@ export function POSClient({
                   }`}
                   title="Grid view"
                 >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h4v4H4zM10 6h4v4h-4zM16 6h4v4h-4zM4 12h4v4H4zM10 12h4v4h-4zM16 12h4v4h-4zM4 18h4v4H4zM10 18h4v4h-4zM16 18h4v4h-4z" /></svg>
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 6h4v4H4zM10 6h4v4h-4zM16 6h4v4h-4zM4 12h4v4H4zM10 12h4v4h-4zM16 12h4v4h-4zM4 18h4v4H4zM10 18h4v4h-4zM16 18h4v4h-4z"
+                    />
+                  </svg>
                   Grid
                 </button>
               </div>
@@ -634,9 +701,15 @@ export function POSClient({
               <table className="w-full">
                 <thead className="bg-[#f8fafc] border-b border-[#e2e8f0] sticky top-0">
                   <tr>
-                    <th className="text-left p-3 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">Product</th>
-                    <th className="text-right p-3 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">Price</th>
-                    <th className="text-right p-3 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-20">Stock</th>
+                    <th className="text-left p-3 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                      Product
+                    </th>
+                    <th className="text-right p-3 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider">
+                      Price
+                    </th>
+                    <th className="text-right p-3 text-[11px] font-semibold text-[#64748b] uppercase tracking-wider w-20">
+                      Stock
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e2e8f0]">
@@ -649,35 +722,61 @@ export function POSClient({
                       <td className="p-3">
                         <div className="flex items-center gap-3">
                           {(product as any).imageUrl ? (
-                            <img src={(product as any).imageUrl} alt="" className="w-9 h-9 rounded-lg object-cover border border-[#e2e8f0] shrink-0" />
+                            <img
+                              src={(product as any).imageUrl}
+                              alt=""
+                              className="w-9 h-9 rounded-lg object-cover border border-[#e2e8f0] shrink-0"
+                            />
                           ) : (
                             <div className="w-9 h-9 rounded-lg bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center shrink-0">
                               <Package className="h-4 w-4 text-[#94a3b8]" />
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="font-semibold text-sm text-[#0e212c] truncate">{product.productName}</p>
-                            <p className="text-[11px] text-[#94a3b8] truncate">{product.category}{(product as any).brandRel?.name ? ` · ${(product as any).brandRel.name}` : ""}</p>
+                            <p className="font-semibold text-sm text-[#0e212c] truncate">
+                              {product.productName}
+                            </p>
+                            <p className="text-[11px] text-[#94a3b8] truncate">
+                              {product.category}
+                              {(product as any).brandRel?.name
+                                ? ` · ${(product as any).brandRel.name}`
+                                : ""}
+                            </p>
                           </div>
                         </div>
                       </td>
                       <td className="p-3 text-right font-bold text-[#fd761a] text-sm whitespace-nowrap">
-                        {Number(product.sellingPrice).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {Number(product.sellingPrice).toLocaleString("en-PH", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </td>
                       <td className="p-3 text-right font-mono text-sm">
-                        <span className={(() => {
-                          const effectiveQty = product.quantity - (pendingPOQty[product.id] || 0);
-                          return effectiveQty <= product.minThreshold && effectiveQty > 0 ? "text-rose-500 font-bold" : "text-[#94a3b8]";
-                        })()}>
+                        <span
+                          className={(() => {
+                            const effectiveQty =
+                              product.quantity -
+                              (pendingPOQty[product.id] || 0);
+                            return effectiveQty <= product.minThreshold &&
+                              effectiveQty > 0
+                              ? "text-rose-500 font-bold"
+                              : "text-[#94a3b8]";
+                          })()}
+                        >
                           {product.quantity - (pendingPOQty[product.id] || 0)}
-                          {pendingPOQty[product.id] ? ` (${product.quantity})` : ""}
+                          {pendingPOQty[product.id]
+                            ? ` (${product.quantity})`
+                            : ""}
                         </span>
                       </td>
                     </tr>
                   ))}
                   {filtered.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="p-8 text-center text-[#94a3b8] text-sm">
+                      <td
+                        colSpan={3}
+                        className="p-8 text-center text-[#94a3b8] text-sm"
+                      >
                         No available products match your search
                       </td>
                     </tr>
@@ -686,60 +785,60 @@ export function POSClient({
               </table>
             </div>
           ) : (
-          <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 content-start min-w-0">
-            {filtered.map((product) => (
-              <button
-                key={product.id}
-                onClick={() => {
-                  addToCart(product);
-                  // Optional: Vibrate or feedback for mobile
-                }}
-                className={`bg-white border border-[#e2e8f0] rounded-xl p-3 sm:p-4 text-left hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 group aspect-square flex flex-col ${product.quantity <= 0 ? "opacity-60 cursor-not-allowed" : ""}`}
-              >
-                {(product as any).imageUrl ? (
-                  <img
-                    src={(product as any).imageUrl}
-                    alt=""
-                    className="w-full h-20 sm:h-24 object-cover rounded-lg mb-3 border border-[#e2e8f0]"
-                  />
-                ) : (
-                  <div className="w-full h-20 sm:h-24 rounded-lg mb-3 bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center">
-                    <Package className="h-8 w-8 text-[#94a3b8]" />
-                  </div>
-                )}
-                <p className="font-semibold text-[13px] sm:text-sm text-[#0e212c] truncate group-hover:text-[#fd761a] transition-colors leading-tight">
-                  {product.productName}
-                </p>
-                <div className="flex items-baseline justify-between mt-1 gap-1">
-                  <p className="text-base sm:text-lg font-bold text-[#fd761a]">
-                    {Number(product.sellingPrice).toLocaleString("en-PH", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+            <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 content-start min-w-0">
+              {filtered.map((product) => (
+                <button
+                  key={product.id}
+                  onClick={() => {
+                    addToCart(product);
+                    // Optional: Vibrate or feedback for mobile
+                  }}
+                  className={`bg-white border border-[#e2e8f0] rounded-xl p-3 sm:p-4 text-left hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200 group aspect-square flex flex-col ${product.quantity <= 0 ? "opacity-60 cursor-not-allowed" : ""}`}
+                >
+                  {(product as any).imageUrl ? (
+                    <img
+                      src={(product as any).imageUrl}
+                      alt=""
+                      className="w-full h-20 sm:h-24 object-cover rounded-lg mb-3 border border-[#e2e8f0]"
+                    />
+                  ) : (
+                    <div className="w-full h-20 sm:h-24 rounded-lg mb-3 bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center">
+                      <Package className="h-8 w-8 text-[#94a3b8]" />
+                    </div>
+                  )}
+                  <p className="font-semibold text-[13px] sm:text-sm text-[#0e212c] truncate group-hover:text-[#fd761a] transition-colors leading-tight">
+                    {product.productName}
                   </p>
-                  {(() => {
-                    const effectiveQty =
-                      product.quantity - (pendingPOQty[product.id] || 0);
-                    return (
-                      <p
-                        className={`text-[10px] ${effectiveQty <= product.minThreshold && effectiveQty > 0 ? "text-rose-500 font-bold" : "text-[#94a3b8]"}`}
-                      >
-                        {effectiveQty}
-                        {pendingPOQty[product.id]
-                          ? ` (${product.quantity})`
-                          : ""}
-                      </p>
-                    );
-                  })()}
+                  <div className="flex items-baseline justify-between mt-1 gap-1">
+                    <p className="text-base sm:text-lg font-bold text-[#fd761a]">
+                      {Number(product.sellingPrice).toLocaleString("en-PH", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
+                    {(() => {
+                      const effectiveQty =
+                        product.quantity - (pendingPOQty[product.id] || 0);
+                      return (
+                        <p
+                          className={`text-[10px] ${effectiveQty <= product.minThreshold && effectiveQty > 0 ? "text-rose-500 font-bold" : "text-[#94a3b8]"}`}
+                        >
+                          {effectiveQty}
+                          {pendingPOQty[product.id]
+                            ? ` (${product.quantity})`
+                            : ""}
+                        </p>
+                      );
+                    })()}
+                  </div>
+                </button>
+              ))}
+              {filtered.length === 0 && (
+                <div className="col-span-full text-center py-12 text-[#94a3b8]">
+                  No available products match your search
                 </div>
-              </button>
-            ))}
-            {filtered.length === 0 && (
-              <div className="col-span-full text-center py-12 text-[#94a3b8]">
-                No available products match your search
-              </div>
-            )}
-          </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -1174,6 +1273,68 @@ export function POSClient({
           </div>
 
           <div className="p-6 border-t border-[#e2e8f0] space-y-4 bg-white sticky bottom-0">
+            {subtotal > 0 && (
+              <div className="flex items-center gap-2">
+                <select
+                  value={discountType}
+                  onChange={(e) => {
+                    setDiscountType(
+                      e.target.value as "amount" | "percent" | "",
+                    );
+                    if (e.target.value === "") setDiscountValue("");
+                  }}
+                  className="h-9 px-2 border border-[#e2e8f0] rounded-lg text-xs bg-white focus:outline-none focus:border-[#fd761a]"
+                >
+                  <option value="">No Discount</option>
+                  <option value="amount">Fixed Amount</option>
+                  <option value="percent">Percent</option>
+                </select>
+                {discountType && (
+                  <div className="relative flex-1">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#94a3b8]">
+                      {discountType === "percent" ? "%" : "\u20B1"}
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={discountType === "percent" ? "100" : undefined}
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(e.target.value)}
+                      placeholder={discountType === "percent" ? "0" : "0.00"}
+                      className="w-full h-9 pl-7 pr-2 border border-[#e2e8f0] rounded-lg text-xs text-right font-mono bg-white focus:outline-none focus:border-[#fd761a]"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+            {discountAmount > 0 && (
+              <div className="flex justify-between items-center text-xs text-[#64748b]">
+                <span>Subtotal</span>
+                <span className="font-mono">
+                  {subtotal.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+            )}
+            {discountAmount > 0 && (
+              <div className="flex justify-between items-center text-xs text-emerald-600">
+                <span>
+                  Discount
+                  {discountType === "percent" && (
+                    <span className="ml-1 text-[10px]">({discountValue}%)</span>
+                  )}
+                </span>
+                <span className="font-mono">
+                  -
+                  {discountAmount.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <span className="text-sm font-bold text-[#0e212c]">Total</span>
               <span className="text-xl font-black text-[#fd761a]">
@@ -1223,6 +1384,8 @@ export function POSClient({
                       isCredit: done.isCredit,
                       creditDueDate: done.creditDueDate,
                       chequeDetails: done.chequeDetails,
+                      discountType: done.discountType,
+                      discountValue: done.discountValue,
                     })
                   }
                   title="Download receipt as PDF"

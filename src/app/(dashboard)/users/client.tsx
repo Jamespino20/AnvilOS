@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 11, 2026
 */
 
 "use client";
@@ -68,7 +68,8 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
     role: "STAFF" as "SUPERADMIN" | "ADMIN" | "STAFF",
   });
 
-  const isAdmin = currentUserRole === "SUPERADMIN" || currentUserRole === "ADMIN";
+  const isAdmin =
+    currentUserRole === "SUPERADMIN" || currentUserRole === "ADMIN";
 
   function canEditUser(targetUser: UserRow) {
     if (currentUserRole === "SUPERADMIN") return true;
@@ -285,8 +286,12 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
                 if (!confirm(`Deactivate ${selected.size} user(s)?`)) return;
                 const result = await bulkDeleteUsers(Array.from(selected));
                 if (result.skipped.length > 0) {
-                  const msgs = result.skipped.map(s => `#${s.id}: ${s.reason}`);
-                  alert(`Deactivated ${result.deactivated}. Skipped:\n${msgs.join("\n")}`);
+                  const msgs = result.skipped.map(
+                    (s) => `#${s.id}: ${s.reason}`,
+                  );
+                  alert(
+                    `Deactivated ${result.deactivated}. Skipped:\n${msgs.join("\n")}`,
+                  );
                 } else {
                   alert(`Deactivated ${result.deactivated} user(s).`);
                 }
@@ -318,10 +323,13 @@ export function UsersClient({ users: initialUsers, currentUserRole }: Props) {
                   <th className="px-3 py-3 text-left">
                     <input
                       type="checkbox"
-                      checked={filtered.length > 0 && filtered.every(u => selected.has(u.id))}
+                      checked={
+                        filtered.length > 0 &&
+                        filtered.every((u) => selected.has(u.id))
+                      }
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelected(new Set(filtered.map(u => u.id)));
+                          setSelected(new Set(filtered.map((u) => u.id)));
                         } else {
                           setSelected(new Set());
                         }

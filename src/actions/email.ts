@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 11, 2026
 */
 
 "use server";
@@ -304,14 +304,11 @@ export async function sendSystemTransactionAlert(
   );
 }
 
-/** Check all products for low/out-of-stock and send alerts + create notifications */
+/** Check all products for low/out-of-stock and queue alerts for scheduled delivery */
 export async function checkAndAlertLowStock() {
-  const [lowStockProducts, outOfStockProducts] = await Promise.all([
+  const [allAvailable, outOfStockProducts] = await Promise.all([
     prisma.product.findMany({
-      where: {
-        isAvailable: true,
-        quantity: { gt: 0, lte: prisma.product.fields.minThreshold },
-      },
+      where: { isAvailable: true, quantity: { gt: 0 } },
       select: { productName: true, quantity: true, minThreshold: true },
     }),
     prisma.product.findMany({
@@ -320,8 +317,19 @@ export async function checkAndAlertLowStock() {
     }),
   ]);
 
-  if (lowStockProducts.length > 0) {
-    await sendLowStockAlerts(lowStockProducts);
+  const lowStockProducts = allAvailable.filter(
+    (p) => p.quantity <= p.minThreshold,
+  );
+
+  // Queue low-stock alerts for scheduled email delivery (noon/8pm PH)
+  for (const p of lowStockProducts) {
+    await prisma.lowStockAlert.create({
+      data: {
+        productName: p.productName,
+        quantity: p.quantity,
+        minThreshold: p.minThreshold,
+      },
+    });
   }
 
   for (const p of outOfStockProducts) {
@@ -340,4 +348,60 @@ export async function checkAndAlertLowStock() {
       `${outOfStockProducts.length} product(s) out of stock`,
     );
   }
+}
+
+/**
+ * Process queued low-stock alerts — sends batched email at noon/8pm PH time.
+ * Called by cron job; skips if not within the delivery window.
+ */
+export async function processLowStockAlerts() {
+  // Check if current PH time is within delivery window (12:00–12:09 or 20:00–20:09)
+  const now = new Date();
+  const phOffset = 8;
+  const phHour = (now.getUTCHours() + phOffset) % 24;
+  const phMinute = now.getUTCMinutes();
+  const isNoonWindow = phHour === 12 && phMinute < 10;
+  const isEveningWindow = phHour === 20 && phMinute < 10;
+
+  if (!isNoonWindow && !isEveningWindow) {
+    return { sent: false, reason: "Outside delivery window" };
+  }
+
+  // Fetch unsent alerts
+  const alerts = await prisma.lowStockAlert.findMany({
+    where: { sentAt: null },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (alerts.length === 0) {
+    return { sent: false, reason: "No pending alerts" };
+  }
+
+  // Deduplicate by productName (keep lowest quantity per product)
+  const deduped = new Map<string, (typeof alerts)[number]>();
+  for (const alert of alerts) {
+    const existing = deduped.get(alert.productName);
+    if (!existing || alert.quantity < existing.quantity) {
+      deduped.set(alert.productName, alert);
+    }
+  }
+  const uniqueAlerts = Array.from(deduped.values());
+
+  // Send batched email
+  await sendLowStockAlerts(
+    uniqueAlerts.map((a) => ({
+      productName: a.productName,
+      quantity: a.quantity,
+      minThreshold: a.minThreshold,
+    })),
+  );
+
+  // Mark as sent (only those still unsent — prevents duplicate processing)
+  const alertIds = alerts.map((a) => a.id);
+  await prisma.lowStockAlert.updateMany({
+    where: { id: { in: alertIds }, sentAt: null },
+    data: { sentAt: new Date() },
+  });
+
+  return { sent: true, count: uniqueAlerts.length };
 }

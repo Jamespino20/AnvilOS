@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 16, 2026
 */
 
 "use client";
@@ -15,6 +15,7 @@ import {
   updateTransactionStatus,
   updateTransactionInvoice,
   markCreditAsPaid,
+  toggleTransactionCredit,
   getProducts,
 } from "@/actions";
 import { callAction } from "@/lib/client-action";
@@ -134,15 +135,17 @@ export default function TransactionsPage() {
         startDate,
         endDate,
       }),
-    ]).then(([data, count]) => {
-      setTransactions(data as TxnWithItems[]);
-      setTotal(count);
-      setLoading(false);
-      setInitialLoad(false);
-    }).catch(() => {
-      setLoading(false);
-      setInitialLoad(false);
-    });
+    ])
+      .then(([data, count]) => {
+        setTransactions(data as TxnWithItems[]);
+        setTotal(count);
+        setLoading(false);
+        setInitialLoad(false);
+      })
+      .catch(() => {
+        setLoading(false);
+        setInitialLoad(false);
+      });
   }, [
     statusFilter,
     typeFilter,
@@ -248,15 +251,15 @@ export default function TransactionsPage() {
         subtitle="View and manage all sales, returns, restocks, and adjustments."
       />
 
-      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-4 items-center">
-        <div className="relative w-full lg:flex-1 min-w-0 sm:min-w-[200px]">
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-3 items-center">
+        <div className="relative w-full lg:flex-1 lg:min-w-[240px] min-w-0">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search by receipt #, buyer name..."
-            className="w-full pl-10 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
+            placeholder="Search receipt #, invoice, buyer..."
+            className="w-full h-10 pl-10 pr-4 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
         </div>
         <div className="flex gap-2 w-full lg:w-auto flex-wrap">
@@ -280,7 +283,7 @@ export default function TransactionsPage() {
               setTypeFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[140px]"
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
             <option value="">All Types</option>
             {TYPE_OPTIONS.slice(1).map((t) => (
@@ -295,7 +298,7 @@ export default function TransactionsPage() {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[120px]"
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
             <option value="">All Statuses</option>
             {STATUS_OPTIONS.slice(1).map((s) => (
@@ -310,7 +313,7 @@ export default function TransactionsPage() {
               setPaymentFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] max-w-[120px]"
+            className="h-10 px-3 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] w-full lg:w-auto min-w-0"
           >
             <option value="">All Payments</option>
             <option value="Cash">Cash</option>
@@ -339,8 +342,10 @@ export default function TransactionsPage() {
               transactions.map((t) =>
                 selectedColumns.map((key) => {
                   if (key === "receiptNumber") return String(t.receiptNumber);
-                  if (key === "salesInvoiceNumber") return (t as any).salesInvoiceNumber || "";
-                  if (key === "deliveryReceiptNumber") return (t as any).deliveryReceiptNumber || "";
+                  if (key === "salesInvoiceNumber")
+                    return (t as any).salesInvoiceNumber || "";
+                  if (key === "deliveryReceiptNumber")
+                    return (t as any).deliveryReceiptNumber || "";
                   if (key === "buyerName") return t.buyerName;
                   if (key === "transactionType")
                     return t.transactionType.replace(/([A-Z])/g, " $1").trim();
@@ -452,7 +457,8 @@ export default function TransactionsPage() {
                     >
                       {sortBy === "deliveryReceiptNumber" && sortDir === "asc"
                         ? "\u25B2"
-                        : sortBy === "deliveryReceiptNumber" && sortDir === "desc"
+                        : sortBy === "deliveryReceiptNumber" &&
+                            sortDir === "desc"
                           ? "\u25BC"
                           : "\u25B2"}
                     </span>
@@ -555,7 +561,10 @@ export default function TransactionsPage() {
                                   toast.success("Credit marked as paid");
                                   window.location.reload();
                                 } catch (e: any) {
-                                  toast.error(e.message || "Failed to mark credit as paid");
+                                  toast.error(
+                                    e.message ||
+                                      "Failed to mark credit as paid",
+                                  );
                                 }
                               }}
                               className="px-2 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -674,8 +683,10 @@ export default function TransactionsPage() {
                                 grandTotal: Number(t.grandTotal || 0),
                                 paymentMethod: t.paymentMethod || undefined,
                                 transactionType: t.transactionType,
-                                salesInvoiceNumber: (t as any).salesInvoiceNumber || undefined,
-                                deliveryReceiptNumber: (t as any).deliveryReceiptNumber || undefined,
+                                salesInvoiceNumber:
+                                  (t as any).salesInvoiceNumber || undefined,
+                                deliveryReceiptNumber:
+                                  (t as any).deliveryReceiptNumber || undefined,
                                 tin: (t as any).tin || undefined,
                                 isCredit: t.isCredit || undefined,
                                 creditDueDate: t.creditDueDate || undefined,
@@ -915,35 +926,85 @@ export default function TransactionsPage() {
                   </div>
 
                   {/* Credit Info */}
-                  {(t as any).isCredit && (
-                    <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 text-sm">
+                  <div className="border border-[#e2e8f0] rounded-lg p-3 text-sm">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <span className="font-semibold text-amber-700">
+                        <span className="font-semibold text-[#0e212c]">
                           Credit Sale
                         </span>
-                        {(t as any).creditDueDate && (
-                          <span className="text-amber-600">
-                            Due:{" "}
-                            {new Date(
-                              (t as any).creditDueDate,
-                            ).toLocaleDateString("en-PH")}
-                          </span>
-                        )}
-                        {(t as any).creditPaidAt ? (
-                          <span className="text-emerald-600 font-semibold">
-                            Paid{" "}
-                            {new Date(
-                              (t as any).creditPaidAt,
-                            ).toLocaleDateString("en-PH")}
+                        {(t as any).isCredit ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-100 text-amber-700">
+                            {(t as any).creditPaidAt ? "Paid" : "Unpaid"}
+                            {(t as any).creditDueDate && (
+                              <span className="text-[9px] opacity-70">
+                                Due:{" "}
+                                {new Date(
+                                  (t as any).creditDueDate,
+                                ).toLocaleDateString("en-PH")}
+                              </span>
+                            )}
                           </span>
                         ) : (
-                          <span className="text-rose-600 font-semibold">
-                            Unpaid
+                          <span className="text-[10px] text-[#94a3b8]">
+                            Not a credit sale
                           </span>
                         )}
                       </div>
+                      <div className="flex items-center gap-2">
+                        {(t as any).isCredit && !(t as any).creditPaidAt && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await callAction(markCreditAsPaid(t.id));
+                                toast.success("Credit marked as paid");
+                                window.location.reload();
+                              } catch (e: any) {
+                                toast.error(
+                                  e.message || "Failed to mark credit as paid",
+                                );
+                              }
+                            }}
+                            className="px-2 py-1 text-[10px] font-bold bg-blue-600 text-white rounded hover:bg-blue-700"
+                          >
+                            Mark Paid
+                          </button>
+                        )}
+                        <button
+                          onClick={async () => {
+                            try {
+                              const newIsCredit = !(t as any).isCredit;
+                              await callAction(
+                                toggleTransactionCredit(
+                                  t.id,
+                                  newIsCredit,
+                                  newIsCredit ? null : undefined,
+                                ),
+                              );
+                              toast.success(
+                                newIsCredit
+                                  ? "Marked as credit sale"
+                                  : "Credit removed",
+                              );
+                              window.location.reload();
+                            } catch (e: any) {
+                              toast.error(
+                                e.message || "Failed to update credit",
+                              );
+                            }
+                          }}
+                          className={`px-2 py-1 text-[10px] font-bold rounded ${
+                            (t as any).isCredit
+                              ? "bg-rose-100 text-rose-700 hover:bg-rose-200"
+                              : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                          }`}
+                        >
+                          {(t as any).isCredit
+                            ? "Remove Credit"
+                            : "Mark as Credit"}
+                        </button>
+                      </div>
                     </div>
-                  )}
+                  </div>
 
                   {/* Cheque Details */}
                   {(t as any).chequeNumber && (
@@ -1022,8 +1083,10 @@ export default function TransactionsPage() {
                         {t.items.map((item) => (
                           <tr key={item.id}>
                             <td className="p-3 text-[#0e212c] font-medium">
-                              {item.productName || products.find((p) => p.id === item.productId)
-                                ?.productName || `#${item.productId}`}
+                              {item.productName ||
+                                products.find((p) => p.id === item.productId)
+                                  ?.productName ||
+                                `#${item.productId}`}
                             </td>
                             <td className="p-3 text-right text-[#64748b]">
                               {item.quantity}

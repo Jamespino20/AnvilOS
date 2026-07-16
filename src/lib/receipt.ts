@@ -2,6 +2,14 @@
  * @fileoverview Receipt generation utilities – PDF download using jsPDF
  */
 
+/*
+App Name: CWL Hardware
+App Client: CWL Hardware
+Author: James Bryant D. Espino
+URL: https://github.com/Jamespino20
+Last Update Date: July 16, 2026
+*/
+
 import { jsPDF } from "jspdf";
 import { formatMoney } from "@/lib/format";
 
@@ -51,6 +59,8 @@ export async function downloadReceiptPdf(data: {
     chequeDate?: Date;
     payeeName: string;
   };
+  discountType?: string;
+  discountValue?: number;
 }) {
   const doc = new jsPDF({ unit: "mm", format: [80, 400] });
 
@@ -309,6 +319,33 @@ export async function downloadReceiptPdf(data: {
   doc.setLineWidth(0.5);
   doc.line(l, y, r, y);
   y += 2.5;
+
+  // Show subtotal + discount when discount is applied
+  const hasDiscount =
+    data.discountType && data.discountValue && data.discountValue > 0;
+  if (hasDiscount) {
+    const subtotal = data.items.reduce((s, i) => s + i.totalPrice, 0);
+    const discountAmount =
+      data.discountType === "percent"
+        ? subtotal * ((data.discountValue || 0) / 100)
+        : data.discountValue || 0;
+    doc.setFont("courier", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Subtotal", l, y);
+    doc.text(`PHP ${formatMoney(subtotal)}`, r - 1, y, { align: "right" });
+    y += 3.5;
+    const discLabel =
+      data.discountType === "percent"
+        ? `Discount (${data.discountValue}%)`
+        : "Discount";
+    doc.text(discLabel, l, y);
+    doc.text(`-PHP ${formatMoney(discountAmount)}`, r - 1, y, {
+      align: "right",
+    });
+    y += 3.5;
+  }
+
   doc.setFont("courier", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(253, 118, 26);

@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 11, 2026
 */
 
 "use client";
@@ -427,8 +427,10 @@ export default function BuyersPage() {
                           {txn.items.map((item) => (
                             <tr key={item.id}>
                               <td className="py-2 text-[#0e212c] font-medium">
-                                {item.productName || products.find((p) => p.id === item.productId)
-                                  ?.productName || `#${item.productId}`}
+                                {item.productName ||
+                                  products.find((p) => p.id === item.productId)
+                                    ?.productName ||
+                                  `#${item.productId}`}
                               </td>
                               <td className="py-2 text-right text-[#64748b]">
                                 {item.quantity}
@@ -606,13 +608,15 @@ export default function BuyersPage() {
                     onClick={async () => {
                       setSavingBuyer(true);
                       try {
-                        await callAction(updateBuyerInfo(selectedBuyer!, {
-                          buyerAddress: editAddress,
-                          buyerContact: editContact,
-                          buyerEmail: editEmail,
-                          imageUrl: editImageUrl,
-                          tin: editTin || undefined,
-                        }));
+                        await callAction(
+                          updateBuyerInfo(selectedBuyer!, {
+                            buyerAddress: editAddress,
+                            buyerContact: editContact,
+                            buyerEmail: editEmail,
+                            imageUrl: editImageUrl,
+                            tin: editTin || undefined,
+                          }),
+                        );
                         setHistory((prev) =>
                           prev.map((t) => ({
                             ...t,
@@ -809,9 +813,7 @@ export default function BuyersPage() {
                   <td className="p-4 text-[#64748b]">
                     {buyer.buyerContact || "—"}
                   </td>
-                  <td className="p-4 text-[#64748b]">
-                    {buyer.tin || "—"}
-                  </td>
+                  <td className="p-4 text-[#64748b]">{buyer.tin || "—"}</td>
                   <td className="p-4 text-[#64748b] max-w-[200px] truncate">
                     {buyer.buyerAddress || "—"}
                   </td>
@@ -1036,13 +1038,15 @@ export default function BuyersPage() {
                     if (!addBuyerName.trim()) return;
                     setAddingBuyer(true);
                     try {
-                      await callAction(createBuyer({
-                        name: addBuyerName.trim(),
-                        address: addBuyerAddress || undefined,
-                        contact: addBuyerContact || undefined,
-                        email: addBuyerEmail || undefined,
-                        tin: addBuyerTin || undefined,
-                      }));
+                      await callAction(
+                        createBuyer({
+                          name: addBuyerName.trim(),
+                          address: addBuyerAddress || undefined,
+                          contact: addBuyerContact || undefined,
+                          email: addBuyerEmail || undefined,
+                          tin: addBuyerTin || undefined,
+                        }),
+                      );
                       setShowAddBuyer(false);
                       setAddBuyerName("");
                       setAddBuyerAddress("");

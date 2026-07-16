@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 11, 2026
 */
 
 import { prisma } from "./prisma";
@@ -97,10 +97,19 @@ async function flushAuditBatch() {
       groups.get(key)!.push(entry);
     }
 
-    const rows: { details: string; sellerId: number | null; panel: string; action: string; successStatus: boolean; logTime: Date }[] = [];
+    const rows: {
+      details: string;
+      sellerId: number | null;
+      panel: string;
+      action: string;
+      successStatus: boolean;
+      logTime: Date;
+    }[] = [];
 
     for (const [, entries] of groups) {
-      const sorted = entries.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      const sorted = entries.sort(
+        (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
+      );
       const formattedEntries = sorted.map((entry) => formatAuditEntry(entry));
 
       if (sorted.length === 1) {

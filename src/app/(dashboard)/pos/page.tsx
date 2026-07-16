@@ -3,29 +3,46 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: June 13, 2026
+Last Update Date: July 11, 2026
 */
 
-import { getProducts, getBuyers, getCategories, getSuppliers, getBrands, getPendingPOQuantities } from "@/actions";
+import {
+  getProducts,
+  getBuyers,
+  getCategories,
+  getSuppliers,
+  getBrands,
+  getPendingPOQuantities,
+} from "@/actions";
 import { POSClient } from "./client";
 
 export default async function POSPage() {
-  let products: any[] = [], buyers: any[] = [], categories: any[] = [], suppliers: any[] = [], brands: any[] = [], pendingPOQty: Record<number, number> = {};
+  let products: any[] = [],
+    buyers: any[] = [],
+    categories: any[] = [],
+    suppliers: any[] = [],
+    brands: any[] = [],
+    pendingPOQty: Record<number, number> = {};
   try {
-    [products, buyers, categories, suppliers, brands, pendingPOQty] = await Promise.all([
-      getProducts({ status: "available" }),
-      getBuyers(),
-      getCategories(),
-      getSuppliers(),
-      getBrands(),
-      getPendingPOQuantities(),
-    ]);
+    [products, buyers, categories, suppliers, brands, pendingPOQty] =
+      await Promise.all([
+        getProducts({ status: "available" }),
+        getBuyers(),
+        getCategories(),
+        getSuppliers(),
+        getBrands(),
+        getPendingPOQuantities(),
+      ]);
   } catch {
     return (
       <div className="flex items-center justify-center h-[50vh]">
         <div className="text-center space-y-2">
-          <p className="text-lg font-semibold text-[#0e212c]">Database Unavailable</p>
-          <p className="text-sm text-[#94a3b8]">Please try again in a few moments.</p>
+          <p className="text-lg font-semibold text-[#0e212c]">
+            Database Unavailable
+          </p>
+          <p className="text-sm text-[#94a3b8]">
+            Please try again in a few moments.
+          </p>
         </div>
       </div>
     );
