@@ -124,8 +124,9 @@ export async function downloadReceiptPdf(data: {
   doc.setTextColor(100, 116, 139);
   doc.text("Hardware & Supply", cx, y + 11, { align: "center" });
   doc.setFontSize(7);
-  doc.text("123 Hardware Street, Manila", cx, y + 15, { align: "center" });
-  doc.text("Tel: (02) 8123-4567", cx, y + 18.5, { align: "center" });
+  doc.text("208 Pulilan Regional Rd, Pulilan, Bulacan", cx, y + 15, {
+    align: "center",
+  });
   y += 23;
 
   // Separator
