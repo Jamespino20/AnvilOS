@@ -323,22 +323,21 @@ export function POSClient({
           deliveryMethod: deliveryMethod as any,
           transactionType: txnType,
           transactionStatus:
-            txnType === "SaleWalkIn" ||
-            txnType === "Return" ||
-            txnType === "Adjustment"
+            (txnType === "SaleWalkIn" || txnType === "Return" || txnType === "Adjustment")
+              && !(paymentMethod === "Credit")
               ? "Completed"
               : txnType === "SalePO"
                 ? "Processing"
                 : "Ongoing",
-        grandTotal: Math.max(
-          cart
-            .filter((c) => !(txnType === "Return" && c.quantity === 0))
-            .reduce(
-              (sum, c) => sum + Number(c.product.sellingPrice) * c.quantity,
-              0,
-            ) - discountAmount,
-          0,
-        ),
+          grandTotal: Math.max(
+            cart
+              .filter((c) => !(txnType === "Return" && c.quantity === 0))
+              .reduce(
+                (sum, c) => sum + Number(c.product.sellingPrice) * c.quantity,
+                0,
+              ) - discountAmount,
+            0,
+          ),
           items: cart
             .filter((c) => !(txnType === "Return" && c.quantity === 0))
             .map((c) => ({
@@ -932,7 +931,7 @@ export function POSClient({
                 type="text"
                 value={salesInvoiceNumber}
                 onChange={(e) => setSalesInvoiceNumber(e.target.value)}
-                placeholder="Sales Invoice # *"
+                placeholder="Sales Invoice #"
                 className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
               />
             </div>

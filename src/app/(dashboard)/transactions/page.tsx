@@ -229,6 +229,13 @@ export default function TransactionsPage() {
                 field,
                 editingInvoice!.value,
               );
+              setTransactions((prev) =>
+                prev.map((txn) =>
+                  txn.id === editingInvoice!.id
+                    ? { ...txn, [field]: editingInvoice!.value }
+                    : txn,
+                ),
+              );
               setEditingInvoice(null);
             }}
             onKeyDown={(e) => {
@@ -690,6 +697,21 @@ export default function TransactionsPage() {
                                 tin: (t as any).tin || undefined,
                                 isCredit: t.isCredit || undefined,
                                 creditDueDate: t.creditDueDate || undefined,
+                                chequeDetails:
+                                  (t as any).chequeNumber
+                                    ? {
+                                        chequeNumber:
+                                          (t as any).chequeNumber || undefined,
+                                        bankName:
+                                          (t as any).chequeBankName ||
+                                          undefined,
+                                        chequeDate:
+                                          (t as any).chequeDate || undefined,
+                                        payeeName:
+                                          (t as any).chequePayeeName ||
+                                          undefined,
+                                      }
+                                    : undefined,
                               });
                             }}
                             className="p-1.5 text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 rounded-md transition-all"
