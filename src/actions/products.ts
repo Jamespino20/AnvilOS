@@ -250,6 +250,7 @@ export async function createProduct(data: {
     revalidatePath("/inventory");
     revalidatePath("/categories");
     revalidatePath("/brands");
+    revalidatePath("/pos");
     revalidateTag("products", "default");
     revalidateTag("categories", "default");
     revalidateTag("brands", "default");
@@ -342,6 +343,7 @@ export async function updateProduct(
     revalidatePath("/inventory");
     revalidatePath("/categories");
     revalidatePath("/brands");
+    revalidatePath("/pos");
     revalidateTag("products", "default");
     revalidateTag("categories", "default");
     revalidateTag("brands", "default");
@@ -367,6 +369,7 @@ export async function adjustStock(productId: number, newQuantity: number) {
     `${product.productName}: ${product.quantity} → ${newQuantity}`,
   );
   revalidatePath("/inventory");
+  revalidatePath("/pos");
   revalidateTag("products", "default");
   return updated;
 }
@@ -384,6 +387,7 @@ export async function setProductAvailability(id: number, isAvailable: boolean) {
     `${product.productName} (#${id})`,
   );
   revalidatePath("/inventory");
+  revalidatePath("/pos");
   revalidateTag("products", "default");
   return updated;
 }
@@ -402,6 +406,7 @@ export async function deleteProduct(id: number) {
       `${product.productName} (#${id}) deleted`,
     );
     revalidatePath("/inventory");
+    revalidatePath("/pos");
     revalidateTag("products", "default");
   });
 }
@@ -427,6 +432,7 @@ export async function deleteProducts(ids: number[]) {
       `${result.count} product(s) deleted (IDs: ${ids.join(", ")})`,
     );
     revalidatePath("/inventory");
+    revalidatePath("/pos");
     revalidateTag("products", "default");
     return {
       deleted: result.count,

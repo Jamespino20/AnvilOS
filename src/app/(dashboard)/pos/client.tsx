@@ -402,6 +402,8 @@ export function POSClient({
                 payeeName,
               }
             : undefined,
+        discountType: discountType || undefined,
+        discountValue: discountValue ? Number(discountValue) : undefined,
       };
       const doneItems = receiptData.items;
       setDone({
