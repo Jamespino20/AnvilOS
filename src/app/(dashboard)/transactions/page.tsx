@@ -251,7 +251,7 @@ export default function TransactionsPage() {
         subtitle="View and manage all sales, returns, restocks, and adjustments."
       />
 
-      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row gap-3 items-center">
+      <div className="bg-white border border-[#e2e8f0] rounded-xl p-4 flex flex-col lg:flex-row flex-wrap gap-3 items-center">
         <div className="relative w-full lg:flex-1 lg:min-w-[240px] min-w-0">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
           <input
@@ -262,8 +262,8 @@ export default function TransactionsPage() {
             className="w-full h-10 pl-10 pr-4 border border-[#e2e8f0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#fd761a] focus:ring-2 focus:ring-[#fd761a]/10"
           />
         </div>
-        <div className="flex gap-2 w-full lg:w-auto flex-wrap">
-          <div className="flex items-center gap-2 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-1">
+        <div className="flex gap-2 w-full lg:w-auto flex-wrap items-center">
+          <div className="flex items-center gap-1 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-1 flex-wrap">
             {DATE_SCOPES.map((s) => (
               <button
                 key={s.value}

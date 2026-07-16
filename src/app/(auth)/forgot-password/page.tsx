@@ -140,6 +140,7 @@ export default function ForgotPasswordPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="w-full rounded-lg border border-outline px-3 py-2 text-sm"
+                autoComplete="new-password"
                 required
               />
             </div>
@@ -150,6 +151,7 @@ export default function ForgotPasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full rounded-lg border border-outline px-3 py-2 text-sm"
+                autoComplete="new-password"
                 required
               />
             </div>

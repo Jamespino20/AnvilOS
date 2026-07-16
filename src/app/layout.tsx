@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: July 11, 2026
+Last Update Date: July 16, 2026
 */
 
 import type { Metadata } from "next";
@@ -15,14 +15,12 @@ const montserrat = Montserrat({
   subsets: ["latin"],
   variable: "--font-sans",
   weight: ["400", "500", "600", "700"],
-  preload: false,
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
   weight: ["400", "500"],
-  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -48,14 +46,6 @@ export default function RootLayout({
       className={cn("font-sans", montserrat.variable)}
       style={{ overflowX: "clip" }}
     >
-      <head>
-        <meta
-          httpEquiv="cache-control"
-          content="no-cache, no-store, must-revalidate"
-        />
-        <meta httpEquiv="pragma" content="no-cache" />
-        <meta httpEquiv="expires" content="0" />
-      </head>
       <body
         className={`${jetbrainsMono.variable} antialiased`}
         style={{ overflowX: "clip" }}
