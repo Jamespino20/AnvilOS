@@ -6,8 +6,6 @@ URL: https://github.com/Jamespino20
 Last Update Date: July 16, 2026
 */
 
-"use server";
-
 import { Prisma } from "@prisma/client";
 import { prisma, invalidateUserCache } from "@/lib/prisma";
 import { revalidatePath, revalidateTag } from "next/cache";

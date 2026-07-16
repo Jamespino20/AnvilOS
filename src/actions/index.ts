@@ -6,8 +6,6 @@ URL: https://github.com/Jamespino20
 Last Update Date: July 16, 2026
 */
 
-"use server";
-
 export * from "./products";
 export * from "./categories";
 export * from "./brands";
