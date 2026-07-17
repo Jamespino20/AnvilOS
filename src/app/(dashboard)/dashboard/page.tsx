@@ -24,8 +24,16 @@ import {
   ArrowUpRight,
   Warehouse,
 } from "lucide-react";
+import { auth } from "@/lib/auth";
+import { isAdminRole } from "@/lib/access";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
+  const session = await auth();
+  if (!session?.user || !isAdminRole((session.user as any)?.role)) {
+    redirect("/pos");
+  }
+
   let kpis, revenueTrend, recentTransactions, charts;
   try {
     [kpis, revenueTrend, recentTransactions, charts] = await Promise.all([

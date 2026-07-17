@@ -10,7 +10,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { redirect } from "next/navigation";
-import { isAdminRole } from "@/lib/access";
 
 export default async function DashboardLayout({
   children,
@@ -19,10 +18,6 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
-
-  if (!isAdminRole((session.user as any).role)) {
-    redirect("/pos");
-  }
 
   const userId = Number(session.user.id);
   let unreadCount = 0;

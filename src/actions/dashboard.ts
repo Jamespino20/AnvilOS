@@ -16,7 +16,7 @@ export async function getDashboardKpis() {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const [dailySales, lowStockCount, totalProducts, totalTransactions, inventoryValue] =
+  const [dailySales, lowStockCount, totalProducts, totalTransactions, products] =
     await Promise.all([
       prisma.transaction.aggregate({
         where: {
@@ -35,14 +35,15 @@ export async function getDashboardKpis() {
       }),
       prisma.product.count({ where: { isAvailable: true } }),
       prisma.transaction.count(),
-      prisma.product.aggregate({
-        _sum: { unitPrice: true, quantity: true },
+      prisma.product.findMany({
+        select: { unitPrice: true, quantity: true },
       }),
     ]);
 
-  const totalInventoryValue = inventoryValue._sum.unitPrice != null
-    ? Number(inventoryValue._sum.unitPrice) * Number(inventoryValue._sum.quantity || 0)
-    : 0;
+  const totalInventoryValue = products.reduce(
+    (sum, p) => sum + Number(p.unitPrice || 0) * Number(p.quantity || 0),
+    0,
+  );
 
   return {
     dailySales: Number(dailySales._sum.grandTotal || 0),
