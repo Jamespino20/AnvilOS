@@ -143,13 +143,32 @@ export async function sendTransactionReceipt(
   }[],
   grandTotal: number,
   actorFingerprint?: string,
+  paymentMethod?: string,
+  discountType?: string | null,
+  discountValue?: number | null,
 ) {
+  const subtotal = items.reduce((s, i) => s + i.totalPrice, 0);
+  const hasDiscount =
+    discountType && discountValue && discountValue > 0;
+  const discountAmount = hasDiscount
+    ? discountType === "percent"
+      ? subtotal * (discountValue / 100)
+      : discountValue
+    : 0;
+
   const itemRows = items
     .map(
       (i) =>
         `<tr><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0">${i.productName}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${i.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">${formatMoney(i.unitPrice)}</td><td style="padding:8px 12px;border-bottom:1px solid #e2e8f0;text-align:right">${formatMoney(i.totalPrice)}</td></tr>`,
     )
     .join("");
+
+  const discountRows = hasDiscount
+    ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;color:#64748b;font-size:13px">Subtotal</td><td style="padding:8px 12px;text-align:right;color:#64748b;font-size:13px">${formatMoney(subtotal)}</td></tr>
+       <tr><td colspan="3" style="padding:8px 12px;text-align:right;color:#ef4444;font-size:13px">Discount${discountType === "percent" ? ` (${discountValue}%)` : ""}</td><td style="padding:8px 12px;text-align:right;color:#ef4444;font-size:13px">-${formatMoney(discountAmount)}</td></tr>`
+    : "";
+
+  const paymentLabel = paymentMethod || "Cash";
 
   await sendMail({
     to: buyerEmail,
@@ -162,6 +181,7 @@ export async function sendTransactionReceipt(
       <div style="padding:24px;background:#fff;border:1px solid #e2e8f0;border-top:0;border-radius:0 0 8px 8px">
         <p style="color:#0e212c;font-size:14px;margin:0 0 4px">Thank you, <strong>${buyerName}</strong>!</p>
         <p style="color:#64748b;font-size:13px;margin:0 0 16px">Your purchase has been completed.</p>
+        <p style="color:#64748b;font-size:12px;margin:0 0 12px">Payment: <strong>${paymentLabel}</strong></p>
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead><tr style="background:#f8fafc">
             <th style="padding:8px 12px;text-align:left;border-bottom:2px solid #e2e8f0">Item</th>
@@ -170,7 +190,7 @@ export async function sendTransactionReceipt(
             <th style="padding:8px 12px;text-align:right;border-bottom:2px solid #e2e8f0">Total</th>
           </tr></thead>
           <tbody>${itemRows}</tbody>
-          <tfoot><tr>
+          <tfoot>${discountRows}<tr>
             <td colspan="3" style="padding:12px;text-align:right;font-weight:700;font-size:15px">Grand Total</td>
             <td style="padding:12px;text-align:right;font-weight:700;font-size:15px;color:#fd761a">${formatMoney(grandTotal)}</td>
           </tr></tfoot>

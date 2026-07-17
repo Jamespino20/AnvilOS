@@ -578,6 +578,9 @@ export async function createTransaction(data: {
               })),
               data.grandTotal,
               actor,
+              data.paymentMethod,
+              data.discountType,
+              data.discountValue,
             ).catch((e) => console.error("Buyer receipt email failed:", e));
           }
         })
