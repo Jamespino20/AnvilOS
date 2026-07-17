@@ -28,7 +28,7 @@ export const proxy = auth((request: NextAuthRequest, event: NextFetchEvent) => {
   const role = (request.auth.user as any).role;
   if (!canAccessPath(role, request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = role === "STAFF" ? "/pos" : "/dashboard";
     return NextResponse.redirect(url);
   }
 

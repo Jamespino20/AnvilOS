@@ -97,7 +97,7 @@ export default async function DashboardPage() {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             }),
-            sub: "unitPrice × stockQty",
+            sub: " ",
             color: "from-amber-500 to-orange-600",
             bg: "bg-amber-50",
           },
