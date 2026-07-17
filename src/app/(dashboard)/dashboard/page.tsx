@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   DollarSign,
   ArrowUpRight,
+  Warehouse,
 } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -82,6 +83,17 @@ export default async function DashboardPage() {
             bg: "bg-emerald-50",
           },
           {
+            icon: Warehouse,
+            label: "Total Inventory Value",
+            value: kpis.totalInventoryValue.toLocaleString("en-PH", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }),
+            sub: "unitPrice × stockQty",
+            color: "from-amber-500 to-orange-600",
+            bg: "bg-amber-50",
+          },
+          {
             icon: Receipt,
             label: "Total Transactions",
             value: kpis.totalTransactions.toLocaleString(),
@@ -108,7 +120,7 @@ export default async function DashboardPage() {
         ].map((card, i) => (
           <div
             key={i}
-            className="col-span-12 sm:col-span-6 md:col-span-3 bg-white/90 backdrop-blur-sm rounded-xl border border-[#e2e8f0] p-5 hover:shadow-lg hover:shadow-black/5 hover:bg-white transition-all duration-300 hover:-translate-y-0.5 group"
+            className="col-span-12 sm:col-span-6 md:col-span-4 bg-white/90 backdrop-blur-sm rounded-xl border border-[#e2e8f0] p-5 hover:shadow-lg hover:shadow-black/5 hover:bg-white transition-all duration-300 hover:-translate-y-0.5 group"
           >
             <div className="flex justify-between items-start mb-4">
               <span className="text-[11px] font-semibold text-[#64748b] uppercase tracking-wider group-hover:text-[#fd761a] transition-colors">

@@ -9,7 +9,6 @@ Last Update Date: July 11, 2026
 export type AppRole = "SUPERADMIN" | "ADMIN" | "STAFF";
 
 export const STAFF_PATHS = [
-  "/dashboard",
   "/pos",
   "/categories",
   "/brands",
