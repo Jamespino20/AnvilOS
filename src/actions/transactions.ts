@@ -49,6 +49,7 @@ function buildTransactionWhere(opts?: {
   }
   if (opts?.search) {
     const or: any[] = [
+      { receiptNumber: { contains: opts.search } },
       { buyerName: { contains: opts.search } },
       { salesInvoiceNumber: { contains: opts.search } },
       { deliveryReceiptNumber: { contains: opts.search } },
@@ -94,7 +95,6 @@ function buildTransactionSqlWhere(opts?: {
     );
   }
   if (opts?.search) {
-    const receipt = Number.parseInt(opts.search, 10);
     const textMatch = Prisma.sql`
       (BUYER_NAME COLLATE utf8mb4_unicode_ci LIKE
       CONCAT('%', CAST(${opts.search} AS CHAR CHARACTER SET utf8mb4), '%')
@@ -104,13 +104,12 @@ function buildTransactionSqlWhere(opts?: {
       COLLATE utf8mb4_unicode_ci
       OR DELIVERY_RECEIPT_NUMBER COLLATE utf8mb4_unicode_ci LIKE
       CONCAT('%', CAST(${opts.search} AS CHAR CHARACTER SET utf8mb4), '%')
+      COLLATE utf8mb4_unicode_ci
+      OR CAST(RECEIPT_NUMBER AS CHAR) COLLATE utf8mb4_unicode_ci LIKE
+      CONCAT('%', CAST(${opts.search} AS CHAR CHARACTER SET utf8mb4), '%')
       COLLATE utf8mb4_unicode_ci)
     `;
-    clauses.push(
-      Number.isNaN(receipt)
-        ? textMatch
-        : Prisma.sql`(${textMatch} OR RECEIPT_NUMBER = ${receipt})`,
-    );
+    clauses.push(textMatch);
   }
 
   return clauses;
@@ -346,250 +345,250 @@ export async function createTransaction(data: {
   };
   discountType?: "amount" | "percent" | null;
   discountValue?: number | null;
-  }) {
+}) {
   return safeCall(async () => {
     const session = await auth();
     const sellerId = Number(session?.user?.id) || 0;
-  const sellerName = session?.user?.name || "Unknown";
+    const sellerName = session?.user?.name || "Unknown";
 
-  const lastReceipt = await prisma.transaction.findFirst({
-    orderBy: { receiptNumber: "desc" },
-    select: { receiptNumber: true },
-  });
-  const receiptNumber = (lastReceipt?.receiptNumber ?? 1000) + 1;
-
-  // Return validation
-  if (data.transactionType === "Return" && data.returnForReceiptNumber) {
-    const orig = await prisma.transaction.findFirst({
-      where: { receiptNumber: data.returnForReceiptNumber },
-      include: { items: true },
+    const lastReceipt = await prisma.transaction.findFirst({
+      orderBy: { receiptNumber: "desc" },
+      select: { receiptNumber: true },
     });
-    if (!orig) throw new Error("Original receipt not found");
-    if (orig.isReturned)
-      throw new Error("This receipt has already been returned");
-    if (
-      orig.transactionType !== "SaleWalkIn" &&
-      orig.transactionType !== "SalePO"
-    )
-      throw new Error("Can only return Sale transactions");
+    const receiptNumber = (lastReceipt?.receiptNumber ?? 1000) + 1;
 
-    // Validate per-product return quantities
-    for (const item of data.items) {
-      const origItem = orig.items.find((i) => i.productId === item.productId);
-      if (!origItem)
-        throw new Error(`Product #${item.productId} not in original receipt`);
+    // Return validation
+    if (data.transactionType === "Return" && data.returnForReceiptNumber) {
+      const orig = await prisma.transaction.findFirst({
+        where: { receiptNumber: data.returnForReceiptNumber },
+        include: { items: true },
+      });
+      if (!orig) throw new Error("Original receipt not found");
+      if (orig.isReturned)
+        throw new Error("This receipt has already been returned");
+      if (
+        orig.transactionType !== "SaleWalkIn" &&
+        orig.transactionType !== "SalePO"
+      )
+        throw new Error("Can only return Sale transactions");
 
-      const alreadyReturned = await prisma.transactionItem.aggregate({
-        where: {
-          productId: item.productId,
-          transaction: {
-            returnForReceiptNumber: data.returnForReceiptNumber,
-            transactionType: "Return",
+      // Validate per-product return quantities
+      for (const item of data.items) {
+        const origItem = orig.items.find((i) => i.productId === item.productId);
+        if (!origItem)
+          throw new Error(`Product #${item.productId} not in original receipt`);
+
+        const alreadyReturned = await prisma.transactionItem.aggregate({
+          where: {
+            productId: item.productId,
+            transaction: {
+              returnForReceiptNumber: data.returnForReceiptNumber,
+              transactionType: "Return",
+            },
           },
-        },
-        _sum: { quantity: true },
-      });
-      const returnedQty = alreadyReturned._sum.quantity ?? 0;
-      const maxReturnable = (origItem.quantity ?? 0) - returnedQty;
-      if (item.quantity > maxReturnable)
-        throw new Error(
-          `Can only return ${maxReturnable} of "${origItem.productName}"`,
-        );
+          _sum: { quantity: true },
+        });
+        const returnedQty = alreadyReturned._sum.quantity ?? 0;
+        const maxReturnable = (origItem.quantity ?? 0) - returnedQty;
+        if (item.quantity > maxReturnable)
+          throw new Error(
+            `Can only return ${maxReturnable} of "${origItem.productName}"`,
+          );
+      }
     }
-  }
 
-  // Apply stock changes
-  if (data.transactionStatus === "Completed") {
-    await applyStockChanges(data.transactionType, data.items);
-  }
-
-  // Look up product names for transaction items
-  const productIds = [...new Set(data.items.map((i) => i.productId))];
-  const products = await prisma.product.findMany({
-    where: { id: { in: productIds } },
-    select: { id: true, productName: true },
-  });
-  const productNameMap = new Map(products.map((p) => [p.id, p.productName]));
-
-  const itemsWithNames = data.items.map((i) => ({
-    productId: i.productId,
-    productName: productNameMap.get(i.productId) || `Product #${i.productId}`,
-    quantity: i.quantity,
-    unitPrice: i.unitPrice,
-    totalPrice: i.totalPrice,
-    costPrice: i.costPrice,
-  }));
-
-  const transaction = await withTimeout(
-    prisma.transaction.create({
-      data: {
-        receiptNumber,
-        buyerName: data.buyerName,
-        buyerAddress: data.buyerAddress || "",
-        buyerContact: data.buyerContact || "",
-        sellerId: sellerId || undefined,
-        sellerName,
-        transactionType: data.transactionType,
-        deliveryMethod: data.deliveryMethod || "WalkIn",
-        paymentMethod: data.paymentMethod || undefined,
-        transactionStatus: data.transactionStatus,
-        transactionDate: new Date(),
-        grandTotal: data.grandTotal,
-        returnForReceiptNumber: data.returnForReceiptNumber,
-        salesInvoiceNumber: data.salesInvoiceNumber,
-        deliveryReceiptNumber: data.deliveryReceiptNumber,
-        tin: data.tin,
-        isCredit: data.isCredit || false,
-        creditDueDate: data.creditDueDate,
-        chequeNumber: data.chequeDetails?.chequeNumber || undefined,
-        chequeBankName: data.chequeDetails?.bankName || undefined,
-        chequeDate: data.chequeDetails?.chequeDate || undefined,
-        chequePayeeName: data.chequeDetails?.payeeName || undefined,
-        isReturned: data.transactionType === "Return",
-        discountType: data.discountType || null,
-        discountValue: data.discountValue ?? null,
-        items: { create: itemsWithNames },
-      },
-    }),
-    DB_TIMEOUT,
-    "Processing transaction",
-  );
-
-  // Upsert buyer record (skip for internal/Restock — CWL Hardware names)
-  let buyer: { id: number; email: string | null } | null = null;
-  if (
-    data.buyerName &&
-    data.transactionType !== "Restock" &&
-    !data.buyerName.startsWith("CWL Hardware")
-  ) {
-    buyer = await prisma.buyer.findFirst({
-      where: { name: data.buyerName },
-    });
-
-    // Returns decrement totalSpent (refund), Damage/Adjustment don't affect it
-    // SalePO skips totalSpent at creation — only incremented on completion
-    const isReturn = data.transactionType === "Return";
-    const isNonMonetary =
-      data.transactionType === "Damage" ||
-      data.transactionType === "Adjustment";
-    const isSalePO = data.transactionType === "SalePO";
-    const skipTotalSpent = isNonMonetary || isSalePO;
-
-    if (buyer) {
-      buyer = await prisma.buyer.update({
-        where: { id: buyer.id },
-        data: {
-          totalOrders: { increment: 1 },
-          totalSpent: skipTotalSpent
-            ? undefined
-            : isReturn
-              ? { decrement: data.grandTotal }
-              : { increment: data.grandTotal },
-          address: data.buyerAddress || undefined,
-          phone: data.buyerContact || undefined,
-          email: data.buyerEmail || undefined,
-          tin: data.tin || undefined,
-          sellerId: sellerId || undefined,
-        },
-      });
-    } else {
-      buyer = await prisma.buyer.create({
-        data: {
-          name: data.buyerName,
-          address: data.buyerAddress || null,
-          phone: data.buyerContact || null,
-          email: data.buyerEmail || null,
-          tin: data.tin || null,
-          totalOrders: 1,
-          totalSpent: skipTotalSpent
-            ? 0
-            : isReturn
-              ? -data.grandTotal
-              : data.grandTotal,
-          sellerId: sellerId || undefined,
-        },
-      });
+    // Apply stock changes
+    if (data.transactionStatus === "Completed") {
+      await applyStockChanges(data.transactionType, data.items);
     }
-    await prisma.transaction.update({
-      where: { id: transaction.id },
-      data: { buyerId: buyer.id },
-    });
-  }
-  // For credit sales, update buyer's credit balance (decrement for returns)
-  if (data.isCredit && buyer) {
-    const isReturn = data.transactionType === "Return";
-    await prisma.buyer.update({
-      where: { id: buyer.id },
-      data: {
-        creditBalance: isReturn
-          ? { decrement: data.grandTotal }
-          : { increment: data.grandTotal },
-      },
-    });
-  }
 
-  // For Restock, still link the transaction if a "CWL Hardware" buyer already exists
-  if (data.transactionType === "Restock" && data.buyerName) {
-    const existing = await prisma.buyer.findFirst({
-      where: { name: data.buyerName },
+    // Look up product names for transaction items
+    const productIds = [...new Set(data.items.map((i) => i.productId))];
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, productName: true },
     });
-    if (existing) {
+    const productNameMap = new Map(products.map((p) => [p.id, p.productName]));
+
+    const itemsWithNames = data.items.map((i) => ({
+      productId: i.productId,
+      productName: productNameMap.get(i.productId) || `Product #${i.productId}`,
+      quantity: i.quantity,
+      unitPrice: i.unitPrice,
+      totalPrice: i.totalPrice,
+      costPrice: i.costPrice,
+    }));
+
+    const transaction = await withTimeout(
+      prisma.transaction.create({
+        data: {
+          receiptNumber,
+          buyerName: data.buyerName,
+          buyerAddress: data.buyerAddress || "",
+          buyerContact: data.buyerContact || "",
+          sellerId: sellerId || undefined,
+          sellerName,
+          transactionType: data.transactionType,
+          deliveryMethod: data.deliveryMethod || "WalkIn",
+          paymentMethod: data.paymentMethod || undefined,
+          transactionStatus: data.transactionStatus,
+          transactionDate: new Date(),
+          grandTotal: data.grandTotal,
+          returnForReceiptNumber: data.returnForReceiptNumber,
+          salesInvoiceNumber: data.salesInvoiceNumber,
+          deliveryReceiptNumber: data.deliveryReceiptNumber,
+          tin: data.tin,
+          isCredit: data.isCredit || false,
+          creditDueDate: data.creditDueDate,
+          chequeNumber: data.chequeDetails?.chequeNumber || undefined,
+          chequeBankName: data.chequeDetails?.bankName || undefined,
+          chequeDate: data.chequeDetails?.chequeDate || undefined,
+          chequePayeeName: data.chequeDetails?.payeeName || undefined,
+          isReturned: data.transactionType === "Return",
+          discountType: data.discountType || null,
+          discountValue: data.discountValue ?? null,
+          items: { create: itemsWithNames },
+        },
+      }),
+      DB_TIMEOUT,
+      "Processing transaction",
+    );
+
+    // Upsert buyer record (skip for internal/Restock — CWL Hardware names)
+    let buyer: { id: number; email: string | null } | null = null;
+    if (
+      data.buyerName &&
+      data.transactionType !== "Restock" &&
+      !data.buyerName.startsWith("CWL Hardware")
+    ) {
+      buyer = await prisma.buyer.findFirst({
+        where: { name: data.buyerName },
+      });
+
+      // Returns decrement totalSpent (refund), Damage/Adjustment don't affect it
+      // SalePO skips totalSpent at creation — only incremented on completion
+      const isReturn = data.transactionType === "Return";
+      const isNonMonetary =
+        data.transactionType === "Damage" ||
+        data.transactionType === "Adjustment";
+      const isSalePO = data.transactionType === "SalePO";
+      const skipTotalSpent = isNonMonetary || isSalePO;
+
+      if (buyer) {
+        buyer = await prisma.buyer.update({
+          where: { id: buyer.id },
+          data: {
+            totalOrders: { increment: 1 },
+            totalSpent: skipTotalSpent
+              ? undefined
+              : isReturn
+                ? { decrement: data.grandTotal }
+                : { increment: data.grandTotal },
+            address: data.buyerAddress || undefined,
+            phone: data.buyerContact || undefined,
+            email: data.buyerEmail || undefined,
+            tin: data.tin || undefined,
+            sellerId: sellerId || undefined,
+          },
+        });
+      } else {
+        buyer = await prisma.buyer.create({
+          data: {
+            name: data.buyerName,
+            address: data.buyerAddress || null,
+            phone: data.buyerContact || null,
+            email: data.buyerEmail || null,
+            tin: data.tin || null,
+            totalOrders: 1,
+            totalSpent: skipTotalSpent
+              ? 0
+              : isReturn
+                ? -data.grandTotal
+                : data.grandTotal,
+            sellerId: sellerId || undefined,
+          },
+        });
+      }
       await prisma.transaction.update({
         where: { id: transaction.id },
-        data: { buyerId: existing.id },
+        data: { buyerId: buyer.id },
       });
     }
-  }
+    // For credit sales, update buyer's credit balance (decrement for returns)
+    if (data.isCredit && buyer) {
+      const isReturn = data.transactionType === "Return";
+      await prisma.buyer.update({
+        where: { id: buyer.id },
+        data: {
+          creditBalance: isReturn
+            ? { decrement: data.grandTotal }
+            : { increment: data.grandTotal },
+        },
+      });
+    }
 
-  await logAudit(
-    "POSPanel",
-    "Complete Transaction",
-    `${data.transactionType} #${receiptNumber} - ${data.buyerName} - ${formatMoney(data.grandTotal)}`,
-  );
+    // For Restock, still link the transaction if a "CWL Hardware" buyer already exists
+    if (data.transactionType === "Restock" && data.buyerName) {
+      const existing = await prisma.buyer.findFirst({
+        where: { name: data.buyerName },
+      });
+      if (existing) {
+        await prisma.transaction.update({
+          where: { id: transaction.id },
+          data: { buyerId: existing.id },
+        });
+      }
+    }
 
-  // Fire-and-forget email alerts (non-blocking)
-  if (data.transactionStatus === "Completed") {
-    const actor = actionFingerprint(session);
-    import("@/actions/email")
-      .then((m) => {
-        // 1. Check stock alerts
-        m.checkAndAlertLowStock().catch((e) =>
-          console.error("Low stock alert failed:", e),
-        );
+    await logAudit(
+      "POSPanel",
+      "Complete Transaction",
+      `${data.transactionType} #${receiptNumber} - ${data.buyerName} - ${formatMoney(data.grandTotal)}`,
+    );
 
-        // 2. Alert staff (systemwide)
-        m.sendSystemTransactionAlert(
-          receiptNumber,
-          data.buyerName,
-          data.grandTotal,
-          actor,
-        ).catch((e) => console.error("System transaction alert failed:", e));
+    // Fire-and-forget email alerts (non-blocking)
+    if (data.transactionStatus === "Completed") {
+      const actor = actionFingerprint(session);
+      import("@/actions/email")
+        .then((m) => {
+          // 1. Check stock alerts
+          m.checkAndAlertLowStock().catch((e) =>
+            console.error("Low stock alert failed:", e),
+          );
 
-        // 3. Email buyer (receipt)
-        if (buyer?.email) {
-          m.sendTransactionReceipt(
+          // 2. Alert staff (systemwide)
+          m.sendSystemTransactionAlert(
             receiptNumber,
             data.buyerName,
-            buyer.email,
-            itemsWithNames.map((i) => ({
-              productName: i.productName,
-              quantity: i.quantity,
-              unitPrice: i.unitPrice,
-              totalPrice: i.totalPrice,
-            })),
             data.grandTotal,
             actor,
-          ).catch((e) => console.error("Buyer receipt email failed:", e));
-        }
-      })
-      .catch((e) => console.error("Failed to load email actions:", e));
-  }
+          ).catch((e) => console.error("System transaction alert failed:", e));
 
-  revalidatePath("/transactions");
-  revalidatePath("/pos");
-  revalidatePath("/inventory");
-  revalidateTag("buyers", "default");
-  return transaction;
+          // 3. Email buyer (receipt)
+          if (buyer?.email) {
+            m.sendTransactionReceipt(
+              receiptNumber,
+              data.buyerName,
+              buyer.email,
+              itemsWithNames.map((i) => ({
+                productName: i.productName,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+                totalPrice: i.totalPrice,
+              })),
+              data.grandTotal,
+              actor,
+            ).catch((e) => console.error("Buyer receipt email failed:", e));
+          }
+        })
+        .catch((e) => console.error("Failed to load email actions:", e));
+    }
+
+    revalidatePath("/transactions");
+    revalidatePath("/pos");
+    revalidatePath("/inventory");
+    revalidateTag("buyers", "default");
+    return transaction;
   });
 }
 
@@ -605,7 +604,9 @@ export async function getDeliverers() {
 
 export async function getReturnTransaction(receiptNumber: number) {
   return safeCall(async () => {
-    console.log(`[getReturnTransaction] lookup receiptNumber=${receiptNumber} (type=${typeof receiptNumber})`);
+    console.log(
+      `[getReturnTransaction] lookup receiptNumber=${receiptNumber} (type=${typeof receiptNumber})`,
+    );
     const txn = await prisma.transaction.findFirst({
       where: { receiptNumber },
       include: {
@@ -614,7 +615,9 @@ export async function getReturnTransaction(receiptNumber: number) {
         },
       },
     });
-    console.log(`[getReturnTransaction] result=${txn ? `found id=${txn.id} type=${txn.transactionType} items=${txn.items.length}` : "null"}`);
+    console.log(
+      `[getReturnTransaction] result=${txn ? `found id=${txn.id} type=${txn.transactionType} items=${txn.items.length}` : "null"}`,
+    );
     if (!txn) throw new Error(`Receipt #${receiptNumber} not found`);
     if (
       txn.transactionType === "Return" ||
@@ -664,9 +667,7 @@ export async function updateTransactionInvoice(
     data: { [field]: value || null },
   });
   const label =
-    field === "salesInvoiceNumber"
-      ? "Sales Invoice"
-      : "Delivery Receipt";
+    field === "salesInvoiceNumber" ? "Sales Invoice" : "Delivery Receipt";
   await logAudit(
     "Transactions",
     "Update Invoice",
@@ -801,121 +802,122 @@ export async function updateTransaction(
   },
 ) {
   return safeCall(async () => {
-  await requireAdmin();
-  const txn = await prisma.transaction.findUniqueOrThrow({
-    where: { id },
-    include: { items: true },
-  });
-  const oldItems = [...txn.items];
-
-  // Update header
-  const updated = await prisma.transaction.update({
-    where: { id },
-    data: {
-      buyerName: data.buyerName,
-      buyerAddress: data.buyerAddress,
-      buyerContact: data.buyerContact,
-      deliveryRef: data.deliveryRef,
-      deliveryNotes: data.deliveryNotes,
-      delivererName: data.delivererName,
-      transactionStatus: data.transactionStatus,
-      isCredit: data.isCredit,
-      creditDueDate: data.creditDueDate
-        ? new Date(data.creditDueDate)
-        : undefined,
-    },
-  });
-
-  // If items changed, recalculate stock deltas
-  if (data.items) {
-    const prodIds = [...new Set(data.items.map((i) => i.productId))];
-    const prods = await prisma.product.findMany({
-      where: { id: { in: prodIds } },
-      select: { id: true, productName: true },
+    await requireAdmin();
+    const txn = await prisma.transaction.findUniqueOrThrow({
+      where: { id },
+      include: { items: true },
     });
-    const nameMap = new Map(prods.map((p) => [p.id, p.productName]));
-    const itemsWithNames = data.items.map((i) => ({
-      productId: i.productId,
-      productName: nameMap.get(i.productId) || `Product #${i.productId}`,
-      quantity: i.quantity,
-      unitPrice: i.unitPrice,
-      totalPrice: i.totalPrice,
-      transactionId: id,
-    }));
+    const oldItems = [...txn.items];
 
-    await prisma.transactionItem.deleteMany({ where: { transactionId: id } });
-    await prisma.transactionItem.createMany({ data: itemsWithNames });
+    // Update header
+    const updated = await prisma.transaction.update({
+      where: { id },
+      data: {
+        buyerName: data.buyerName,
+        buyerAddress: data.buyerAddress,
+        buyerContact: data.buyerContact,
+        deliveryRef: data.deliveryRef,
+        deliveryNotes: data.deliveryNotes,
+        delivererName: data.delivererName,
+        transactionStatus: data.transactionStatus,
+        isCredit: data.isCredit,
+        creditDueDate: data.creditDueDate
+          ? new Date(data.creditDueDate)
+          : undefined,
+      },
+    });
 
-    // Recalculate stock based on delta between old and new items
-    for (const newItem of data.items) {
-      const oldItem = oldItems.find((o) => o.productId === newItem.productId);
-      const oldQty = oldItem?.quantity ?? 0;
-      const product = await prisma.product.findUniqueOrThrow({
-        where: { id: newItem.productId },
+    // If items changed, recalculate stock deltas
+    if (data.items) {
+      const prodIds = [...new Set(data.items.map((i) => i.productId))];
+      const prods = await prisma.product.findMany({
+        where: { id: { in: prodIds } },
+        select: { id: true, productName: true },
       });
-      let delta = 0;
+      const nameMap = new Map(prods.map((p) => [p.id, p.productName]));
+      const itemsWithNames = data.items.map((i) => ({
+        productId: i.productId,
+        productName: nameMap.get(i.productId) || `Product #${i.productId}`,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        totalPrice: i.totalPrice,
+        transactionId: id,
+      }));
 
-      switch (txn.transactionType) {
-        case "Restock":
-        case "Return":
-          delta = newItem.quantity - oldQty;
-          break;
-        case "Damage":
-        case "SaleWalkIn":
-          delta = oldQty - newItem.quantity;
-          break;
-        case "Adjustment":
-          delta = newItem.quantity - product.quantity;
-          break;
-        case "SalePO":
-          delta = 0;
-          if (data.transactionStatus === "Completed") delta = -newItem.quantity;
-          break;
+      await prisma.transactionItem.deleteMany({ where: { transactionId: id } });
+      await prisma.transactionItem.createMany({ data: itemsWithNames });
+
+      // Recalculate stock based on delta between old and new items
+      for (const newItem of data.items) {
+        const oldItem = oldItems.find((o) => o.productId === newItem.productId);
+        const oldQty = oldItem?.quantity ?? 0;
+        const product = await prisma.product.findUniqueOrThrow({
+          where: { id: newItem.productId },
+        });
+        let delta = 0;
+
+        switch (txn.transactionType) {
+          case "Restock":
+          case "Return":
+            delta = newItem.quantity - oldQty;
+            break;
+          case "Damage":
+          case "SaleWalkIn":
+            delta = oldQty - newItem.quantity;
+            break;
+          case "Adjustment":
+            delta = newItem.quantity - product.quantity;
+            break;
+          case "SalePO":
+            delta = 0;
+            if (data.transactionStatus === "Completed")
+              delta = -newItem.quantity;
+            break;
+        }
+
+        const newStock = product.quantity + delta;
+        if (newStock < 0)
+          throw new Error(`Insufficient stock for #${newItem.productId}`);
+        await prisma.product.update({
+          where: { id: newItem.productId },
+          data: { quantity: newStock, isAvailable: newStock > 0 },
+        });
+
+        await logAudit(
+          "EditTransactionDialog",
+          txn.transactionType,
+          `${product.productName} (#${txn.receiptNumber}): ${oldQty}→${newItem.quantity} (delta:${delta})`,
+        );
       }
-
-      const newStock = product.quantity + delta;
-      if (newStock < 0)
-        throw new Error(`Insufficient stock for #${newItem.productId}`);
-      await prisma.product.update({
-        where: { id: newItem.productId },
-        data: { quantity: newStock, isAvailable: newStock > 0 },
-      });
-
-      await logAudit(
-        "EditTransactionDialog",
-        txn.transactionType,
-        `${product.productName} (#${txn.receiptNumber}): ${oldQty}→${newItem.quantity} (delta:${delta})`,
-      );
     }
-  }
 
-  await logAudit(
-    "EditTransactionDialog",
-    "Edit Transaction",
-    `#${txn.receiptNumber} updated`,
-  );
-  revalidatePath("/transactions");
-  return updated;
+    await logAudit(
+      "EditTransactionDialog",
+      "Edit Transaction",
+      `#${txn.receiptNumber} updated`,
+    );
+    revalidatePath("/transactions");
+    return updated;
   });
 }
 
 export async function markCreditAsPaid(id: number) {
   return safeCall(async () => {
-  await requireAdmin();
-  const txn = await prisma.transaction.findUniqueOrThrow({ where: { id } });
-  if (!txn.isCredit) throw new Error("Transaction is not a credit sale");
-  if (txn.creditPaidAt) throw new Error("Credit is already marked as paid");
-  const updated = await prisma.transaction.update({
-    where: { id },
-    data: { creditPaidAt: new Date() },
-  });
-  await logAudit(
-    "Transactions",
-    "Mark Credit Paid",
-    `#${txn.receiptNumber} credit marked as paid`,
-  );
-  revalidatePath("/transactions");
-  return updated;
+    await requireAdmin();
+    const txn = await prisma.transaction.findUniqueOrThrow({ where: { id } });
+    if (!txn.isCredit) throw new Error("Transaction is not a credit sale");
+    if (txn.creditPaidAt) throw new Error("Credit is already marked as paid");
+    const updated = await prisma.transaction.update({
+      where: { id },
+      data: { creditPaidAt: new Date() },
+    });
+    await logAudit(
+      "Transactions",
+      "Mark Credit Paid",
+      `#${txn.receiptNumber} credit marked as paid`,
+    );
+    revalidatePath("/transactions");
+    return updated;
   });
 }
 
@@ -930,31 +932,46 @@ export async function toggleTransactionCredit(
     if (isCredit === txn.isCredit && creditDueDate === undefined) {
       return txn;
     }
-    if (["Return", "Restock", "Damage", "Adjustment"].includes(txn.transactionType)) {
+    if (
+      ["Return", "Restock", "Damage", "Adjustment"].includes(
+        txn.transactionType,
+      )
+    ) {
       throw new Error("Credit can only be toggled on Sale transactions");
     }
     const updated = await prisma.transaction.update({
       where: { id },
       data: {
         isCredit,
-        creditDueDate: creditDueDate !== undefined
-          ? creditDueDate ? new Date(creditDueDate) : null
-          : isCredit
-            ? txn.creditDueDate
-            : null,
+        creditDueDate:
+          creditDueDate !== undefined
+            ? creditDueDate
+              ? new Date(creditDueDate)
+              : null
+            : isCredit
+              ? txn.creditDueDate
+              : null,
       },
     });
     // Adjust buyer creditBalance
     if (txn.buyerName) {
-      const buyer = await prisma.buyer.findFirst({ where: { name: txn.buyerName } });
+      const buyer = await prisma.buyer.findFirst({
+        where: { name: txn.buyerName },
+      });
       if (buyer) {
         const amount = Number(txn.grandTotal || 0);
         if (isCredit && !txn.isCredit) {
           // Toggling ON: increment creditBalance
-          await prisma.buyer.update({ where: { id: buyer.id }, data: { creditBalance: { increment: amount } } });
+          await prisma.buyer.update({
+            where: { id: buyer.id },
+            data: { creditBalance: { increment: amount } },
+          });
         } else if (!isCredit && txn.isCredit) {
           // Toggling OFF: decrement creditBalance
-          await prisma.buyer.update({ where: { id: buyer.id }, data: { creditBalance: { decrement: amount } } });
+          await prisma.buyer.update({
+            where: { id: buyer.id },
+            data: { creditBalance: { decrement: amount } },
+          });
         }
       }
     }

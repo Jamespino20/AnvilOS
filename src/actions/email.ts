@@ -355,18 +355,6 @@ export async function checkAndAlertLowStock() {
  * Called by cron job; skips if not within the delivery window.
  */
 export async function processLowStockAlerts() {
-  // Check if current PH time is within delivery window (12:00–12:09 or 20:00–20:09)
-  const now = new Date();
-  const phOffset = 8;
-  const phHour = (now.getUTCHours() + phOffset) % 24;
-  const phMinute = now.getUTCMinutes();
-  const isNoonWindow = phHour === 12 && phMinute < 10;
-  const isEveningWindow = phHour === 20 && phMinute < 10;
-
-  if (!isNoonWindow && !isEveningWindow) {
-    return { sent: false, reason: "Outside delivery window" };
-  }
-
   // Fetch unsent alerts
   const alerts = await prisma.lowStockAlert.findMany({
     where: { sentAt: null },
