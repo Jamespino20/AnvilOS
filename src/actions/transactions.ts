@@ -345,6 +345,7 @@ export async function createTransaction(data: {
   };
   discountType?: "amount" | "percent" | null;
   discountValue?: number | null;
+  transactionDate?: Date | string;
 }) {
   return safeCall(async () => {
     const session = await auth();
@@ -432,7 +433,7 @@ export async function createTransaction(data: {
           deliveryMethod: data.deliveryMethod || "WalkIn",
           paymentMethod: data.paymentMethod || undefined,
           transactionStatus: data.transactionStatus,
-          transactionDate: new Date(),
+          transactionDate: data.transactionDate ? new Date(data.transactionDate) : new Date(),
           grandTotal: data.grandTotal,
           returnForReceiptNumber: data.returnForReceiptNumber,
           salesInvoiceNumber: data.salesInvoiceNumber,
@@ -540,10 +541,19 @@ export async function createTransaction(data: {
       }
     }
 
+    const isBackdated = data.transactionDate && new Date(data.transactionDate).toDateString() !== new Date().toDateString();
+    const auditDetails = isBackdated
+      ? `${data.transactionType} #${receiptNumber} - ${data.buyerName} - ${formatMoney(data.grandTotal)} (Backdated: ${new Date(data.transactionDate!).toLocaleDateString()})`
+      : `${data.transactionType} #${receiptNumber} - ${data.buyerName} - ${formatMoney(data.grandTotal)}`;
+    
     await logAudit(
       "POSPanel",
       "Complete Transaction",
-      `${data.transactionType} #${receiptNumber} - ${data.buyerName} - ${formatMoney(data.grandTotal)}`,
+      auditDetails,
+      true,
+      undefined,
+      isBackdated ? { transactionDate: new Date().toISOString() } : undefined,
+      isBackdated ? { transactionDate: new Date(data.transactionDate!).toISOString() } : undefined,
     );
 
     // Fire-and-forget email alerts (non-blocking)
@@ -918,6 +928,65 @@ export async function markCreditAsPaid(id: number) {
       "Transactions",
       "Mark Credit Paid",
       `#${txn.receiptNumber} credit marked as paid`,
+    );
+    revalidatePath("/transactions");
+    return updated;
+  });
+}
+
+export async function recordCreditPayment(
+  id: number,
+  amountPaid: number,
+  penaltyFee: number = 0,
+) {
+  return safeCall(async () => {
+    await requireAdmin();
+    const txn = await prisma.transaction.findUniqueOrThrow({ where: { id } });
+    if (!txn.isCredit) throw new Error("Transaction is not a credit sale");
+
+    const grandTotal = Number(txn.grandTotal);
+    const currentAmountPaid = Number(txn.creditAmountPaid);
+    const currentPenaltyFee = Number(txn.creditPenaltyFee);
+
+    if (amountPaid <= 0) throw new Error("Payment amount must be greater than 0");
+    if (currentAmountPaid >= grandTotal) throw new Error("Credit is already fully paid");
+
+    const totalOwed = grandTotal + currentPenaltyFee;
+    const remaining = totalOwed - currentAmountPaid;
+    if (amountPaid > remaining) {
+      throw new Error(`Payment exceeds remaining balance of ${remaining.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`);
+    }
+
+    const newAmountPaid = currentAmountPaid + amountPaid;
+    const newPenaltyFee = currentPenaltyFee + penaltyFee;
+    const isFullyPaid = newAmountPaid >= grandTotal;
+
+    const updated = await prisma.transaction.update({
+      where: { id },
+      data: {
+        creditAmountPaid: newAmountPaid,
+        creditPenaltyFee: newPenaltyFee,
+        creditLastPaymentDate: new Date(),
+        creditPaidAt: isFullyPaid ? new Date() : null,
+      },
+    });
+
+    // Update buyer's creditBalance
+    if (txn.buyerName) {
+      const buyer = await prisma.buyer.findFirst({ where: { name: txn.buyerName } });
+      if (buyer) {
+        const paymentApplied = amountPaid + penaltyFee;
+        await prisma.buyer.update({
+          where: { id: buyer.id },
+          data: { creditBalance: { decrement: paymentApplied } },
+        });
+      }
+    }
+
+    await logAudit(
+      "Transactions",
+      "Record Credit Payment",
+      `#${txn.receiptNumber} - Paid ${amountPaid.toLocaleString("en-PH", { minimumFractionDigits: 2 })}${penaltyFee > 0 ? ` + ${penaltyFee.toLocaleString("en-PH", { minimumFractionDigits: 2 })} penalty` : ""}${isFullyPaid ? " (Fully Paid)" : ` (Remaining: ${(totalOwed - newAmountPaid).toLocaleString("en-PH", { minimumFractionDigits: 2 })})`}`,
     );
     revalidatePath("/transactions");
     return updated;

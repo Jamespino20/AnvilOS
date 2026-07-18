@@ -15,6 +15,7 @@ import {
   updateTransactionStatus,
   updateTransactionInvoice,
   markCreditAsPaid,
+  recordCreditPayment,
   toggleTransactionCredit,
   getProducts,
 } from "@/actions";
@@ -94,6 +95,16 @@ export default function TransactionsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [paymentModal, setPaymentModal] = useState<{
+    transactionId: number;
+    receiptNumber: number;
+    grandTotal: number;
+    currentAmountPaid: number;
+    creditDueDate: string | null;
+  } | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [penaltyFee, setPenaltyFee] = useState("");
+  const [submittingPayment, setSubmittingPayment] = useState(false);
   const perPage = 15;
 
   // Debounce search input
@@ -542,41 +553,63 @@ export default function TransactionsPage() {
                         <div className="flex items-center gap-2">
                           <span>{t.paymentMethod || "\u2014"}</span>
                           {(t as any).isCredit && (
-                            <span
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                (t as any).creditPaidAt
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-amber-100 text-amber-700"
-                              }`}
-                            >
-                              {(t as any).creditPaidAt ? "Paid" : "Unpaid"}
-                              {(t as any).creditDueDate && (
-                                <span className="text-[9px] opacity-70">
-                                  Due:{" "}
-                                  {new Date(
-                                    (t as any).creditDueDate,
-                                  ).toLocaleDateString("en-PH")}
+                            <div className="flex flex-col gap-1">
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                  (t as any).creditPaidAt
+                                    ? "bg-green-100 text-green-700"
+                                    : Number((t as any).creditAmountPaid) > 0
+                                      ? "bg-blue-100 text-blue-700"
+                                      : "bg-amber-100 text-amber-700"
+                                }`}
+                              >
+                                {(t as any).creditPaidAt
+                                  ? "Paid"
+                                  : Number((t as any).creditAmountPaid) > 0
+                                    ? "Partial"
+                                    : "Unpaid"}
+                                {(t as any).creditDueDate && (
+                                  <span className="text-[9px] opacity-70">
+                                    Due:{" "}
+                                    {new Date(
+                                      (t as any).creditDueDate,
+                                    ).toLocaleDateString("en-PH")}
+                                  </span>
+                                )}
+                              </span>
+                              {Number((t as any).creditAmountPaid) > 0 && (
+                                <span className="text-[9px] text-[#64748b]">
+                                  Paid:{" "}
+                                  {Number(
+                                    (t as any).creditAmountPaid,
+                                  ).toLocaleString("en-PH", {
+                                    minimumFractionDigits: 2,
+                                  })}
+                                  {" / "}
+                                  {Number(t.grandTotal).toLocaleString("en-PH", {
+                                    minimumFractionDigits: 2,
+                                  })}
                                 </span>
                               )}
-                            </span>
+                            </div>
                           )}
                           {(t as any).isCredit && !(t as any).creditPaidAt && (
                             <button
-                              onClick={async () => {
-                                try {
-                                  await callAction(markCreditAsPaid(t.id));
-                                  toast.success("Credit marked as paid");
-                                  window.location.reload();
-                                } catch (e: any) {
-                                  toast.error(
-                                    e.message ||
-                                      "Failed to mark credit as paid",
-                                  );
-                                }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPaymentModal({
+                                  transactionId: t.id,
+                                  receiptNumber: t.receiptNumber,
+                                  grandTotal: Number(t.grandTotal),
+                                  currentAmountPaid: Number(
+                                    (t as any).creditAmountPaid || 0,
+                                  ),
+                                  creditDueDate: (t as any).creditDueDate,
+                                });
                               }}
                               className="px-2 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded hover:bg-blue-700"
                             >
-                              Mark Paid
+                              Record Payment
                             </button>
                           )}
                         </div>
@@ -1202,6 +1235,147 @@ export default function TransactionsPage() {
             </div>
           );
         })()}
+
+      {paymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e2e8f0]">
+              <h3 className="text-lg font-bold text-[#0e212c]">
+                Record Payment — Receipt #{paymentModal.receiptNumber}
+              </h3>
+              <button
+                onClick={() => {
+                  setPaymentModal(null);
+                  setPaymentAmount("");
+                  setPenaltyFee("");
+                }}
+                className="p-1 hover:bg-[#f1f5f9] rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-[#64748b]" />
+              </button>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-[#94a3b8] text-xs">Grand Total</span>
+                  <p className="font-mono font-bold text-[#0e212c]">
+                    {paymentModal.grandTotal.toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[#94a3b8] text-xs">Already Paid</span>
+                  <p className="font-mono font-bold text-green-600">
+                    {paymentModal.currentAmountPaid.toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                <span className="text-amber-800 text-xs font-semibold">
+                  Remaining Balance
+                </span>
+                <p className="font-mono font-bold text-amber-900 text-lg">
+                  {(
+                    paymentModal.grandTotal - paymentModal.currentAmountPaid
+                  ).toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                  })}
+                </p>
+              </div>
+              {paymentModal.creditDueDate &&
+                new Date(paymentModal.creditDueDate) < new Date() &&
+                paymentModal.currentAmountPaid === 0 && (
+                  <div className="bg-rose-50 border border-rose-200 rounded-lg px-4 py-3">
+                    <span className="text-rose-800 text-xs font-semibold">
+                      OVERDUE — Due{" "}
+                      {new Date(
+                        paymentModal.creditDueDate,
+                      ).toLocaleDateString("en-PH")}
+                    </span>
+                  </div>
+                )}
+              <div>
+                <label className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
+                  Amount Paid *
+                </label>
+                <input
+                  type="number"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  min="0.01"
+                  step="0.01"
+                  placeholder="0.00"
+                  className="w-full mt-1 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm font-mono focus:outline-none focus:border-[#fd761a]"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
+                  Penalty Fee (Optional)
+                </label>
+                <input
+                  type="number"
+                  value={penaltyFee}
+                  onChange={(e) => setPenaltyFee(e.target.value)}
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  className="w-full mt-1 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm font-mono focus:outline-none focus:border-[#fd761a]"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-[#e2e8f0] bg-[#f8fafc]">
+              <button
+                onClick={() => {
+                  setPaymentModal(null);
+                  setPaymentAmount("");
+                  setPenaltyFee("");
+                }}
+                className="flex-1 px-4 py-2 text-sm font-semibold text-[#64748b] bg-white border border-[#e2e8f0] rounded-lg hover:bg-[#f1f5f9] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={submittingPayment || !paymentAmount}
+                onClick={async () => {
+                  const amount = parseFloat(paymentAmount);
+                  const penalty = parseFloat(penaltyFee) || 0;
+                  if (!amount || amount <= 0) {
+                    toast.error("Enter a valid payment amount");
+                    return;
+                  }
+                  setSubmittingPayment(true);
+                  try {
+                    await callAction(
+                      recordCreditPayment(
+                        paymentModal.transactionId,
+                        amount,
+                        penalty,
+                      ),
+                    );
+                    toast.success(
+                      `Payment of ${amount.toLocaleString("en-PH", { minimumFractionDigits: 2 })} recorded${penalty > 0 ? ` + ${penalty.toLocaleString("en-PH", { minimumFractionDigits: 2 })} penalty` : ""}`,
+                    );
+                    setPaymentModal(null);
+                    setPaymentAmount("");
+                    setPenaltyFee("");
+                    window.location.reload();
+                  } catch (e: any) {
+                    toast.error(e.message || "Failed to record payment");
+                  } finally {
+                    setSubmittingPayment(false);
+                  }
+                }}
+                className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                {submittingPayment ? "Recording..." : "Record Payment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

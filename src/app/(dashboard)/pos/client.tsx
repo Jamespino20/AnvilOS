@@ -111,6 +111,10 @@ export function POSClient({
   const [salesInvoiceNumber, setSalesInvoiceNumber] = useState("");
   const [deliveryReceiptNumber, setdeliveryReceiptNumber] = useState("");
   const [tin, setTin] = useState("");
+  const [transactionDate, setTransactionDate] = useState(() => {
+    const now = new Date();
+    return now.toISOString().slice(0, 10);
+  });
   const [creditDueDate, setCreditDueDate] = useState("");
   const [chequeNumber, setChequeNumber] = useState("");
   const [bankName, setBankName] = useState("");
@@ -365,12 +369,13 @@ export function POSClient({
               : undefined,
           discountType: discountType || undefined,
           discountValue: discountValue ? Number(discountValue) : undefined,
+          transactionDate: new Date(transactionDate),
         }),
       );
       const isCredit = paymentMethod === "Credit";
       const receiptData = {
         receiptNumber: result.receiptNumber,
-        date: new Date(),
+        date: new Date(transactionDate),
         sellerName: session?.user?.name || "Unknown",
         buyerName: buyerName,
         buyerAddress: buyerAddress || undefined,
@@ -439,6 +444,10 @@ export function POSClient({
       setSalesInvoiceNumber("");
       setdeliveryReceiptNumber("");
       setTin("");
+      setTransactionDate(() => {
+        const now = new Date();
+        return now.toISOString().slice(0, 10);
+      });
       setCreditDueDate("");
       setChequeNumber("");
       setBankName("");
@@ -959,6 +968,20 @@ export function POSClient({
               />
             </div>
 
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Calendar className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
+              <input
+                type="date"
+                value={transactionDate}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setTransactionDate(e.target.value)}
+                className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors"
+              />
+              <span className="text-[10px] text-[#94a3b8] whitespace-nowrap">
+                Transaction Date
+              </span>
+            </div>
+
             {txnType !== "Return" && (
               <div className="space-y-2 text-xs">
                 <div className="flex items-center gap-2.5 relative min-w-0">
@@ -974,7 +997,7 @@ export function POSClient({
                     onBlur={() =>
                       setTimeout(() => setShowBuyerDropdown(false), 200)
                     }
-                    placeholder="Buyer name *"
+                    placeholder="Buyer name"
                     className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#fd761a] transition-colors"
                   />
                   {showBuyerDropdown && buyerSuggestions.length > 0 && (
@@ -1007,7 +1030,7 @@ export function POSClient({
                     value={buyerAddress}
                     onChange={(e) => setBuyerAddress(e.target.value)}
                     placeholder="Address (Optional)"
-                    className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
+                    className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                   />
                 </div>
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -1017,7 +1040,7 @@ export function POSClient({
                     value={buyerContact}
                     onChange={(e) => setBuyerContact(e.target.value)}
                     placeholder="Contact (Optional)"
-                    className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
+                    className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                   />
                 </div>
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -1027,7 +1050,7 @@ export function POSClient({
                     value={buyerEmail}
                     onChange={(e) => setBuyerEmail(e.target.value)}
                     placeholder="Email (Optional)"
-                    className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
+                    className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-[#0e212c] placeholder:text-[#94a3b8] focus:outline-none"
                   />
                 </div>
               </div>
@@ -1040,7 +1063,7 @@ export function POSClient({
                   value={paymentMethod}
                   title="Select payment method"
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none"
+                  className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-xs text-[#0e212c] bg-transparent focus:outline-none"
                 >
                   {PAYMENT_METHODS.map((m) => (
                     <option key={m} value={m}>
@@ -1055,7 +1078,7 @@ export function POSClient({
                   value={deliveryMethod}
                   title="Select delivery method"
                   onChange={(e) => setDeliveryMethod(e.target.value)}
-                  className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none"
+                  className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-xs text-[#0e212c] bg-transparent focus:outline-none"
                 >
                   {DELIVERY_METHODS.map((m) => (
                     <option key={m} value={m}>
@@ -1074,7 +1097,7 @@ export function POSClient({
                     type="date"
                     value={creditDueDate}
                     onChange={(e) => setCreditDueDate(e.target.value)}
-                    className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                    className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
                   />
                   <span className="text-[10px] text-[#94a3b8] whitespace-nowrap">
                     Due Date
@@ -1095,7 +1118,7 @@ export function POSClient({
                         value={chequeNumber}
                         onChange={(e) => setChequeNumber(e.target.value)}
                         placeholder="Cheque/Ref #"
-                        className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                        className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
                       />
                     </div>
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1104,7 +1127,7 @@ export function POSClient({
                         value={bankName}
                         onChange={(e) => setBankName(e.target.value)}
                         placeholder="Bank Name"
-                        className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                        className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
                       />
                     </div>
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1112,7 +1135,7 @@ export function POSClient({
                         type="date"
                         value={chequeDate}
                         onChange={(e) => setChequeDate(e.target.value)}
-                        className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                        className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
                       />
                       <span className="text-[10px] text-[#94a3b8] whitespace-nowrap">
                         Cheque Date
@@ -1124,7 +1147,7 @@ export function POSClient({
                         value={payeeName}
                         onChange={(e) => setPayeeName(e.target.value)}
                         placeholder={buyerName || "Payee Name"}
-                        className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
+                        className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-xs text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a]"
                       />
                     </div>
                   </div>
