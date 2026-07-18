@@ -99,7 +99,7 @@ export default function RestocksPage() {
     setCart((prev) => {
       const existing = prev.find((i) => i.productId === product.id);
       if (existing) return prev.map((i) => i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i);
-      return [...prev, { productId: product.id, productName: product.productName, quantity: 1, costPrice: "" }];
+      return [...prev, { productId: product.id, productName: product.productName, quantity: 1, costPrice: product.unitPrice ? Number(product.unitPrice) : "" }];
     });
   }
 
@@ -311,14 +311,14 @@ export default function RestocksPage() {
       {/* New Restock Modal - POS Cart Layout */}
       {showNew && (
         <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-xl shadow-2xl border border-[#e2e8f0] w-full max-w-6xl mx-4 h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-8 py-6 border-b border-[#e2e8f0]">
               <h2 className="text-lg font-bold text-[#0e212c] flex items-center gap-2">
                 <ArrowDownUp className="h-5 w-5 text-[#fd761a]" /> New Restock
               </h2>
               <button onClick={() => { setShowNew(false); setCart([]); setRestockSearch(""); }} className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors"><X className="h-5 w-5" /></button>
             </div>
-            <div className="flex flex-col lg:flex-row gap-0 flex-1 overflow-hidden">
+            <div className="flex flex-col lg:flex-row gap-0 h-full overflow-hidden">
               {/* Product selection area */}
               <div className="lg:flex-[1] p-8 overflow-y-auto border-b lg:border-b-0 lg:border-r border-[#e2e8f0] space-y-4">
                 <div className="flex items-center gap-3">
