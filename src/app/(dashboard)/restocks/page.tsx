@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { getTransactions, getTransactionsCount, getProducts, processRestock, createTransaction } from "@/actions";
 import { callAction } from "@/lib/client-action";
-import { Search, ArrowDownUp, Loader2, ChevronDown, ChevronUp, CheckCircle, Plus, ShoppingCart, Minus, Package, X, Truck, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ArrowDownUp, Loader2, ChevronDown, ChevronUp, CheckCircle, Plus, ShoppingCart, Minus, Package, X, Truck, ChevronLeft, ChevronRight, LayoutGrid, List } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
@@ -112,6 +112,7 @@ export default function RestocksPage() {
 
   const [editingQty, setEditingQty] = useState<number | null>(null);
   const [qtyInput, setQtyInput] = useState("");
+  const [productViewMode, setProductViewMode] = useState<"grid" | "list">("list");
 
   function startQtyEdit(productId: number, currentQty: number) {
     setEditingQty(productId);
@@ -320,40 +321,97 @@ export default function RestocksPage() {
             <div className="flex flex-col lg:flex-row gap-0 flex-1 overflow-hidden">
               {/* Product selection area */}
               <div className="lg:flex-[2] p-8 overflow-y-auto border-b lg:border-b-0 lg:border-r border-[#e2e8f0] space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
-                  <input type="text" value={restockSearch} onChange={(e) => setRestockSearch(e.target.value)}
-                    placeholder="Search products..."
-                    className="w-full pl-9 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
+                    <input type="text" value={restockSearch} onChange={(e) => setRestockSearch(e.target.value)}
+                      placeholder="Search products..."
+                      className="w-full pl-9 pr-4 py-2.5 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]" />
+                  </div>
+                  <div className="flex items-center gap-1 border border-[#e2e8f0] rounded-lg p-0.5 bg-white shrink-0">
+                    <button
+                      onClick={() => setProductViewMode("list")}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                        productViewMode === "list"
+                          ? "bg-[#fd761a] text-white shadow-sm"
+                          : "text-[#64748b] hover:bg-[#f1f5f9]"
+                      }`}
+                      title="List view"
+                    >
+                      <List className="h-4 w-4" />
+                      List
+                    </button>
+                    <button
+                      onClick={() => setProductViewMode("grid")}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                        productViewMode === "grid"
+                          ? "bg-[#fd761a] text-white shadow-sm"
+                          : "text-[#64748b] hover:bg-[#f1f5f9]"
+                      }`}
+                      title="Grid view"
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                      Grid
+                    </button>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {filteredProducts.map((p) => {
-                    const inCart = cart.find((i) => i.productId === p.id);
-                    const imgUrl = (p as any).imageUrl;
-                    return (
-                      <button key={p.id} type="button" onClick={() => addToCart(p)}
-                        className={`bg-white border rounded-xl p-3 text-left hover:shadow-md transition-all group ${inCart ? "border-[#fd761a] bg-[#fff5ed]" : "border-[#e2e8f0]"}`}>
-                        {imgUrl ? (
-                          <img src={imgUrl} alt="" className="w-full h-16 object-cover rounded-lg mb-2 border border-[#e2e8f0]" />
-                        ) : (
-                          <div className="w-full h-16 rounded-lg mb-2 bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center">
-                            <Package className="h-6 w-6 text-[#94a3b8]" />
+                {productViewMode === "list" ? (
+                  <div className="space-y-2">
+                    {filteredProducts.map((p) => {
+                      const inCart = cart.find((i) => i.productId === p.id);
+                      const imgUrl = (p as any).imageUrl;
+                      return (
+                        <button key={p.id} type="button" onClick={() => addToCart(p)}
+                          className={`w-full bg-white border rounded-lg p-3 text-left hover:shadow-md transition-all group flex items-center gap-3 ${inCart ? "border-[#fd761a] bg-[#fff5ed]" : "border-[#e2e8f0]"}`}>
+                          {imgUrl ? (
+                            <img src={imgUrl} alt="" className="w-12 h-12 object-cover rounded-lg border border-[#e2e8f0] shrink-0" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center shrink-0">
+                              <Package className="h-5 w-5 text-[#94a3b8]" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-[#0e212c] truncate">{p.productName}</p>
+                            <p className="text-xs text-[#94a3b8] mt-0.5">Stock: {p.quantity}</p>
                           </div>
-                        )}
-                        <p className="text-xs font-medium text-[#0e212c] leading-snug line-clamp-2">{p.productName}</p>
-                        <p className="text-[10px] text-[#94a3b8] mt-1">Stock: {p.quantity}</p>
-                        {inCart && <p className="text-[10px] text-[#fd761a] font-semibold mt-1">{inCart.quantity} in cart</p>}
-                      </button>
-                    );
-                  })}
-                  {filteredProducts.length === 0 && (
-                    <div className="col-span-3 text-center py-8 text-[#94a3b8] text-sm">No products match your search</div>
-                  )}
-                </div>
+                          {inCart && <span className="text-xs text-[#fd761a] font-semibold">{inCart.quantity} in cart</span>}
+                        </button>
+                      );
+                    })}
+                    {filteredProducts.length === 0 && (
+                      <div className="text-center py-8 text-[#94a3b8] text-sm">No products match your search</div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {filteredProducts.map((p) => {
+                      const inCart = cart.find((i) => i.productId === p.id);
+                      const imgUrl = (p as any).imageUrl;
+                      return (
+                        <button key={p.id} type="button" onClick={() => addToCart(p)}
+                          className={`bg-white border rounded-xl p-3 text-left hover:shadow-md transition-all group ${inCart ? "border-[#fd761a] bg-[#fff5ed]" : "border-[#e2e8f0]"}`}>
+                          {imgUrl ? (
+                            <img src={imgUrl} alt="" className="w-full h-16 object-cover rounded-lg mb-2 border border-[#e2e8f0]" />
+                          ) : (
+                            <div className="w-full h-16 rounded-lg mb-2 bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center">
+                              <Package className="h-6 w-6 text-[#94a3b8]" />
+                            </div>
+                          )}
+                          <p className="text-xs font-medium text-[#0e212c] leading-snug line-clamp-2">{p.productName}</p>
+                          <p className="text-[10px] text-[#94a3b8] mt-1">Stock: {p.quantity}</p>
+                          {inCart && <p className="text-[10px] text-[#fd761a] font-semibold mt-1">{inCart.quantity} in cart</p>}
+                        </button>
+                      );
+                    })}
+                    {filteredProducts.length === 0 && (
+                      <div className="col-span-3 text-center py-8 text-[#94a3b8] text-sm">No products match your search</div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Cart area */}
-              <div className="flex-1 p-8 flex flex-col overflow-hidden">
+              <div className="lg:flex-[3] p-8 flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between mb-5">
                   <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2">
                     <ShoppingCart className="h-4 w-4 text-[#fd761a]" /> Cart
