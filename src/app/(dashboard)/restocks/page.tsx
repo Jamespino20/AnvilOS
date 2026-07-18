@@ -320,7 +320,7 @@ export default function RestocksPage() {
             </div>
             <div className="flex flex-col lg:flex-row gap-0 flex-1 overflow-hidden">
               {/* Product selection area */}
-              <div className="lg:flex-[2] p-8 overflow-y-auto border-b lg:border-b-0 lg:border-r border-[#e2e8f0] space-y-4">
+              <div className="lg:flex-[3] p-8 overflow-y-auto border-b lg:border-b-0 lg:border-r border-[#e2e8f0] space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94a3b8]" />
@@ -411,7 +411,7 @@ export default function RestocksPage() {
               </div>
 
               {/* Cart area */}
-              <div className="lg:flex-[3] p-8 flex flex-col overflow-hidden">
+              <div className="lg:flex-[2] p-8 flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between mb-5">
                   <h3 className="text-sm font-bold text-[#0e212c] flex items-center gap-2">
                     <ShoppingCart className="h-4 w-4 text-[#fd761a]" /> Cart
