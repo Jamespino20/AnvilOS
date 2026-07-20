@@ -8,6 +8,7 @@ Last Update Date: July 16, 2026
 
 import { NextResponse } from "next/server";
 import { processLowStockAlerts } from "@/actions/email";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -23,7 +24,14 @@ export async function GET(request: Request) {
 
   try {
     const result = await processLowStockAlerts();
-    return NextResponse.json(result);
+
+    // Cleanup: delete notifications older than 30 days
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const deleted = await prisma.notification.deleteMany({
+      where: { createdAt: { lt: cutoff } },
+    });
+
+    return NextResponse.json({ ...result, cleanedOldNotifications: deleted.count });
   } catch (err: any) {
     console.error("Low-stock cron failed:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -114,13 +114,25 @@ export async function sendLowStockAlerts(
     </div>`,
   });
 
-  for (const p of lowStockProducts) {
-    await prisma.notification.create({
-      data: {
+  // Batch into a single notification; skip if similar notification exists within 24h
+  if (lowStockProducts.length > 0) {
+    const recentCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentNotif = await prisma.notification.findFirst({
+      where: {
         systemNotification: "Low Stock Alert",
-        message: `LOW STOCK: ${p.productName} quantity is ${p.quantity} (threshold: ${p.minThreshold})`,
+        createdAt: { gte: recentCutoff },
       },
     });
+    if (!recentNotif) {
+      const names = lowStockProducts.slice(0, 5).map((p) => p.productName).join(", ");
+      const suffix = lowStockProducts.length > 5 ? ` and ${lowStockProducts.length - 5} more` : "";
+      await prisma.notification.create({
+        data: {
+          systemNotification: "Low Stock Alert",
+          message: `LOW STOCK: ${names}${suffix} below threshold`,
+        },
+      });
+    }
   }
 
   await logAudit(
@@ -418,16 +430,25 @@ export async function checkAndAlertLowStock() {
     });
   }
 
-  for (const p of outOfStockProducts) {
-    await prisma.notification.create({
-      data: {
+  // Batch out-of-stock into a single notification; skip if similar notification exists within 24h
+  if (outOfStockProducts.length > 0) {
+    const recentCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentNotif = await prisma.notification.findFirst({
+      where: {
         systemNotification: "Out of Stock Alert",
-        message: `OUT OF STOCK: ${p.productName} is no longer available`,
+        createdAt: { gte: recentCutoff },
       },
     });
-  }
-
-  if (outOfStockProducts.length > 0) {
+    if (!recentNotif) {
+      const names = outOfStockProducts.slice(0, 5).map((p) => p.productName).join(", ");
+      const suffix = outOfStockProducts.length > 5 ? ` and ${outOfStockProducts.length - 5} more` : "";
+      await prisma.notification.create({
+        data: {
+          systemNotification: "Out of Stock Alert",
+          message: `OUT OF STOCK: ${names}${suffix} no longer available`,
+        },
+      });
+    }
     await logAudit(
       "Inventory",
       "Out of Stock Alert",

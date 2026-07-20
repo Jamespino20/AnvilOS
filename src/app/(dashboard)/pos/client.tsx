@@ -10,6 +10,7 @@ Last Update Date: July 16, 2026
 
 import { useState, useMemo, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   Search,
   Plus,
@@ -32,6 +33,7 @@ import {
   FolderPlus,
   Receipt,
   Calendar,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createTransaction, getReturnTransaction } from "@/actions";
@@ -91,6 +93,7 @@ export function POSClient({
   pendingPOQty = {},
 }: Props) {
   const { data: session } = useSession();
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [parentCategory, setParentCategory] = useState<number | "">("");
   const [filterSupplier, setFilterSupplier] = useState<number | "">("");
@@ -113,7 +116,8 @@ export function POSClient({
   const [tin, setTin] = useState("");
   const [transactionDate, setTransactionDate] = useState(() => {
     const now = new Date();
-    return now.toISOString().slice(0, 16);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
   });
   const [creditDueDate, setCreditDueDate] = useState("");
   const [chequeNumber, setChequeNumber] = useState("");
@@ -483,7 +487,8 @@ export function POSClient({
       setTin("");
       setTransactionDate(() => {
         const now = new Date();
-        return now.toISOString().slice(0, 10);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
       });
       setCreditDueDate("");
       setChequeNumber("");
@@ -745,6 +750,13 @@ export function POSClient({
                   Grid
                 </button>
               </div>
+              <button
+                onClick={() => router.refresh()}
+                className="flex items-center gap-1.5 px-3 py-2.5 border border-[#e2e8f0] rounded-lg text-sm text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0e212c] transition-colors shrink-0"
+                title="Refresh products"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
             </div>
           </div>
 
@@ -1538,6 +1550,10 @@ export function POSClient({
                       chequeDetails: done.chequeDetails,
                       discountType: done.discountType,
                       discountValue: done.discountValue,
+                      discountDesc: done.discountDesc,
+                      additionalChargeType: done.additionalChargeType,
+                      additionalChargeValue: done.additionalChargeValue,
+                      additionalChargeDesc: done.additionalChargeDesc,
                     })
                   }
                   title="Download receipt as PDF"
