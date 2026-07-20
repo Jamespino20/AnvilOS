@@ -61,6 +61,7 @@ export async function downloadReceiptPdf(data: {
   };
   discountType?: string;
   discountValue?: number;
+  discountDesc?: string;
   additionalChargeType?: string;
   additionalChargeValue?: number;
   additionalChargeDesc?: string;
@@ -340,22 +341,6 @@ export async function downloadReceiptPdf(data: {
     doc.text(`PHP ${formatMoney(subtotal)}`, r - 1, y, { align: "right" });
     y += 3.5;
 
-    if (hasDiscount) {
-      const discountAmount =
-        data.discountType === "percent"
-          ? subtotal * ((data.discountValue || 0) / 100)
-          : data.discountValue || 0;
-      const discLabel =
-        data.discountType === "percent"
-          ? `Discount (${data.discountValue}%)`
-          : "Discount";
-      doc.text(discLabel, l, y);
-      doc.text(`-PHP ${formatMoney(discountAmount)}`, r - 1, y, {
-        align: "right",
-      });
-      y += 3.5;
-    }
-
     if (hasAdditionalCharge) {
       const chargeAmount =
         data.additionalChargeType === "percent"
@@ -368,6 +353,23 @@ export async function downloadReceiptPdf(data: {
           : "Additional Charge";
       doc.text(chargeLabel, l, y);
       doc.text(`+PHP ${formatMoney(chargeAmount)}`, r - 1, y, {
+        align: "right",
+      });
+      y += 3.5;
+    }
+
+    if (hasDiscount) {
+      const discountAmount =
+        data.discountType === "percent"
+          ? subtotal * ((data.discountValue || 0) / 100)
+          : data.discountValue || 0;
+      const discLabel = data.discountDesc
+        ? data.discountDesc
+        : data.discountType === "percent"
+          ? `Discount (${data.discountValue}%)`
+          : "Discount";
+      doc.text(discLabel, l, y);
+      doc.text(`-PHP ${formatMoney(discountAmount)}`, r - 1, y, {
         align: "right",
       });
       y += 3.5;

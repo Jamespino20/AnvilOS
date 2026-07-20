@@ -231,6 +231,7 @@ model Transaction {
   returnForReceiptNumber Int?              @map("RETURN_FOR_RECEIPT_NUMBER")
   discountType           String?           @db.VarChar(20) @map("DISCOUNT_TYPE")
   discountValue          Decimal?          @db.Decimal(10, 2) @map("DISCOUNT_VALUE")
+  discountDesc           String?           @db.VarChar(255) @map("DISCOUNT_DESC")
   additionalChargeType   String?           @db.VarChar(20) @map("ADDITIONAL_CHARGE_TYPE")
   additionalChargeValue  Decimal?          @db.Decimal(10, 2) @map("ADDITIONAL_CHARGE_VALUE")
   additionalChargeDesc   String?           @db.VarChar(255) @map("ADDITIONAL_CHARGE_DESC")

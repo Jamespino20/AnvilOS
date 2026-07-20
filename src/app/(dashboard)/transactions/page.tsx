@@ -1168,54 +1168,85 @@ export default function TransactionsPage() {
                     </table>
                     <div className="flex justify-end mt-3 pt-3 border-t border-[#e2e8f0]">
                       <div className="text-right space-y-1">
-                        {(t as any).discountType &&
-                          (t as any).discountValue > 0 && (
-                            <>
-                              <div className="flex justify-end gap-4 text-xs text-[#64748b]">
-                                <span>Subtotal</span>
-                                <span className="font-mono">
-                                  {(() => {
-                                    const subtotal = t.items.reduce(
-                                      (sum, i) =>
-                                        sum + Number(i.totalPrice || 0),
-                                      0,
-                                    );
-                                    return subtotal.toLocaleString("en-PH", {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    });
-                                  })()}
-                                </span>
-                              </div>
-                              <div className="flex justify-end gap-4 text-xs text-red-500">
-                                <span>
-                                  Discount{" "}
-                                  {(t as any).discountType === "percent"
-                                    ? `(${(t as any).discountValue}%)`
-                                    : ""}
-                                </span>
-                                <span className="font-mono">
-                                  -
-                                  {(() => {
-                                    const subtotal = t.items.reduce(
-                                      (sum, i) =>
-                                        sum + Number(i.totalPrice || 0),
-                                      0,
-                                    );
-                                    const disc =
-                                      (t as any).discountType === "percent"
-                                        ? subtotal *
-                                          ((t as any).discountValue / 100)
-                                        : (t as any).discountValue;
-                                    return disc.toLocaleString("en-PH", {
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2,
-                                    });
-                                  })()}
-                                </span>
-                              </div>
-                            </>
-                          )}
+                        {(((t as any).discountType && (t as any).discountValue > 0) ||
+                          ((t as any).additionalChargeType && (t as any).additionalChargeValue > 0)) && (
+                          <>
+                            <div className="flex justify-end gap-4 text-xs text-[#64748b]">
+                              <span>Subtotal</span>
+                              <span className="font-mono">
+                                {(() => {
+                                  const subtotal = t.items.reduce(
+                                    (sum, i) =>
+                                      sum + Number(i.totalPrice || 0),
+                                    0,
+                                  );
+                                  return subtotal.toLocaleString("en-PH", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  });
+                                })()}
+                              </span>
+                            </div>
+                            {(t as any).additionalChargeType &&
+                              (t as any).additionalChargeValue > 0 && (
+                                <div className="flex justify-end gap-4 text-xs text-amber-600">
+                                  <span>
+                                    {(t as any).additionalChargeDesc || "Additional Charge"}
+                                    {(t as any).additionalChargeType === "percent"
+                                      ? ` (${(t as any).additionalChargeValue}%)`
+                                      : ""}
+                                  </span>
+                                  <span className="font-mono">
+                                    +
+                                    {(() => {
+                                      const subtotal = t.items.reduce(
+                                        (sum, i) => sum + Number(i.totalPrice || 0),
+                                        0,
+                                      );
+                                      const charge =
+                                        (t as any).additionalChargeType === "percent"
+                                          ? subtotal * ((t as any).additionalChargeValue / 100)
+                                          : (t as any).additionalChargeValue;
+                                      return charge.toLocaleString("en-PH", {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      });
+                                    })()}
+                                  </span>
+                                </div>
+                              )}
+                            {(t as any).discountType &&
+                              (t as any).discountValue > 0 && (
+                                <div className="flex justify-end gap-4 text-xs text-red-500">
+                                  <span>
+                                    {(t as any).discountDesc || "Discount"}
+                                    {(t as any).discountType === "percent"
+                                      ? ` (${(t as any).discountValue}%)`
+                                      : ""}
+                                  </span>
+                                  <span className="font-mono">
+                                    -
+                                    {(() => {
+                                      const subtotal = t.items.reduce(
+                                        (sum, i) =>
+                                          sum + Number(i.totalPrice || 0),
+                                        0,
+                                      );
+                                      const disc =
+                                        (t as any).discountType === "percent"
+                                          ? subtotal *
+                                            ((t as any).discountValue / 100)
+                                          : (t as any).discountValue;
+                                      return disc.toLocaleString("en-PH", {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      });
+                                    })()}
+                                  </span>
+                                </div>
+                              )}
+                          </>
+                        )}
                         <div className="flex justify-end gap-4">
                           <span className="text-[10px] font-semibold text-[#94a3b8] uppercase tracking-wider">
                             Grand Total

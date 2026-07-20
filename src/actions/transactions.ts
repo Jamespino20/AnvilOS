@@ -345,6 +345,7 @@ export async function createTransaction(data: {
   };
   discountType?: "amount" | "percent" | null;
   discountValue?: number | null;
+  discountDesc?: string | null;
   additionalChargeType?: "amount" | "percent" | null;
   additionalChargeValue?: number | null;
   additionalChargeDesc?: string | null;
@@ -451,6 +452,7 @@ export async function createTransaction(data: {
           isReturned: data.transactionType === "Return",
           discountType: data.discountType || null,
           discountValue: data.discountValue ?? null,
+          discountDesc: data.discountDesc || null,
           additionalChargeType: data.additionalChargeType || null,
           additionalChargeValue: data.additionalChargeValue ?? null,
           additionalChargeDesc: data.additionalChargeDesc || null,
@@ -597,6 +599,7 @@ export async function createTransaction(data: {
               data.paymentMethod,
               data.discountType,
               data.discountValue,
+              data.discountDesc,
               data.additionalChargeType,
               data.additionalChargeValue,
               data.additionalChargeDesc,

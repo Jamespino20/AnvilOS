@@ -146,6 +146,7 @@ export async function sendTransactionReceipt(
   paymentMethod?: string,
   discountType?: string | null,
   discountValue?: number | null,
+  discountDesc?: string | null,
   additionalChargeType?: string | null,
   additionalChargeValue?: number | null,
   additionalChargeDesc?: string | null,
@@ -176,8 +177,8 @@ export async function sendTransactionReceipt(
 
   const summaryRows = (hasDiscount || hasAdditionalCharge)
     ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;color:#64748b;font-size:13px">Subtotal</td><td style="padding:8px 12px;text-align:right;color:#64748b;font-size:13px">${formatMoney(subtotal)}</td></tr>
-       ${hasDiscount ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;color:#ef4444;font-size:13px">Discount${discountType === "percent" ? ` (${discountValue}%)` : ""}</td><td style="padding:8px 12px;text-align:right;color:#ef4444;font-size:13px">-${formatMoney(discountAmount)}</td></tr>` : ""}
-       ${hasAdditionalCharge ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;color:#d97706;font-size:13px">${additionalChargeDesc || "Additional Charge"}${additionalChargeType === "percent" ? ` (${additionalChargeValue}%)` : ""}</td><td style="padding:8px 12px;text-align:right;color:#d97706;font-size:13px">+${formatMoney(additionalChargeAmount)}</td></tr>` : ""}`
+       ${hasAdditionalCharge ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;color:#d97706;font-size:13px">${additionalChargeDesc || "Additional Charge"}${additionalChargeType === "percent" ? ` (${additionalChargeValue}%)` : ""}</td><td style="padding:8px 12px;text-align:right;color:#d97706;font-size:13px">+${formatMoney(additionalChargeAmount)}</td></tr>` : ""}
+       ${hasDiscount ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;color:#ef4444;font-size:13px">${discountDesc || "Discount"}${discountType === "percent" ? ` (${discountValue}%)` : ""}</td><td style="padding:8px 12px;text-align:right;color:#ef4444;font-size:13px">-${formatMoney(discountAmount)}</td></tr>` : ""}`
     : "";
 
   const paymentLabel = paymentMethod || "Cash";

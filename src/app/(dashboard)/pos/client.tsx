@@ -138,6 +138,7 @@ export function POSClient({
     };
     discountType?: string;
     discountValue?: number;
+    discountDesc?: string;
     additionalChargeType?: string;
     additionalChargeValue?: number;
     additionalChargeDesc?: string;
@@ -152,6 +153,7 @@ export function POSClient({
     "",
   );
   const [discountValue, setDiscountValue] = useState("");
+  const [discountDesc, setDiscountDesc] = useState("");
   const [additionalChargeType, setAdditionalChargeType] = useState<
     "amount" | "percent" | ""
   >("");
@@ -358,7 +360,7 @@ export function POSClient({
               .reduce(
                 (sum, c) => sum + Number(c.product.sellingPrice) * c.quantity,
                 0,
-              ) - discountAmount,
+              ) - discountAmount + additionalChargeAmount,
             0,
           ),
           items: cart
@@ -385,9 +387,10 @@ export function POSClient({
                   payeeName: payeeName || undefined,
                 }
               : undefined,
-          discountType: discountType || undefined,
-          discountValue: discountValue ? Number(discountValue) : undefined,
-          additionalChargeType: additionalChargeType || undefined,
+        discountType: discountType || undefined,
+        discountValue: discountValue ? Number(discountValue) : undefined,
+        discountDesc: discountDesc || undefined,
+        additionalChargeType: additionalChargeType || undefined,
           additionalChargeValue: additionalChargeValue
             ? Number(additionalChargeValue)
             : undefined,
@@ -462,6 +465,7 @@ export function POSClient({
             : undefined,
         discountType: discountType || undefined,
         discountValue: discountValue ? Number(discountValue) : undefined,
+        discountDesc: discountDesc || undefined,
         additionalChargeType: additionalChargeType || undefined,
         additionalChargeValue: additionalChargeValue
           ? Number(additionalChargeValue)
@@ -490,6 +494,7 @@ export function POSClient({
       setDeliveryMethod("WalkIn");
       setDiscountType("");
       setDiscountValue("");
+      setDiscountDesc("");
       setAdditionalChargeType("");
       setAdditionalChargeValue("");
       setAdditionalChargeDesc("");
@@ -1334,43 +1339,6 @@ export function POSClient({
             {subtotal > 0 && (
               <div className="flex items-center gap-2">
                 <label className="text-[10px] font-semibold text-[#64748b] uppercase shrink-0">
-                  Discount
-                </label>
-                <select
-                  value={discountType}
-                  onChange={(e) => {
-                    setDiscountType(
-                      e.target.value as "amount" | "percent" | "",
-                    );
-                    if (e.target.value === "") setDiscountValue("");
-                  }}
-                  className="h-9 px-2 border border-[#e2e8f0] rounded-lg text-xs bg-white focus:outline-none focus:border-[#fd761a]"
-                >
-                  <option value="">None</option>
-                  <option value="amount">Fixed Amount</option>
-                  <option value="percent">Percent</option>
-                </select>
-                {discountType && (
-                  <div className="relative flex-1">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#94a3b8]">
-                      {discountType === "percent" ? "%" : "\u20B1"}
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      max={discountType === "percent" ? "100" : undefined}
-                      value={discountValue}
-                      onChange={(e) => setDiscountValue(e.target.value)}
-                      placeholder={discountType === "percent" ? "0" : "0.00"}
-                      className="w-full h-9 pl-7 pr-2 border border-[#e2e8f0] rounded-lg text-xs text-right font-mono bg-white focus:outline-none focus:border-[#fd761a]"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-            {subtotal > 0 && (
-              <div className="flex items-center gap-2">
-                <label className="text-[10px] font-semibold text-[#64748b] uppercase shrink-0">
                   Additional
                 </label>
                 <select
@@ -1423,28 +1391,60 @@ export function POSClient({
                 )}
               </div>
             )}
+            {subtotal > 0 && (
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-semibold text-[#64748b] uppercase shrink-0">
+                  Discount
+                </label>
+                <select
+                  value={discountType}
+                  onChange={(e) => {
+                    setDiscountType(
+                      e.target.value as "amount" | "percent" | "",
+                    );
+                    if (e.target.value === "") {
+                      setDiscountValue("");
+                      setDiscountDesc("");
+                    }
+                  }}
+                  className="h-9 px-2 border border-[#e2e8f0] rounded-lg text-xs bg-white focus:outline-none focus:border-[#fd761a]"
+                >
+                  <option value="">None</option>
+                  <option value="amount">Fixed Amount</option>
+                  <option value="percent">Percent</option>
+                </select>
+                {discountType && (
+                  <>
+                    <input
+                      type="text"
+                      value={discountDesc}
+                      onChange={(e) => setDiscountDesc(e.target.value)}
+                      placeholder="Description"
+                      className="h-9 px-2 border border-[#e2e8f0] rounded-lg text-xs bg-white focus:outline-none focus:border-[#fd761a] w-28"
+                    />
+                    <div className="relative flex-1">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#94a3b8]">
+                        {discountType === "percent" ? "%" : "\u20B1"}
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        max={discountType === "percent" ? "100" : undefined}
+                        value={discountValue}
+                        onChange={(e) => setDiscountValue(e.target.value)}
+                        placeholder={discountType === "percent" ? "0" : "0.00"}
+                        className="w-full h-9 pl-7 pr-2 border border-[#e2e8f0] rounded-lg text-xs text-right font-mono bg-white focus:outline-none focus:border-[#fd761a]"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             {discountAmount > 0 && (
               <div className="flex justify-between items-center text-xs text-[#64748b]">
                 <span>Subtotal</span>
                 <span className="font-mono">
                   {subtotal.toLocaleString("en-PH", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </span>
-              </div>
-            )}
-            {discountAmount > 0 && (
-              <div className="flex justify-between items-center text-xs text-emerald-600">
-                <span>
-                  Discount
-                  {discountType === "percent" && (
-                    <span className="ml-1 text-[10px]">({discountValue}%)</span>
-                  )}
-                </span>
-                <span className="font-mono">
-                  -
-                  {discountAmount.toLocaleString("en-PH", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
@@ -1464,6 +1464,23 @@ export function POSClient({
                 <span className="font-mono">
                   +
                   {additionalChargeAmount.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+            )}
+            {discountAmount > 0 && (
+              <div className="flex justify-between items-center text-xs text-emerald-600">
+                <span>
+                  {discountDesc || "Discount"}
+                  {discountType === "percent" && (
+                    <span className="ml-1 text-[10px]">({discountValue}%)</span>
+                  )}
+                </span>
+                <span className="font-mono">
+                  -
+                  {discountAmount.toLocaleString("en-PH", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
