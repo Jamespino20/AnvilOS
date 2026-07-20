@@ -439,6 +439,7 @@ export function POSClient({
             : undefined,
         discountType: discountType || undefined,
         discountValue: discountValue ? Number(discountValue) : undefined,
+        discountDesc: discountDesc || undefined,
         additionalChargeType: additionalChargeType || undefined,
         additionalChargeValue: additionalChargeValue
           ? Number(additionalChargeValue)

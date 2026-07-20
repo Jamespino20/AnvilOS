@@ -751,6 +751,14 @@ export default function TransactionsPage() {
                                   (t as any).discountType || undefined,
                                 discountValue:
                                   (t as any).discountValue ?? undefined,
+                                discountDesc:
+                                  (t as any).discountDesc || undefined,
+                                additionalChargeType:
+                                  (t as any).additionalChargeType || undefined,
+                                additionalChargeValue:
+                                  (t as any).additionalChargeValue ?? undefined,
+                                additionalChargeDesc:
+                                  (t as any).additionalChargeDesc || undefined,
                               });
                             }}
                             className="p-1.5 text-[#94a3b8] hover:text-[#fd761a] hover:bg-amber-50 rounded-md transition-all"
