@@ -1296,37 +1296,47 @@ export function POSClient({
 
           <div className="p-6 border-t border-[#e2e8f0] space-y-4 bg-white sticky bottom-0">
             {subtotal > 0 && (
-              <div className="flex items-center gap-2">
-                <select
-                  value={discountType}
-                  onChange={(e) => {
-                    setDiscountType(
-                      e.target.value as "amount" | "percent" | "",
-                    );
-                    if (e.target.value === "") setDiscountValue("");
-                  }}
-                  className="h-9 px-2 border border-[#e2e8f0] rounded-lg text-xs bg-white focus:outline-none focus:border-[#fd761a]"
-                >
-                  <option value="">No Discount</option>
-                  <option value="amount">Fixed Amount</option>
-                  <option value="percent">Percent</option>
-                </select>
-                {discountType && (
-                  <div className="relative flex-1">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#94a3b8]">
-                      {discountType === "percent" ? "%" : "\u20B1"}
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      max={discountType === "percent" ? "100" : undefined}
-                      value={discountValue}
-                      onChange={(e) => setDiscountValue(e.target.value)}
-                      placeholder={discountType === "percent" ? "0" : "0.00"}
-                      className="w-full h-9 pl-7 pr-2 border border-[#e2e8f0] rounded-lg text-xs text-right font-mono bg-white focus:outline-none focus:border-[#fd761a]"
-                    />
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
+                  Extras
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-0.5">
+                    <label className="text-[10px] font-semibold text-[#64748b] uppercase">
+                      Discount
+                    </label>
+                    <select
+                      value={discountType}
+                      onChange={(e) => {
+                        setDiscountType(
+                          e.target.value as "amount" | "percent" | "",
+                        );
+                        if (e.target.value === "") setDiscountValue("");
+                      }}
+                      className="h-9 px-2 border border-[#e2e8f0] rounded-lg text-xs bg-white focus:outline-none focus:border-[#fd761a]"
+                    >
+                      <option value="">None</option>
+                      <option value="amount">Fixed Amount</option>
+                      <option value="percent">Percent</option>
+                    </select>
                   </div>
-                )}
+                  {discountType && (
+                    <div className="relative flex-1">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#94a3b8]">
+                        {discountType === "percent" ? "%" : "\u20B1"}
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        max={discountType === "percent" ? "100" : undefined}
+                        value={discountValue}
+                        onChange={(e) => setDiscountValue(e.target.value)}
+                        placeholder={discountType === "percent" ? "0" : "0.00"}
+                        className="w-full h-9 pl-7 pr-2 border border-[#e2e8f0] rounded-lg text-xs text-right font-mono bg-white focus:outline-none focus:border-[#fd761a]"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {discountAmount > 0 && (

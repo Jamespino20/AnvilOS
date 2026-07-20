@@ -371,10 +371,18 @@ export async function checkAndAlertLowStock() {
 }
 
 /**
- * Process queued low-stock alerts — sends batched email at noon/8pm PH time.
+ * Process queued low-stock alerts — sends batched email at 8 AM / 12 PM PH time.
  * Called by cron job; skips if not within the delivery window.
  */
 export async function processLowStockAlerts() {
+  // Time window guard: only send during 8 AM–8:59 AM or 12 PM–12:59 PM PH (UTC+8)
+  const now = new Date();
+  const phHour = (now.getUTCHours() + 8) % 24;
+  const allowedHours = [8, 12];
+  if (!allowedHours.includes(phHour)) {
+    return { sent: false, reason: `Outside delivery window (PH hour ${phHour})` };
+  }
+
   // Fetch unsent alerts
   const alerts = await prisma.lowStockAlert.findMany({
     where: { sentAt: null },
