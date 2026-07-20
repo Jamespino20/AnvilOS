@@ -345,6 +345,9 @@ export async function createTransaction(data: {
   };
   discountType?: "amount" | "percent" | null;
   discountValue?: number | null;
+  additionalChargeType?: "amount" | "percent" | null;
+  additionalChargeValue?: number | null;
+  additionalChargeDesc?: string | null;
   transactionDate?: Date | string;
 }) {
   return safeCall(async () => {
@@ -448,6 +451,9 @@ export async function createTransaction(data: {
           isReturned: data.transactionType === "Return",
           discountType: data.discountType || null,
           discountValue: data.discountValue ?? null,
+          additionalChargeType: data.additionalChargeType || null,
+          additionalChargeValue: data.additionalChargeValue ?? null,
+          additionalChargeDesc: data.additionalChargeDesc || null,
           items: { create: itemsWithNames },
         },
       }),
@@ -591,6 +597,9 @@ export async function createTransaction(data: {
               data.paymentMethod,
               data.discountType,
               data.discountValue,
+              data.additionalChargeType,
+              data.additionalChargeValue,
+              data.additionalChargeDesc,
             ).catch((e) => console.error("Buyer receipt email failed:", e));
           }
         })

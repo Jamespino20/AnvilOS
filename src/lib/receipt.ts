@@ -61,6 +61,9 @@ export async function downloadReceiptPdf(data: {
   };
   discountType?: string;
   discountValue?: number;
+  additionalChargeType?: string;
+  additionalChargeValue?: number;
+  additionalChargeDesc?: string;
 }) {
   const doc = new jsPDF({ unit: "mm", format: [80, 400] });
 
@@ -321,30 +324,54 @@ export async function downloadReceiptPdf(data: {
   doc.line(l, y, r, y);
   y += 2.5;
 
-  // Show subtotal + discount when discount is applied
+  // Show subtotal + discount + additional charges when applicable
   const hasDiscount =
     data.discountType && data.discountValue && data.discountValue > 0;
-  if (hasDiscount) {
+  const hasAdditionalCharge =
+    data.additionalChargeType &&
+    data.additionalChargeValue &&
+    data.additionalChargeValue > 0;
+  if (hasDiscount || hasAdditionalCharge) {
     const subtotal = data.items.reduce((s, i) => s + i.totalPrice, 0);
-    const discountAmount =
-      data.discountType === "percent"
-        ? subtotal * ((data.discountValue || 0) / 100)
-        : data.discountValue || 0;
     doc.setFont("courier", "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(100, 116, 139);
     doc.text("Subtotal", l, y);
     doc.text(`PHP ${formatMoney(subtotal)}`, r - 1, y, { align: "right" });
     y += 3.5;
-    const discLabel =
-      data.discountType === "percent"
-        ? `Discount (${data.discountValue}%)`
-        : "Discount";
-    doc.text(discLabel, l, y);
-    doc.text(`-PHP ${formatMoney(discountAmount)}`, r - 1, y, {
-      align: "right",
-    });
-    y += 3.5;
+
+    if (hasDiscount) {
+      const discountAmount =
+        data.discountType === "percent"
+          ? subtotal * ((data.discountValue || 0) / 100)
+          : data.discountValue || 0;
+      const discLabel =
+        data.discountType === "percent"
+          ? `Discount (${data.discountValue}%)`
+          : "Discount";
+      doc.text(discLabel, l, y);
+      doc.text(`-PHP ${formatMoney(discountAmount)}`, r - 1, y, {
+        align: "right",
+      });
+      y += 3.5;
+    }
+
+    if (hasAdditionalCharge) {
+      const chargeAmount =
+        data.additionalChargeType === "percent"
+          ? subtotal * ((data.additionalChargeValue || 0) / 100)
+          : data.additionalChargeValue || 0;
+      const chargeLabel = data.additionalChargeDesc
+        ? data.additionalChargeDesc
+        : data.additionalChargeType === "percent"
+          ? `Additional (${data.additionalChargeValue}%)`
+          : "Additional Charge";
+      doc.text(chargeLabel, l, y);
+      doc.text(`+PHP ${formatMoney(chargeAmount)}`, r - 1, y, {
+        align: "right",
+      });
+      y += 3.5;
+    }
   }
 
   doc.setFont("courier", "bold");

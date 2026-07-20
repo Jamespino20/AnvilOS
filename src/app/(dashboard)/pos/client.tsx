@@ -138,6 +138,9 @@ export function POSClient({
     };
     discountType?: string;
     discountValue?: number;
+    additionalChargeType?: string;
+    additionalChargeValue?: number;
+    additionalChargeDesc?: string;
   } | null>(null);
   const [error, setError] = useState("");
   const [editingQty, setEditingQty] = useState<number | null>(null);
@@ -149,6 +152,11 @@ export function POSClient({
     "",
   );
   const [discountValue, setDiscountValue] = useState("");
+  const [additionalChargeType, setAdditionalChargeType] = useState<
+    "amount" | "percent" | ""
+  >("");
+  const [additionalChargeValue, setAdditionalChargeValue] = useState("");
+  const [additionalChargeDesc, setAdditionalChargeDesc] = useState("");
 
   const handleDragStart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -293,9 +301,19 @@ export function POSClient({
     return Math.min(val, subtotal);
   }, [subtotal, discountType, discountValue]);
 
+  const additionalChargeAmount = useMemo(() => {
+    if (!additionalChargeType || !additionalChargeValue) return 0;
+    const val = Number(additionalChargeValue);
+    if (isNaN(val) || val < 0) return 0;
+    if (additionalChargeType === "percent") {
+      return subtotal * (val / 100);
+    }
+    return val;
+  }, [subtotal, additionalChargeType, additionalChargeValue]);
+
   const grandTotal = useMemo(
-    () => Math.max(subtotal - discountAmount, 0),
-    [subtotal, discountAmount],
+    () => Math.max(subtotal - discountAmount + additionalChargeAmount, 0),
+    [subtotal, discountAmount, additionalChargeAmount],
   );
 
   async function handleCheckout() {
@@ -369,6 +387,11 @@ export function POSClient({
               : undefined,
           discountType: discountType || undefined,
           discountValue: discountValue ? Number(discountValue) : undefined,
+          additionalChargeType: additionalChargeType || undefined,
+          additionalChargeValue: additionalChargeValue
+            ? Number(additionalChargeValue)
+            : undefined,
+          additionalChargeDesc: additionalChargeDesc || undefined,
           transactionDate: new Date(transactionDate),
         }),
       );
@@ -409,6 +432,11 @@ export function POSClient({
             : undefined,
         discountType: discountType || undefined,
         discountValue: discountValue ? Number(discountValue) : undefined,
+        additionalChargeType: additionalChargeType || undefined,
+        additionalChargeValue: additionalChargeValue
+          ? Number(additionalChargeValue)
+          : undefined,
+        additionalChargeDesc: additionalChargeDesc || undefined,
       };
       const doneItems = receiptData.items;
       setDone({
@@ -434,6 +462,11 @@ export function POSClient({
             : undefined,
         discountType: discountType || undefined,
         discountValue: discountValue ? Number(discountValue) : undefined,
+        additionalChargeType: additionalChargeType || undefined,
+        additionalChargeValue: additionalChargeValue
+          ? Number(additionalChargeValue)
+          : undefined,
+        additionalChargeDesc: additionalChargeDesc || undefined,
       });
       setCart([]);
       setBuyerName("");
@@ -457,6 +490,9 @@ export function POSClient({
       setDeliveryMethod("WalkIn");
       setDiscountType("");
       setDiscountValue("");
+      setAdditionalChargeType("");
+      setAdditionalChargeValue("");
+      setAdditionalChargeDesc("");
       if (txnType !== "SalePO") {
         setTimeout(() => {
           downloadReceipt(receiptData).catch(() => {});
@@ -1296,47 +1332,95 @@ export function POSClient({
 
           <div className="p-6 border-t border-[#e2e8f0] space-y-4 bg-white sticky bottom-0">
             {subtotal > 0 && (
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
-                  Extras
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="flex flex-col gap-0.5">
-                    <label className="text-[10px] font-semibold text-[#64748b] uppercase">
-                      Discount
-                    </label>
-                    <select
-                      value={discountType}
-                      onChange={(e) => {
-                        setDiscountType(
-                          e.target.value as "amount" | "percent" | "",
-                        );
-                        if (e.target.value === "") setDiscountValue("");
-                      }}
-                      className="h-9 px-2 border border-[#e2e8f0] rounded-lg text-xs bg-white focus:outline-none focus:border-[#fd761a]"
-                    >
-                      <option value="">None</option>
-                      <option value="amount">Fixed Amount</option>
-                      <option value="percent">Percent</option>
-                    </select>
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-semibold text-[#64748b] uppercase shrink-0">
+                  Discount
+                </label>
+                <select
+                  value={discountType}
+                  onChange={(e) => {
+                    setDiscountType(
+                      e.target.value as "amount" | "percent" | "",
+                    );
+                    if (e.target.value === "") setDiscountValue("");
+                  }}
+                  className="h-9 px-2 border border-[#e2e8f0] rounded-lg text-xs bg-white focus:outline-none focus:border-[#fd761a]"
+                >
+                  <option value="">None</option>
+                  <option value="amount">Fixed Amount</option>
+                  <option value="percent">Percent</option>
+                </select>
+                {discountType && (
+                  <div className="relative flex-1">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#94a3b8]">
+                      {discountType === "percent" ? "%" : "\u20B1"}
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      max={discountType === "percent" ? "100" : undefined}
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(e.target.value)}
+                      placeholder={discountType === "percent" ? "0" : "0.00"}
+                      className="w-full h-9 pl-7 pr-2 border border-[#e2e8f0] rounded-lg text-xs text-right font-mono bg-white focus:outline-none focus:border-[#fd761a]"
+                    />
                   </div>
-                  {discountType && (
+                )}
+              </div>
+            )}
+            {subtotal > 0 && (
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-semibold text-[#64748b] uppercase shrink-0">
+                  Additional
+                </label>
+                <select
+                  value={additionalChargeType}
+                  onChange={(e) => {
+                    setAdditionalChargeType(
+                      e.target.value as "amount" | "percent" | "",
+                    );
+                    if (e.target.value === "") {
+                      setAdditionalChargeValue("");
+                      setAdditionalChargeDesc("");
+                    }
+                  }}
+                  className="h-9 px-2 border border-[#e2e8f0] rounded-lg text-xs bg-white focus:outline-none focus:border-[#fd761a]"
+                >
+                  <option value="">None</option>
+                  <option value="amount">Fixed Amount</option>
+                  <option value="percent">Percent</option>
+                </select>
+                {additionalChargeType && (
+                  <>
+                    <input
+                      type="text"
+                      value={additionalChargeDesc}
+                      onChange={(e) => setAdditionalChargeDesc(e.target.value)}
+                      placeholder="Description"
+                      className="h-9 px-2 border border-[#e2e8f0] rounded-lg text-xs bg-white focus:outline-none focus:border-[#fd761a] w-28"
+                    />
                     <div className="relative flex-1">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-[#94a3b8]">
-                        {discountType === "percent" ? "%" : "\u20B1"}
+                        {additionalChargeType === "percent" ? "%" : "\u20B1"}
                       </span>
                       <input
                         type="number"
                         min="0"
-                        max={discountType === "percent" ? "100" : undefined}
-                        value={discountValue}
-                        onChange={(e) => setDiscountValue(e.target.value)}
-                        placeholder={discountType === "percent" ? "0" : "0.00"}
+                        max={
+                          additionalChargeType === "percent" ? "100" : undefined
+                        }
+                        value={additionalChargeValue}
+                        onChange={(e) =>
+                          setAdditionalChargeValue(e.target.value)
+                        }
+                        placeholder={
+                          additionalChargeType === "percent" ? "0" : "0.00"
+                        }
                         className="w-full h-9 pl-7 pr-2 border border-[#e2e8f0] rounded-lg text-xs text-right font-mono bg-white focus:outline-none focus:border-[#fd761a]"
                       />
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             )}
             {discountAmount > 0 && (
@@ -1361,6 +1445,25 @@ export function POSClient({
                 <span className="font-mono">
                   -
                   {discountAmount.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+            )}
+            {additionalChargeAmount > 0 && (
+              <div className="flex justify-between items-center text-xs text-amber-600">
+                <span>
+                  {additionalChargeDesc || "Additional Charge"}
+                  {additionalChargeType === "percent" && (
+                    <span className="ml-1 text-[10px]">
+                      ({additionalChargeValue}%)
+                    </span>
+                  )}
+                </span>
+                <span className="font-mono">
+                  +
+                  {additionalChargeAmount.toLocaleString("en-PH", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}

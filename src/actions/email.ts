@@ -146,6 +146,9 @@ export async function sendTransactionReceipt(
   paymentMethod?: string,
   discountType?: string | null,
   discountValue?: number | null,
+  additionalChargeType?: string | null,
+  additionalChargeValue?: number | null,
+  additionalChargeDesc?: string | null,
 ) {
   const subtotal = items.reduce((s, i) => s + i.totalPrice, 0);
   const hasDiscount =
@@ -156,6 +159,14 @@ export async function sendTransactionReceipt(
       : discountValue
     : 0;
 
+  const hasAdditionalCharge =
+    additionalChargeType && additionalChargeValue && additionalChargeValue > 0;
+  const additionalChargeAmount = hasAdditionalCharge
+    ? additionalChargeType === "percent"
+      ? subtotal * (additionalChargeValue / 100)
+      : additionalChargeValue
+    : 0;
+
   const itemRows = items
     .map(
       (i) =>
@@ -163,9 +174,10 @@ export async function sendTransactionReceipt(
     )
     .join("");
 
-  const discountRows = hasDiscount
+  const summaryRows = (hasDiscount || hasAdditionalCharge)
     ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;color:#64748b;font-size:13px">Subtotal</td><td style="padding:8px 12px;text-align:right;color:#64748b;font-size:13px">${formatMoney(subtotal)}</td></tr>
-       <tr><td colspan="3" style="padding:8px 12px;text-align:right;color:#ef4444;font-size:13px">Discount${discountType === "percent" ? ` (${discountValue}%)` : ""}</td><td style="padding:8px 12px;text-align:right;color:#ef4444;font-size:13px">-${formatMoney(discountAmount)}</td></tr>`
+       ${hasDiscount ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;color:#ef4444;font-size:13px">Discount${discountType === "percent" ? ` (${discountValue}%)` : ""}</td><td style="padding:8px 12px;text-align:right;color:#ef4444;font-size:13px">-${formatMoney(discountAmount)}</td></tr>` : ""}
+       ${hasAdditionalCharge ? `<tr><td colspan="3" style="padding:8px 12px;text-align:right;color:#d97706;font-size:13px">${additionalChargeDesc || "Additional Charge"}${additionalChargeType === "percent" ? ` (${additionalChargeValue}%)` : ""}</td><td style="padding:8px 12px;text-align:right;color:#d97706;font-size:13px">+${formatMoney(additionalChargeAmount)}</td></tr>` : ""}`
     : "";
 
   const paymentLabel = paymentMethod || "Cash";
@@ -190,7 +202,7 @@ export async function sendTransactionReceipt(
             <th style="padding:8px 12px;text-align:right;border-bottom:2px solid #e2e8f0">Total</th>
           </tr></thead>
           <tbody>${itemRows}</tbody>
-          <tfoot>${discountRows}<tr>
+          <tfoot>${summaryRows}<tr>
             <td colspan="3" style="padding:12px;text-align:right;font-weight:700;font-size:15px">Grand Total</td>
             <td style="padding:12px;text-align:right;font-weight:700;font-size:15px;color:#fd761a">${formatMoney(grandTotal)}</td>
           </tr></tfoot>
