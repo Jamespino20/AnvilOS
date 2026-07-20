@@ -35,7 +35,7 @@ export function DashboardExport({ data }: { data: Data }) {
           t.transactionType,
           `${Number(t.grandTotal).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           t.transactionStatus,
-          new Date(t.transactionDate).toLocaleDateString("en-PH"),
+           new Date(t.transactionDate).toLocaleString("en-PH"),
         ])}
         label="Transactions CSV"
       />

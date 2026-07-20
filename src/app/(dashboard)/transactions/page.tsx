@@ -368,7 +368,7 @@ export default function TransactionsPage() {
                   if (key === "transactionType")
                     return t.transactionType.replace(/([A-Z])/g, " $1").trim();
                   if (key === "transactionDate")
-                    return new Date(t.transactionDate).toLocaleDateString(
+                    return new Date(t.transactionDate).toLocaleString(
                       "en-PH",
                     );
                   if (key === "paymentMethod") return t.paymentMethod || "—";
@@ -540,12 +540,14 @@ export default function TransactionsPage() {
                         {t.transactionType.replace(/([A-Z])/g, " $1").trim()}
                       </td>
                       <td className="p-4 text-[#64748b]">
-                        {new Date(t.transactionDate).toLocaleDateString(
+                        {new Date(t.transactionDate).toLocaleString(
                           "en-PH",
                           {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
                           },
                         )}
                       </td>
@@ -871,7 +873,7 @@ export default function TransactionsPage() {
                       Transaction #{t.receiptNumber}
                     </h2>
                     <p className="text-xs text-[#64748b] mt-0.5">
-                      {new Date(t.transactionDate).toLocaleDateString("en-PH", {
+                      {new Date(t.transactionDate).toLocaleString("en-PH", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",

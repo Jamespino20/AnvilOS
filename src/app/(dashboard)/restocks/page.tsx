@@ -211,7 +211,7 @@ export default function RestocksPage() {
                   const total = r.items.reduce((s, i) => s + Number(i.costPrice || i.unitPrice || 0) * (i.quantity || 0), 0);
                   return `${total.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 }
-                if (key === "transactionDate") return new Date(r.transactionDate).toLocaleDateString("en-PH");
+                if (key === "transactionDate") return new Date(r.transactionDate).toLocaleString("en-PH");
                 if (key === "transactionStatus") return r.transactionStatus;
                 return "";
               })
@@ -249,7 +249,7 @@ export default function RestocksPage() {
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold text-[#94a3b8] uppercase">Date</p>
-                    <p className="text-[#64748b] mt-0.5">{new Date(r.transactionDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</p>
+                    <p className="text-[#64748b] mt-0.5">{new Date(r.transactionDate).toLocaleString("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold text-[#94a3b8] uppercase">Status</p>
@@ -479,7 +479,7 @@ export default function RestocksPage() {
                     <ArrowDownUp className="h-5 w-5 text-[#fd761a]" /> Restock #{restock.receiptNumber}
                   </h2>
                   <p className="text-xs text-[#64748b] mt-1">
-                    {restock.buyerName} &middot; {new Date(restock.transactionDate).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}
+                    {restock.buyerName} &middot; {new Date(restock.transactionDate).toLocaleString("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
                 <button onClick={() => setExpandedId(null)} className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] transition-colors">

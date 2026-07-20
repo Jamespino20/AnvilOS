@@ -395,7 +395,7 @@ export default function OrdersPage() {
                   if (key === "grandTotal")
                     return `${Number(order.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   if (key === "transactionDate")
-                    return new Date(order.transactionDate).toLocaleDateString(
+                    return new Date(order.transactionDate).toLocaleString(
                       "en-PH",
                     );
                   if (key === "deliveryMethod")
@@ -755,12 +755,14 @@ export default function OrdersPage() {
                       Order #{order.receiptNumber}
                     </h3>
                     <p className="text-[10px] text-[#94a3b8] mt-0.5">
-                      {new Date(order.transactionDate).toLocaleDateString(
+                      {new Date(order.transactionDate).toLocaleString(
                         "en-PH",
                         {
                           year: "numeric",
                           month: "short",
                           day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         },
                       )}
                     </p>

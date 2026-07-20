@@ -113,7 +113,7 @@ export function POSClient({
   const [tin, setTin] = useState("");
   const [transactionDate, setTransactionDate] = useState(() => {
     const now = new Date();
-    return now.toISOString().slice(0, 10);
+    return now.toISOString().slice(0, 16);
   });
   const [creditDueDate, setCreditDueDate] = useState("");
   const [chequeNumber, setChequeNumber] = useState("");
@@ -936,9 +936,9 @@ export function POSClient({
             <div className="flex items-center gap-2.5 min-w-0">
               <Calendar className="h-3.5 w-3.5 text-[#94a3b8] shrink-0" />
               <input
-                type="date"
+                type="datetime-local"
                 value={transactionDate}
-                max={new Date().toISOString().slice(0, 10)}
+                max={new Date().toISOString().slice(0, 16)}
                 onChange={(e) => setTransactionDate(e.target.value)}
                 className="flex-1 min-w-0 border-b border-[#e2e8f0] py-1.5 text-sm text-[#0e212c] bg-transparent focus:outline-none focus:border-[#fd761a] transition-colors"
               />

@@ -139,7 +139,7 @@ export default function BuyersPage() {
     const dataRows = history.map((t) => [
       `#${t.receiptNumber}`,
       t.transactionType.replace(/([A-Z])/g, " $1").trim(),
-      new Date(t.transactionDate).toLocaleDateString("en-PH"),
+      new Date(t.transactionDate).toLocaleString("en-PH"),
       `${Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       t.transactionStatus,
     ]);
@@ -368,9 +368,9 @@ export default function BuyersPage() {
                           Date
                         </p>
                         <p className="text-[#64748b] mt-0.5">
-                          {new Date(txn.transactionDate).toLocaleDateString(
+                          {new Date(txn.transactionDate).toLocaleString(
                             "en-PH",
-                            { month: "short", day: "numeric", year: "numeric" },
+                            { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" },
                           )}
                         </p>
                       </div>

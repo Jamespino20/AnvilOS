@@ -551,7 +551,7 @@ export async function createTransaction(data: {
 
     const isBackdated = data.transactionDate && new Date(data.transactionDate).toDateString() !== new Date().toDateString();
     const auditDetails = isBackdated
-      ? `${data.transactionType} #${receiptNumber} - ${data.buyerName} - ${formatMoney(data.grandTotal)} (Backdated: ${new Date(data.transactionDate!).toLocaleDateString()})`
+      ? `${data.transactionType} #${receiptNumber} - ${data.buyerName} - ${formatMoney(data.grandTotal)} (Backdated: ${new Date(data.transactionDate!).toLocaleString()})`
       : `${data.transactionType} #${receiptNumber} - ${data.buyerName} - ${formatMoney(data.grandTotal)}`;
     
     await logAudit(
@@ -580,6 +580,19 @@ export async function createTransaction(data: {
             data.buyerName,
             data.grandTotal,
             actor,
+            itemsWithNames.map((i) => ({
+              productName: i.productName,
+              quantity: i.quantity,
+              unitPrice: i.unitPrice,
+              totalPrice: i.totalPrice,
+            })),
+            data.paymentMethod,
+            data.discountType,
+            data.discountValue,
+            data.discountDesc,
+            data.additionalChargeType,
+            data.additionalChargeValue,
+            data.additionalChargeDesc,
           ).catch((e) => console.error("System transaction alert failed:", e));
 
           // 3. Email buyer (receipt)
