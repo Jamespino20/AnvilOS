@@ -54,10 +54,10 @@ export async function downloadReceiptPdf(data: {
   isCredit?: boolean;
   creditDueDate?: Date;
   chequeDetails?: {
-    chequeNumber: string;
-    bankName: string;
+    chequeNumber?: string;
+    bankName?: string;
     chequeDate?: Date;
-    payeeName: string;
+    payeeName?: string;
   };
   discountType?: string;
   discountValue?: number;
@@ -229,15 +229,17 @@ export async function downloadReceiptPdf(data: {
     doc.text(`Payment: ${data.paymentMethod}`, l, y);
     y += 4;
   }
-  if (data.isCredit && data.creditDueDate) {
+  if (data.isCredit) {
     doc.text(
-      `Due Date: ${new Date(data.creditDueDate).toLocaleDateString("en-PH")}`,
+      data.creditDueDate
+        ? `Due Date: ${new Date(data.creditDueDate).toLocaleDateString("en-PH")}`
+        : "Due Date: None",
       l,
       y,
     );
     y += 4;
   }
-  if (data.chequeDetails) {
+  if (data.isCredit) {
     y += 1;
     doc.setFont("courier", "bold");
     doc.setFontSize(7);
@@ -250,15 +252,15 @@ export async function downloadReceiptPdf(data: {
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
 
-    if (data.chequeDetails.chequeNumber) {
+    if (data.chequeDetails?.chequeNumber) {
       doc.text(`Cheque #: ${data.chequeDetails.chequeNumber}`, l, y);
       y += 4;
     }
-    if (data.chequeDetails.bankName) {
+    if (data.chequeDetails?.bankName) {
       doc.text(`Bank: ${data.chequeDetails.bankName}`, l, y);
       y += 4;
     }
-    if (data.chequeDetails.chequeDate) {
+    if (data.chequeDetails?.chequeDate) {
       doc.text(
         `Cheque Date: ${new Date(data.chequeDetails.chequeDate).toLocaleDateString("en-PH")}`,
         l,
@@ -266,7 +268,7 @@ export async function downloadReceiptPdf(data: {
       );
       y += 4;
     }
-    if (data.chequeDetails.payeeName) {
+    if (data.chequeDetails?.payeeName) {
       doc.text(`Payee: ${data.chequeDetails.payeeName}`, l, y);
       y += 4;
     }
