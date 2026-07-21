@@ -225,8 +225,12 @@ export async function downloadReceiptPdf(data: {
     y,
   );
   y += 4;
-  if (data.paymentMethod) {
-    doc.text(`Payment: ${data.paymentMethod}`, l, y);
+  if (data.isCredit || data.paymentMethod) {
+    doc.text(
+      `Payment: ${data.isCredit ? "Credit" : data.paymentMethod}`,
+      l,
+      y,
+    );
     y += 4;
   }
   if (data.isCredit) {
