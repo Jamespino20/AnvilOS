@@ -1023,6 +1023,10 @@ export async function toggleTransactionCredit(
   id: number,
   isCredit: boolean,
   creditDueDate?: string | null,
+  chequeNumber?: string,
+  chequeBankName?: string,
+  chequeDate?: Date,
+  chequePayeeName?: string,
 ) {
   return safeCall(async () => {
     await requireAdmin();
@@ -1049,6 +1053,10 @@ export async function toggleTransactionCredit(
             : isCredit
               ? txn.creditDueDate
               : null,
+        ...(chequeNumber !== undefined && { chequeNumber }),
+        ...(chequeBankName !== undefined && { chequeBankName }),
+        ...(chequeDate !== undefined && { chequeDate }),
+        ...(chequePayeeName !== undefined && { chequePayeeName }),
       },
     });
     // Adjust buyer creditBalance

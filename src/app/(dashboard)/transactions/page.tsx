@@ -105,6 +105,17 @@ export default function TransactionsPage() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [penaltyFee, setPenaltyFee] = useState("");
   const [submittingPayment, setSubmittingPayment] = useState(false);
+  const [creditModal, setCreditModal] = useState<{
+    transactionId: number;
+    receiptNumber: number;
+    isCurrentlyCredit: boolean;
+  } | null>(null);
+  const [creditDueDate, setCreditDueDate] = useState("");
+  const [creditChequeNumber, setCreditChequeNumber] = useState("");
+  const [creditChequeBankName, setCreditChequeBankName] = useState("");
+  const [creditChequeDate, setCreditChequeDate] = useState("");
+  const [creditChequePayeeName, setCreditChequePayeeName] = useState("");
+  const [submittingCredit, setSubmittingCredit] = useState(false);
   const perPage = 15;
 
   // Debounce search input
@@ -1039,27 +1050,25 @@ export default function TransactionsPage() {
                           </button>
                         )}
                         <button
-                          onClick={async () => {
-                            try {
-                              const newIsCredit = !(t as any).isCredit;
-                              await callAction(
-                                toggleTransactionCredit(
-                                  t.id,
-                                  newIsCredit,
-                                  newIsCredit ? null : undefined,
-                                ),
-                              );
-                              toast.success(
-                                newIsCredit
-                                  ? "Marked as credit sale"
-                                  : "Credit removed",
-                              );
-                              window.location.reload();
-                            } catch (e: any) {
-                              toast.error(
-                                e.message || "Failed to update credit",
-                              );
-                            }
+                          onClick={() => {
+                            setCreditModal({
+                              transactionId: t.id,
+                              receiptNumber: t.receiptNumber,
+                              isCurrentlyCredit: (t as any).isCredit,
+                            });
+                            setCreditDueDate(
+                              (t as any).creditDueDate
+                                ? new Date((t as any).creditDueDate).toISOString().slice(0, 10)
+                                : "",
+                            );
+                            setCreditChequeNumber((t as any).chequeNumber || "");
+                            setCreditChequeBankName((t as any).chequeBankName || "");
+                            setCreditChequeDate(
+                              (t as any).chequeDate
+                                ? new Date((t as any).chequeDate).toISOString().slice(0, 10)
+                                : "",
+                            );
+                            setCreditChequePayeeName((t as any).chequePayeeName || "");
                           }}
                           className={`px-2 py-1 text-[10px] font-bold rounded ${
                             (t as any).isCredit
@@ -1276,6 +1285,160 @@ export default function TransactionsPage() {
             </div>
           );
         })()}
+
+      {creditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e2e8f0]">
+              <h3 className="text-lg font-bold text-[#0e212c]">
+                {creditModal.isCurrentlyCredit ? "Edit Credit" : "Mark as Credit"} — Receipt #{creditModal.receiptNumber}
+              </h3>
+              <button
+                onClick={() => setCreditModal(null)}
+                className="p-1 hover:bg-[#f1f5f9] rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-[#64748b]" />
+              </button>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-[#64748b] uppercase tracking-wider">
+                  Credit Due Date
+                </label>
+                <input
+                  type="date"
+                  value={creditDueDate}
+                  onChange={(e) => setCreditDueDate(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                />
+              </div>
+              <div className="border-t border-[#e2e8f0] pt-4">
+                <p className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wider mb-3">
+                  Cheque Details (Optional)
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-[#64748b]">Cheque/Reference #</label>
+                    <input
+                      type="text"
+                      value={creditChequeNumber}
+                      onChange={(e) => setCreditChequeNumber(e.target.value)}
+                      placeholder="e.g. CHK-001"
+                      className="w-full mt-1 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#64748b]">Bank Name</label>
+                    <input
+                      type="text"
+                      value={creditChequeBankName}
+                      onChange={(e) => setCreditChequeBankName(e.target.value)}
+                      placeholder="e.g. BDO"
+                      className="w-full mt-1 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#64748b]">Cheque Date</label>
+                    <input
+                      type="date"
+                      value={creditChequeDate}
+                      onChange={(e) => setCreditChequeDate(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[#64748b]">Payee Name</label>
+                    <input
+                      type="text"
+                      value={creditChequePayeeName}
+                      onChange={(e) => setCreditChequePayeeName(e.target.value)}
+                      placeholder="e.g. CWL Hardware"
+                      className="w-full mt-1 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:border-[#fd761a]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-[#e2e8f0] bg-[#f8fafc]">
+              <button
+                onClick={() => setCreditModal(null)}
+                className="flex-1 px-4 py-2 text-sm font-semibold text-[#64748b] bg-white border border-[#e2e8f0] rounded-lg hover:bg-[#f1f5f9] transition-colors"
+              >
+                Cancel
+              </button>
+              {creditModal.isCurrentlyCredit && (
+                <button
+                  disabled={submittingCredit}
+                  onClick={async () => {
+                    setSubmittingCredit(true);
+                    try {
+                      await callAction(
+                        toggleTransactionCredit(
+                          creditModal.transactionId,
+                          false,
+                          null,
+                          undefined,
+                          undefined,
+                          undefined,
+                          undefined,
+                        ),
+                      );
+                      toast.success("Credit removed");
+                      setCreditModal(null);
+                      window.location.reload();
+                    } catch (e: any) {
+                      toast.error(e.message || "Failed to remove credit");
+                    } finally {
+                      setSubmittingCredit(false);
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-rose-600 rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-colors"
+                >
+                  {submittingCredit ? "Processing..." : "Remove Credit"}
+                </button>
+              )}
+              <button
+                disabled={submittingCredit}
+                onClick={async () => {
+                  setSubmittingCredit(true);
+                  try {
+                    const newIsCredit = !creditModal.isCurrentlyCredit;
+                    await callAction(
+                      toggleTransactionCredit(
+                        creditModal.transactionId,
+                        true,
+                        creditDueDate || null,
+                        creditChequeNumber || undefined,
+                        creditChequeBankName || undefined,
+                        creditChequeDate ? new Date(creditChequeDate) : undefined,
+                        creditChequePayeeName || undefined,
+                      ),
+                    );
+                    toast.success(
+                      creditModal.isCurrentlyCredit
+                        ? "Credit updated"
+                        : "Marked as credit sale",
+                    );
+                    setCreditModal(null);
+                    window.location.reload();
+                  } catch (e: any) {
+                    toast.error(e.message || "Failed to update credit");
+                  } finally {
+                    setSubmittingCredit(false);
+                  }
+                }}
+                className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                {submittingCredit
+                  ? "Processing..."
+                  : creditModal.isCurrentlyCredit
+                    ? "Update Credit"
+                    : "Save Credit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {paymentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
