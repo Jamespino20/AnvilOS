@@ -382,7 +382,7 @@ export default function TransactionsPage() {
                     return new Date(t.transactionDate).toLocaleString(
                       "en-PH",
                     );
-                  if (key === "paymentMethod") return t.paymentMethod || "—";
+                  if (key === "paymentMethod") return t.isCredit ? "Credit" : t.paymentMethod || "—";
                   if (key === "grandTotal")
                     return `${Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   if (key === "transactionStatus") return t.transactionStatus;
@@ -564,7 +564,7 @@ export default function TransactionsPage() {
                       </td>
                       <td className="p-4 text-[#64748b]">
                         <div className="flex items-center gap-2">
-                          <span>{t.paymentMethod || "\u2014"}</span>
+                          <span>{t.isCredit ? "Credit" : t.paymentMethod || "\u2014"}</span>
                           {(t as any).isCredit && (
                             <div className="flex flex-col gap-1">
                               <span
@@ -953,7 +953,7 @@ export default function TransactionsPage() {
                         Payment
                       </span>
                       <p className="text-[#0e212c] font-medium">
-                        {t.paymentMethod || "\u2014"}
+                        {(t as any).isCredit ? "Credit" : t.paymentMethod || "\u2014"}
                       </p>
                     </div>
                     {(t as any).salesInvoiceNumber && (
@@ -1077,96 +1077,97 @@ export default function TransactionsPage() {
                         </button>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                      <div>
-                        <span className="text-[10px] text-[#94a3b8]">Due Date</span>
-                        <p className="text-[#0e212c] font-medium">
-                          {(t as any).creditDueDate
-                            ? new Date((t as any).creditDueDate).toLocaleDateString("en-PH")
-                            : <span className="text-[#94a3b8]">None</span>}
-                        </p>
+                    {(t as any).isCredit && (
+                      <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                        <div>
+                          <span className="text-[10px] text-[#94a3b8]">Due Date</span>
+                          <p className="text-[#0e212c] font-medium">
+                            {(t as any).creditDueDate
+                              ? new Date((t as any).creditDueDate).toLocaleDateString("en-PH")
+                              : <span className="text-[#94a3b8]">None</span>}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#94a3b8]">Amount Paid</span>
+                          <p className="text-[#0e212c] font-medium">
+                            {(t as any).creditAmountPaid
+                              ? Number((t as any).creditAmountPaid).toLocaleString("en-PH", { minimumFractionDigits: 2 })
+                              : <span className="text-[#94a3b8]">None</span>}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#94a3b8]">Penalty Fee</span>
+                          <p className="text-[#0e212c] font-medium">
+                            {(t as any).creditPenaltyFee
+                              ? Number((t as any).creditPenaltyFee).toLocaleString("en-PH", { minimumFractionDigits: 2 })
+                              : <span className="text-[#94a3b8]">None</span>}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#94a3b8]">Last Payment Date</span>
+                          <p className="text-[#0e212c] font-medium">
+                            {(t as any).creditLastPaymentDate
+                              ? new Date((t as any).creditLastPaymentDate).toLocaleString("en-PH")
+                              : <span className="text-[#94a3b8]">None</span>}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#94a3b8]">Paid At</span>
+                          <p className="text-[#0e212c] font-medium">
+                            {(t as any).creditPaidAt
+                              ? new Date((t as any).creditPaidAt).toLocaleString("en-PH")
+                              : <span className="text-[#94a3b8]">Unpaid</span>}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#94a3b8]">Amount Owed</span>
+                          <p className={`font-medium ${
+                            !(t as any).creditPaidAt
+                              ? "text-rose-600"
+                              : "text-[#0e212c]"
+                          }`}>
+                            {(Number((t as any).grandTotal || 0) - Number((t as any).creditAmountPaid || 0)).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-[10px] text-[#94a3b8]">Amount Paid</span>
-                        <p className="text-[#0e212c] font-medium">
-                          {(t as any).creditAmountPaid
-                            ? Number((t as any).creditAmountPaid).toLocaleString("en-PH", { minimumFractionDigits: 2 })
-                            : <span className="text-[#94a3b8]">None</span>}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#94a3b8]">Penalty Fee</span>
-                        <p className="text-[#0e212c] font-medium">
-                          {(t as any).creditPenaltyFee
-                            ? Number((t as any).creditPenaltyFee).toLocaleString("en-PH", { minimumFractionDigits: 2 })
-                            : <span className="text-[#94a3b8]">None</span>}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#94a3b8]">Last Payment Date</span>
-                        <p className="text-[#0e212c] font-medium">
-                          {(t as any).creditLastPaymentDate
-                            ? new Date((t as any).creditLastPaymentDate).toLocaleString("en-PH")
-                            : <span className="text-[#94a3b8]">None</span>}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#94a3b8]">Paid At</span>
-                        <p className="text-[#0e212c] font-medium">
-                          {(t as any).creditPaidAt
-                            ? new Date((t as any).creditPaidAt).toLocaleString("en-PH")
-                            : <span className="text-[#94a3b8]">Unpaid</span>}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#94a3b8]">Amount Owed</span>
-                        <p className={`font-medium ${
-                          (t as any).isCredit && !(t as any).creditPaidAt
-                            ? "text-rose-600"
-                            : "text-[#0e212c]"
-                        }`}>
-                          {(t as any).isCredit
-                            ? (Number((t as any).grandTotal || 0) - Number((t as any).creditAmountPaid || 0)).toLocaleString("en-PH", { minimumFractionDigits: 2 })
-                            : <span className="text-[#94a3b8]">N/A</span>}
-                        </p>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
-                  {/* Cheque Details */}
-                  <div className="border border-[#e2e8f0] rounded-lg p-4 space-y-2 bg-[#f8fafc]">
-                    <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
-                      Cheque Details
-                    </p>
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                      <div>
-                        <span className="text-[10px] text-[#94a3b8]">Cheque/Ref #</span>
-                        <p className="text-[#0e212c] font-medium">
-                          {(t as any).chequeNumber || <span className="text-[#94a3b8]">None</span>}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#94a3b8]">Bank Name</span>
-                        <p className="text-[#0e212c] font-medium">
-                          {(t as any).chequeBankName || <span className="text-[#94a3b8]">None</span>}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#94a3b8]">Cheque Date</span>
-                        <p className="text-[#0e212c] font-medium">
-                          {(t as any).chequeDate
-                            ? new Date((t as any).chequeDate).toLocaleDateString("en-PH")
-                            : <span className="text-[#94a3b8]">None</span>}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#94a3b8]">Payee Name</span>
-                        <p className="text-[#0e212c] font-medium">
-                          {(t as any).chequePayeeName || <span className="text-[#94a3b8]">None</span>}
-                        </p>
+                  {(t as any).isCredit && (
+                    <div className="border border-[#e2e8f0] rounded-lg p-4 space-y-2 bg-[#f8fafc]">
+                      <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider">
+                        Cheque Details
+                      </p>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                        <div>
+                          <span className="text-[10px] text-[#94a3b8]">Cheque/Ref #</span>
+                          <p className="text-[#0e212c] font-medium">
+                            {(t as any).chequeNumber || <span className="text-[#94a3b8]">None</span>}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#94a3b8]">Bank Name</span>
+                          <p className="text-[#0e212c] font-medium">
+                            {(t as any).chequeBankName || <span className="text-[#94a3b8]">None</span>}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#94a3b8]">Cheque Date</span>
+                          <p className="text-[#0e212c] font-medium">
+                            {(t as any).chequeDate
+                              ? new Date((t as any).chequeDate).toLocaleDateString("en-PH")
+                              : <span className="text-[#94a3b8]">None</span>}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#94a3b8]">Payee Name</span>
+                          <p className="text-[#0e212c] font-medium">
+                            {(t as any).chequePayeeName || <span className="text-[#94a3b8]">None</span>}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Items Table */}
                   <div>

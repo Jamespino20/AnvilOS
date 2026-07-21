@@ -1045,6 +1045,7 @@ export async function toggleTransactionCredit(
       where: { id },
       data: {
         isCredit,
+        paymentMethod: isCredit ? "Credit" : "Cash",
         creditDueDate:
           creditDueDate !== undefined
             ? creditDueDate
