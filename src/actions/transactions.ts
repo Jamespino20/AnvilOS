@@ -22,6 +22,7 @@ import {
   DB_TIMEOUT,
   safeCall,
 } from "./_shared";
+import { phMidnight, phEndOfDay } from "@/lib/format";
 
 // ─────────── Transactions ───────────
 
@@ -40,11 +41,11 @@ function buildTransactionWhere(opts?: {
   if (opts?.type) where.transactionType = opts.type;
   if (opts?.paymentMethod) where.paymentMethod = opts.paymentMethod;
   if (opts?.startDate)
-    where.transactionDate = { gte: new Date(opts.startDate) };
+    where.transactionDate = { gte: phMidnight(opts.startDate) };
   if (opts?.endDate) {
     where.transactionDate = {
       ...where.transactionDate,
-      lte: new Date(opts.endDate + "T23:59:59"),
+      lte: phEndOfDay(opts.endDate),
     };
   }
   if (opts?.search) {
@@ -87,11 +88,11 @@ function buildTransactionSqlWhere(opts?: {
     clauses.push(Prisma.sql`PAYMENT_METHOD = ${opts.paymentMethod}`);
   }
   if (opts?.startDate) {
-    clauses.push(Prisma.sql`TRANSACTION_DATE >= ${new Date(opts.startDate)}`);
+    clauses.push(Prisma.sql`TRANSACTION_DATE >= ${phMidnight(opts.startDate)}`);
   }
   if (opts?.endDate) {
     clauses.push(
-      Prisma.sql`TRANSACTION_DATE <= ${new Date(opts.endDate + "T23:59:59")}`,
+      Prisma.sql`TRANSACTION_DATE <= ${phEndOfDay(opts.endDate)}`,
     );
   }
   if (opts?.search) {

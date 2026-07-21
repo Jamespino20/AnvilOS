@@ -9,6 +9,7 @@ Last Update Date: July 16, 2026
 "use server";
 
 import { prisma, auth } from "./_shared";
+import { phMidnight, phEndOfDay } from "@/lib/format";
 
 // ─────────── Financial Dashboard ───────────
 
@@ -21,10 +22,10 @@ export async function getFinancialDashboard(period?: {
 
   const now = new Date();
   const start = period?.start
-    ? new Date(period.start)
+    ? phMidnight(period.start)
     : new Date(now.getFullYear(), now.getMonth(), 1);
   const end = period?.end
-    ? new Date(period.end + "T23:59:59")
+    ? phEndOfDay(period.end)
     : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   const periodDays =
     Math.round((end.getTime() - start.getTime()) / 86400000) || 1;

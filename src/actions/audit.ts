@@ -9,6 +9,7 @@ Last Update Date: July 16, 2026
 "use server";
 
 import { prisma } from "./_shared";
+import { phMidnight, phEndOfDay } from "@/lib/format";
 
 // ─────────── Audit Logs ───────────
 
@@ -19,9 +20,9 @@ export async function getAuditLogs(opts?: {
   panel?: string;
 }) {
   const where: any = {};
-  if (opts?.startDate) where.logTime = { gte: new Date(opts.startDate) };
+  if (opts?.startDate) where.logTime = { gte: phMidnight(opts.startDate) };
   if (opts?.endDate) {
-    where.logTime = { ...where.logTime, lte: new Date(opts.endDate) };
+    where.logTime = { ...where.logTime, lte: phEndOfDay(opts.endDate) };
   }
   if (opts?.panel) where.panel = opts.panel;
   if (opts?.search) {
@@ -49,9 +50,9 @@ export async function getAuditLogCount(opts?: {
   panel?: string;
 }) {
   const where: any = {};
-  if (opts?.startDate) where.logTime = { gte: new Date(opts.startDate) };
+  if (opts?.startDate) where.logTime = { gte: phMidnight(opts.startDate) };
   if (opts?.endDate)
-    where.logTime = { ...where.logTime, lte: new Date(opts.endDate) };
+    where.logTime = { ...where.logTime, lte: phEndOfDay(opts.endDate) };
   if (opts?.panel) where.panel = opts.panel;
   if (opts?.search)
     where.OR = [
@@ -74,11 +75,11 @@ export async function getPaginatedAuditLogs(
   },
 ) {
   const where: any = {};
-  if (opts?.startDate) where.logTime = { gte: new Date(opts.startDate) };
+  if (opts?.startDate) where.logTime = { gte: phMidnight(opts.startDate) };
   if (opts?.endDate)
     where.logTime = {
       ...where.logTime,
-      lte: new Date(opts.endDate + "T23:59:59"),
+      lte: phEndOfDay(opts.endDate),
     };
   if (opts?.panel) where.panel = opts.panel;
   if (opts?.sellerId) where.sellerId = opts.sellerId;

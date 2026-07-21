@@ -90,7 +90,7 @@ export default function TransactionsPage() {
     field: "salesInvoiceNumber" | "deliveryReceiptNumber";
     value: string;
   } | null>(null);
-  const [dateScope, setDateScope] = useState("today");
+  const [dateScope, setDateScope] = useState("all");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
