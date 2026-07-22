@@ -12,13 +12,13 @@ import {
   prisma,
   revalidatePath,
   logAudit,
-  requireAdmin,
+  requireUser,
   safeCall,
 } from "./_shared";
 
 export async function processRestock(transactionId: number) {
   return safeCall(async () => {
-  await requireAdmin();
+  await requireUser();
   const txn = await prisma.transaction.findUniqueOrThrow({
     where: { id: transactionId },
     include: { items: true },
