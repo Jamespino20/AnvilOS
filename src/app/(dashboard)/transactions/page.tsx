@@ -87,7 +87,7 @@ export default function TransactionsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("SaleWalkIn");
   const [paymentFilter, setPaymentFilter] = useState("");
   const [sortBy, setSortBy] = useState<string>("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
