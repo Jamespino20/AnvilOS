@@ -8,6 +8,7 @@ Last Update Date: July 23, 2026
 
 "use client";
 import { useState, useEffect, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import {
   getTransactions,
   getTransactionsCount,
@@ -77,6 +78,8 @@ function getDateScopeStart(scope: string): string | undefined {
 }
 
 export default function RestocksPage() {
+  const { data: session } = useSession();
+  const isAdmin = ["SUPERADMIN", "ADMIN"].includes((session?.user as any)?.role);
   const [restocks, setRestocks] = useState<TxnWithItems[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -432,6 +435,7 @@ export default function RestocksPage() {
                       <ChevronDown className="h-4 w-4" />
                     )}
                   </button>
+                  {isAdmin && (
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
@@ -454,6 +458,7 @@ export default function RestocksPage() {
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
+                  )}
                 </div>
               </div>
             </div>

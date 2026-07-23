@@ -9,6 +9,7 @@ Last Update Date: July 23, 2026
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import {
   getTransactions,
   getTransactionsCount,
@@ -77,6 +78,8 @@ function statusBadge(status: string) {
 }
 
 export default function TransactionsPage() {
+  const { data: session } = useSession();
+  const isAdmin = ["SUPERADMIN", "ADMIN"].includes((session?.user as any)?.role);
   const [transactions, setTransactions] = useState<TxnWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
@@ -777,6 +780,25 @@ export default function TransactionsPage() {
                           >
                             <Receipt className="h-3.5 w-3.5" />
                           </button>
+                          {isAdmin && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (!confirm("Delete this transaction? This will revert stock quantities.")) return;
+                              try {
+                                await callAction(deleteTransaction(t.id));
+                                toast.success("Transaction deleted");
+                                window.location.reload();
+                              } catch (err: any) {
+                                toast.error(err.message || "Failed to delete");
+                              }
+                            }}
+                            className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded-md transition-all"
+                            title="Delete transaction (admin only)"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
