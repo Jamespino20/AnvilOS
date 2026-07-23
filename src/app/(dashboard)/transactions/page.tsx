@@ -3,7 +3,7 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: July 16, 2026
+Last Update Date: July 23, 2026
 */
 
 "use client";
@@ -17,6 +17,7 @@ import {
   markCreditAsPaid,
   recordCreditPayment,
   toggleTransactionCredit,
+  deleteTransaction,
   getProducts,
 } from "@/actions";
 import { callAction } from "@/lib/client-action";
@@ -33,6 +34,7 @@ import {
   Package,
   Truck,
   X,
+  Trash2,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { getDateScopeStart, getDateScopeEnd, DATE_SCOPES } from "@/lib/format";
@@ -379,10 +381,9 @@ export default function TransactionsPage() {
                   if (key === "transactionType")
                     return t.transactionType.replace(/([A-Z])/g, " $1").trim();
                   if (key === "transactionDate")
-                    return new Date(t.transactionDate).toLocaleString(
-                      "en-PH",
-                    );
-                  if (key === "paymentMethod") return t.isCredit ? "Credit" : t.paymentMethod || "—";
+                    return new Date(t.transactionDate).toLocaleString("en-PH");
+                  if (key === "paymentMethod")
+                    return t.isCredit ? "Credit" : t.paymentMethod || "—";
                   if (key === "grandTotal")
                     return `${Number(t.grandTotal || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   if (key === "transactionStatus") return t.transactionStatus;
@@ -551,20 +552,21 @@ export default function TransactionsPage() {
                         {t.transactionType.replace(/([A-Z])/g, " $1").trim()}
                       </td>
                       <td className="p-4 text-[#64748b]">
-                        {new Date(t.transactionDate).toLocaleString(
-                          "en-PH",
-                          {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          },
-                        )}
+                        {new Date(t.transactionDate).toLocaleString("en-PH", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </td>
                       <td className="p-4 text-[#64748b]">
                         <div className="flex items-center gap-2">
-                          <span>{t.isCredit ? "Credit" : t.paymentMethod || "\u2014"}</span>
+                          <span>
+                            {t.isCredit
+                              ? "Credit"
+                              : t.paymentMethod || "\u2014"}
+                          </span>
                           {(t as any).isCredit && (
                             <div className="flex flex-col gap-1">
                               <span
@@ -599,9 +601,12 @@ export default function TransactionsPage() {
                                     minimumFractionDigits: 2,
                                   })}
                                   {" / "}
-                                  {Number(t.grandTotal).toLocaleString("en-PH", {
-                                    minimumFractionDigits: 2,
-                                  })}
+                                  {Number(t.grandTotal).toLocaleString(
+                                    "en-PH",
+                                    {
+                                      minimumFractionDigits: 2,
+                                    },
+                                  )}
                                 </span>
                               )}
                             </div>
@@ -747,13 +752,11 @@ export default function TransactionsPage() {
                                   chequeNumber:
                                     (t as any).chequeNumber || undefined,
                                   bankName:
-                                    (t as any).chequeBankName ||
-                                    undefined,
+                                    (t as any).chequeBankName || undefined,
                                   chequeDate:
                                     (t as any).chequeDate || undefined,
                                   payeeName:
-                                    (t as any).chequePayeeName ||
-                                    undefined,
+                                    (t as any).chequePayeeName || undefined,
                                 },
                                 discountType:
                                   (t as any).discountType || undefined,
@@ -953,7 +956,9 @@ export default function TransactionsPage() {
                         Payment
                       </span>
                       <p className="text-[#0e212c] font-medium">
-                        {(t as any).isCredit ? "Credit" : t.paymentMethod || "\u2014"}
+                        {(t as any).isCredit
+                          ? "Credit"
+                          : t.paymentMethod || "\u2014"}
                       </p>
                     </div>
                     {(t as any).salesInvoiceNumber && (
@@ -1053,17 +1058,27 @@ export default function TransactionsPage() {
                             });
                             setCreditDueDate(
                               (t as any).creditDueDate
-                                ? new Date((t as any).creditDueDate).toISOString().slice(0, 10)
+                                ? new Date((t as any).creditDueDate)
+                                    .toISOString()
+                                    .slice(0, 10)
                                 : "",
                             );
-                            setCreditChequeNumber((t as any).chequeNumber || "");
-                            setCreditChequeBankName((t as any).chequeBankName || "");
+                            setCreditChequeNumber(
+                              (t as any).chequeNumber || "",
+                            );
+                            setCreditChequeBankName(
+                              (t as any).chequeBankName || "",
+                            );
                             setCreditChequeDate(
                               (t as any).chequeDate
-                                ? new Date((t as any).chequeDate).toISOString().slice(0, 10)
+                                ? new Date((t as any).chequeDate)
+                                    .toISOString()
+                                    .slice(0, 10)
                                 : "",
                             );
-                            setCreditChequePayeeName((t as any).chequePayeeName || "");
+                            setCreditChequePayeeName(
+                              (t as any).chequePayeeName || "",
+                            );
                           }}
                           className={`px-2 py-1 text-[10px] font-bold rounded ${
                             (t as any).isCredit
@@ -1080,53 +1095,96 @@ export default function TransactionsPage() {
                     {(t as any).isCredit && (
                       <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                         <div>
-                          <span className="text-[10px] text-[#94a3b8]">Due Date</span>
+                          <span className="text-[10px] text-[#94a3b8]">
+                            Due Date
+                          </span>
                           <p className="text-[#0e212c] font-medium">
-                            {(t as any).creditDueDate
-                              ? new Date((t as any).creditDueDate).toLocaleDateString("en-PH")
-                              : <span className="text-[#94a3b8]">None</span>}
+                            {(t as any).creditDueDate ? (
+                              new Date(
+                                (t as any).creditDueDate,
+                              ).toLocaleDateString("en-PH")
+                            ) : (
+                              <span className="text-[#94a3b8]">None</span>
+                            )}
                           </p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-[#94a3b8]">Amount Paid</span>
+                          <span className="text-[10px] text-[#94a3b8]">
+                            Amount Paid
+                          </span>
                           <p className="text-[#0e212c] font-medium">
-                            {(t as any).creditAmountPaid
-                              ? Number((t as any).creditAmountPaid).toLocaleString("en-PH", { minimumFractionDigits: 2 })
-                              : <span className="text-[#94a3b8]">None</span>}
+                            {(t as any).creditAmountPaid ? (
+                              Number(
+                                (t as any).creditAmountPaid,
+                              ).toLocaleString("en-PH", {
+                                minimumFractionDigits: 2,
+                              })
+                            ) : (
+                              <span className="text-[#94a3b8]">None</span>
+                            )}
                           </p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-[#94a3b8]">Penalty Fee</span>
+                          <span className="text-[10px] text-[#94a3b8]">
+                            Penalty Fee
+                          </span>
                           <p className="text-[#0e212c] font-medium">
-                            {(t as any).creditPenaltyFee
-                              ? Number((t as any).creditPenaltyFee).toLocaleString("en-PH", { minimumFractionDigits: 2 })
-                              : <span className="text-[#94a3b8]">None</span>}
+                            {(t as any).creditPenaltyFee ? (
+                              Number(
+                                (t as any).creditPenaltyFee,
+                              ).toLocaleString("en-PH", {
+                                minimumFractionDigits: 2,
+                              })
+                            ) : (
+                              <span className="text-[#94a3b8]">None</span>
+                            )}
                           </p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-[#94a3b8]">Last Payment Date</span>
+                          <span className="text-[10px] text-[#94a3b8]">
+                            Last Payment Date
+                          </span>
                           <p className="text-[#0e212c] font-medium">
-                            {(t as any).creditLastPaymentDate
-                              ? new Date((t as any).creditLastPaymentDate).toLocaleString("en-PH")
-                              : <span className="text-[#94a3b8]">None</span>}
+                            {(t as any).creditLastPaymentDate ? (
+                              new Date(
+                                (t as any).creditLastPaymentDate,
+                              ).toLocaleString("en-PH")
+                            ) : (
+                              <span className="text-[#94a3b8]">None</span>
+                            )}
                           </p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-[#94a3b8]">Paid At</span>
+                          <span className="text-[10px] text-[#94a3b8]">
+                            Paid At
+                          </span>
                           <p className="text-[#0e212c] font-medium">
-                            {(t as any).creditPaidAt
-                              ? new Date((t as any).creditPaidAt).toLocaleString("en-PH")
-                              : <span className="text-[#94a3b8]">Unpaid</span>}
+                            {(t as any).creditPaidAt ? (
+                              new Date((t as any).creditPaidAt).toLocaleString(
+                                "en-PH",
+                              )
+                            ) : (
+                              <span className="text-[#94a3b8]">Unpaid</span>
+                            )}
                           </p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-[#94a3b8]">Amount Owed</span>
-                          <p className={`font-medium ${
-                            !(t as any).creditPaidAt
-                              ? "text-rose-600"
-                              : "text-[#0e212c]"
-                          }`}>
-                            {(Number((t as any).grandTotal || 0) - Number((t as any).creditAmountPaid || 0)).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                          <span className="text-[10px] text-[#94a3b8]">
+                            Amount Owed
+                          </span>
+                          <p
+                            className={`font-medium ${
+                              !(t as any).creditPaidAt
+                                ? "text-rose-600"
+                                : "text-[#0e212c]"
+                            }`}
+                          >
+                            {(
+                              Number((t as any).grandTotal || 0) -
+                              Number((t as any).creditAmountPaid || 0)
+                            ).toLocaleString("en-PH", {
+                              minimumFractionDigits: 2,
+                            })}
                           </p>
                         </div>
                       </div>
@@ -1140,29 +1198,47 @@ export default function TransactionsPage() {
                       </p>
                       <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                         <div>
-                          <span className="text-[10px] text-[#94a3b8]">Cheque/Ref #</span>
+                          <span className="text-[10px] text-[#94a3b8]">
+                            Cheque/Ref #
+                          </span>
                           <p className="text-[#0e212c] font-medium">
-                            {(t as any).chequeNumber || <span className="text-[#94a3b8]">None</span>}
+                            {(t as any).chequeNumber || (
+                              <span className="text-[#94a3b8]">None</span>
+                            )}
                           </p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-[#94a3b8]">Bank Name</span>
+                          <span className="text-[10px] text-[#94a3b8]">
+                            Bank Name
+                          </span>
                           <p className="text-[#0e212c] font-medium">
-                            {(t as any).chequeBankName || <span className="text-[#94a3b8]">None</span>}
+                            {(t as any).chequeBankName || (
+                              <span className="text-[#94a3b8]">None</span>
+                            )}
                           </p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-[#94a3b8]">Cheque Date</span>
+                          <span className="text-[10px] text-[#94a3b8]">
+                            Cheque Date
+                          </span>
                           <p className="text-[#0e212c] font-medium">
-                            {(t as any).chequeDate
-                              ? new Date((t as any).chequeDate).toLocaleDateString("en-PH")
-                              : <span className="text-[#94a3b8]">None</span>}
+                            {(t as any).chequeDate ? (
+                              new Date(
+                                (t as any).chequeDate,
+                              ).toLocaleDateString("en-PH")
+                            ) : (
+                              <span className="text-[#94a3b8]">None</span>
+                            )}
                           </p>
                         </div>
                         <div>
-                          <span className="text-[10px] text-[#94a3b8]">Payee Name</span>
+                          <span className="text-[10px] text-[#94a3b8]">
+                            Payee Name
+                          </span>
                           <p className="text-[#0e212c] font-medium">
-                            {(t as any).chequePayeeName || <span className="text-[#94a3b8]">None</span>}
+                            {(t as any).chequePayeeName || (
+                              <span className="text-[#94a3b8]">None</span>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -1221,16 +1297,17 @@ export default function TransactionsPage() {
                     </table>
                     <div className="flex justify-end mt-3 pt-3 border-t border-[#e2e8f0]">
                       <div className="text-right space-y-1">
-                        {(((t as any).discountType && (t as any).discountValue > 0) ||
-                          ((t as any).additionalChargeType && (t as any).additionalChargeValue > 0)) && (
+                        {(((t as any).discountType &&
+                          (t as any).discountValue > 0) ||
+                          ((t as any).additionalChargeType &&
+                            (t as any).additionalChargeValue > 0)) && (
                           <>
                             <div className="flex justify-end gap-4 text-xs text-[#64748b]">
                               <span>Subtotal</span>
                               <span className="font-mono">
                                 {(() => {
                                   const subtotal = t.items.reduce(
-                                    (sum, i) =>
-                                      sum + Number(i.totalPrice || 0),
+                                    (sum, i) => sum + Number(i.totalPrice || 0),
                                     0,
                                   );
                                   return subtotal.toLocaleString("en-PH", {
@@ -1244,8 +1321,10 @@ export default function TransactionsPage() {
                               (t as any).additionalChargeValue > 0 && (
                                 <div className="flex justify-end gap-4 text-xs text-amber-600">
                                   <span>
-                                    {(t as any).additionalChargeDesc || "Additional Charge"}
-                                    {(t as any).additionalChargeType === "percent"
+                                    {(t as any).additionalChargeDesc ||
+                                      "Additional Charge"}
+                                    {(t as any).additionalChargeType ===
+                                    "percent"
                                       ? ` (${(t as any).additionalChargeValue}%)`
                                       : ""}
                                   </span>
@@ -1253,12 +1332,16 @@ export default function TransactionsPage() {
                                     +
                                     {(() => {
                                       const subtotal = t.items.reduce(
-                                        (sum, i) => sum + Number(i.totalPrice || 0),
+                                        (sum, i) =>
+                                          sum + Number(i.totalPrice || 0),
                                         0,
                                       );
                                       const charge =
-                                        (t as any).additionalChargeType === "percent"
-                                          ? subtotal * ((t as any).additionalChargeValue / 100)
+                                        (t as any).additionalChargeType ===
+                                        "percent"
+                                          ? subtotal *
+                                            ((t as any).additionalChargeValue /
+                                              100)
                                           : (t as any).additionalChargeValue;
                                       return charge.toLocaleString("en-PH", {
                                         minimumFractionDigits: 2,
@@ -1325,7 +1408,10 @@ export default function TransactionsPage() {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e2e8f0]">
               <h3 className="text-lg font-bold text-[#0e212c]">
-                {creditModal.isCurrentlyCredit ? "Edit Credit" : "Mark as Credit"} — Receipt #{creditModal.receiptNumber}
+                {creditModal.isCurrentlyCredit
+                  ? "Edit Credit"
+                  : "Mark as Credit"}{" "}
+                — Receipt #{creditModal.receiptNumber}
               </h3>
               <button
                 onClick={() => setCreditModal(null)}
@@ -1352,7 +1438,9 @@ export default function TransactionsPage() {
                 </p>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs text-[#64748b]">Cheque/Reference #</label>
+                    <label className="text-xs text-[#64748b]">
+                      Cheque/Reference #
+                    </label>
                     <input
                       type="text"
                       value={creditChequeNumber}
@@ -1372,7 +1460,9 @@ export default function TransactionsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-[#64748b]">Cheque Date</label>
+                    <label className="text-xs text-[#64748b]">
+                      Cheque Date
+                    </label>
                     <input
                       type="date"
                       value={creditChequeDate}
@@ -1444,7 +1534,9 @@ export default function TransactionsPage() {
                         creditDueDate || null,
                         creditChequeNumber || undefined,
                         creditChequeBankName || undefined,
-                        creditChequeDate ? new Date(creditChequeDate) : undefined,
+                        creditChequeDate
+                          ? new Date(creditChequeDate)
+                          : undefined,
                         creditChequePayeeName || undefined,
                       ),
                     );
@@ -1529,9 +1621,9 @@ export default function TransactionsPage() {
                   <div className="bg-rose-50 border border-rose-200 rounded-lg px-4 py-3">
                     <span className="text-rose-800 text-xs font-semibold">
                       OVERDUE — Due{" "}
-                      {new Date(
-                        paymentModal.creditDueDate,
-                      ).toLocaleDateString("en-PH")}
+                      {new Date(paymentModal.creditDueDate).toLocaleDateString(
+                        "en-PH",
+                      )}
                     </span>
                   </div>
                 )}

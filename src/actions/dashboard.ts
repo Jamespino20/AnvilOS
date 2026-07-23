@@ -3,42 +3,48 @@ App Name: CWL Hardware
 App Client: CWL Hardware
 Author: James Bryant D. Espino
 URL: https://github.com/Jamespino20
-Last Update Date: July 16, 2026
+Last Update Date: July 23, 2026
 */
 
 "use server";
 
 import { prisma } from "./_shared";
+import { phMidnight, phEndOfDay } from "@/lib/format";
 
 export async function getDashboardKpis() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const now = new Date();
+  const phDateStr = now.toLocaleDateString("en-CA"); // YYYY-MM-DD in local tz
+  const today = phMidnight(phDateStr);
+  const tomorrow = phEndOfDay(phDateStr);
 
-  const [dailySales, lowStockCount, totalProducts, totalTransactions, products] =
-    await Promise.all([
-      prisma.transaction.aggregate({
-        where: {
-          transactionDate: { gte: today, lt: tomorrow },
-          transactionStatus: "Completed",
-          transactionType: { in: ["SaleWalkIn", "SalePO"] },
-        },
-        _sum: { grandTotal: true },
-        _count: true,
-      }),
-      prisma.product.count({
-        where: {
-          quantity: { lte: prisma.product.fields.minThreshold },
-          isAvailable: true,
-        },
-      }),
-      prisma.product.count({ where: { isAvailable: true } }),
-      prisma.transaction.count(),
-      prisma.product.findMany({
-        select: { unitPrice: true, quantity: true },
-      }),
-    ]);
+  const [
+    dailySales,
+    lowStockCount,
+    totalProducts,
+    totalTransactions,
+    products,
+  ] = await Promise.all([
+    prisma.transaction.aggregate({
+      where: {
+        transactionDate: { gte: today, lt: tomorrow },
+        transactionStatus: "Completed",
+        transactionType: { in: ["SaleWalkIn", "SalePO"] },
+      },
+      _sum: { grandTotal: true },
+      _count: true,
+    }),
+    prisma.product.count({
+      where: {
+        quantity: { lte: prisma.product.fields.minThreshold },
+        isAvailable: true,
+      },
+    }),
+    prisma.product.count({ where: { isAvailable: true } }),
+    prisma.transaction.count(),
+    prisma.product.findMany({
+      select: { unitPrice: true, quantity: true },
+    }),
+  ]);
 
   const totalInventoryValue = products.reduce(
     (sum, p) => sum + Number(p.unitPrice || 0) * Number(p.quantity || 0),

@@ -1092,6 +1092,57 @@ export async function toggleTransactionCredit(
   });
 }
 
+export async function deleteTransaction(id: number) {
+  return safeCall(async () => {
+    await requireAdmin();
+    const txn = await prisma.transaction.findUniqueOrThrow({
+      where: { id },
+      include: { items: true },
+    });
+
+    // Revert stock quantities for completed transactions
+    if (txn.transactionStatus === "Completed") {
+      for (const item of txn.items) {
+        if (!item.productId) continue;
+        const product = await prisma.product.findUniqueOrThrow({
+          where: { id: item.productId },
+        });
+        if (txn.transactionType === "Restock") {
+          // Restock added stock — remove it
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { quantity: { decrement: item.quantity ?? 0 } },
+          });
+        } else if (["SaleWalkIn", "SalePO"].includes(txn.transactionType)) {
+          // Sale removed stock — add it back
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { quantity: { increment: item.quantity ?? 0 } },
+          });
+        } else if (txn.transactionType === "Return") {
+          // Return added stock back — remove it
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { quantity: { decrement: item.quantity ?? 0 } },
+          });
+        }
+      }
+    }
+    // Delete transaction items first, then the transaction
+    await prisma.transactionItem.deleteMany({ where: { transactionId: id } });
+    await prisma.transaction.delete({ where: { id } });
+    await logAudit(
+      "Transactions",
+      "Delete Transaction",
+      `#${txn.receiptNumber} (${txn.transactionType}) deleted with stock reversion`,
+    );
+    revalidatePath("/transactions");
+    revalidatePath("/restocks");
+    revalidatePath("/inventory");
+    revalidatePath("/dashboard");
+  });
+}
+
 export async function getDailySales(date?: string) {
   const start = date ? new Date(date) : new Date();
   start.setHours(0, 0, 0, 0);
