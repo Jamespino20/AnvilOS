@@ -42,6 +42,7 @@ import { getDateScopeStart, getDateScopeEnd, DATE_SCOPES } from "@/lib/format";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
 import { downloadReceiptPdf } from "@/lib/receipt";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 import { toast } from "sonner";
@@ -97,6 +98,7 @@ export default function TransactionsPage() {
   } | null>(null);
   const [dateScope, setDateScope] = useState("all");
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [initialLoad, setInitialLoad] = useState(true);
@@ -782,16 +784,9 @@ export default function TransactionsPage() {
                           </button>
                           {isAdmin && (
                           <button
-                            onClick={async (e) => {
+                            onClick={(e) => {
                               e.stopPropagation();
-                              if (!confirm("Delete this transaction? This will revert stock quantities.")) return;
-                              try {
-                                await callAction(deleteTransaction(t.id));
-                                toast.success("Transaction deleted");
-                                window.location.reload();
-                              } catch (err: any) {
-                                toast.error(err.message || "Failed to delete");
-                              }
+                              setPendingDeleteId(t.id);
                             }}
                             className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded-md transition-all"
                             title="Delete transaction (admin only)"
@@ -1728,6 +1723,26 @@ export default function TransactionsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={pendingDeleteId !== null}
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={async () => {
+          if (pendingDeleteId === null) return;
+          try {
+            await callAction(deleteTransaction(pendingDeleteId));
+            toast.success("Transaction deleted");
+            window.location.reload();
+          } catch (err: any) {
+            toast.error(err.message || "Failed to delete");
+          } finally {
+            setPendingDeleteId(null);
+          }
+        }}
+        title="Delete Transaction"
+        message="This will permanently delete this transaction and revert all affected stock quantities. This action cannot be undone."
+        confirmLabel="Delete Transaction"
+      />
     </div>
   );
 }

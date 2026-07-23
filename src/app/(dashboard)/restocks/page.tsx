@@ -40,6 +40,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { ExportDialog } from "@/components/export-dialog";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 import type { Transaction, TransactionItem, Product } from "@prisma/client";
 import { toast } from "sonner";
@@ -89,6 +90,7 @@ export default function RestocksPage() {
   const [total, setTotal] = useState(0);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [processingId, setProcessingId] = useState<number | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
   const [showNew, setShowNew] = useState(false);
 
   // New restock cart state
@@ -437,21 +439,9 @@ export default function RestocksPage() {
                   </button>
                   {isAdmin && (
                   <button
-                    onClick={async (e) => {
+                    onClick={(e) => {
                       e.stopPropagation();
-                      if (
-                        !confirm(
-                          "Delete this restock? This will revert stock quantities.",
-                        )
-                      )
-                        return;
-                      try {
-                        await callAction(deleteTransaction(r.id));
-                        toast.success("Restock deleted");
-                        refresh();
-                      } catch (err: any) {
-                        toast.error(err.message || "Failed to delete");
-                      }
+                      setPendingDeleteId(r.id);
                     }}
                     className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                     title="Delete restock (admin only)"
@@ -946,6 +936,26 @@ export default function RestocksPage() {
             </div>
           );
         })()}
+
+      <ConfirmModal
+        open={pendingDeleteId !== null}
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={async () => {
+          if (pendingDeleteId === null) return;
+          try {
+            await callAction(deleteTransaction(pendingDeleteId));
+            toast.success("Restock deleted");
+            refresh();
+          } catch (err: any) {
+            toast.error(err.message || "Failed to delete");
+          } finally {
+            setPendingDeleteId(null);
+          }
+        }}
+        title="Delete Restock"
+        message="This will permanently delete this restock and revert all affected stock quantities. This action cannot be undone."
+        confirmLabel="Delete Restock"
+      />
     </div>
   );
 }
